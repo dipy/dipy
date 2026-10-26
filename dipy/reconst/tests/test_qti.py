@@ -331,7 +331,7 @@ def _qti_gtab(rng):
 
 
 @set_random_number_generator(123)
-def test_ls_sdp_fits(rng):
+def test_ls_sdp_fits(rng=None):
     """Test ordinary and weighted least squares and semidefinite programming
     QTI fits by comparing the estimated parameters to the ground-truth values."""
     gtab = _qti_gtab(rng)
@@ -465,7 +465,7 @@ def test_ls_sdp_fits(rng):
 
 
 @set_random_number_generator(123)
-def test_qti_model(rng):
+def test_qti_model(rng=None):
     """Test the QTI model class."""
 
     # Input validation
@@ -482,7 +482,7 @@ def test_qti_model(rng):
 
 
 @set_random_number_generator(4321)
-def test_qti_fit(rng):
+def test_qti_fit(rng=None):
     """Test the QTI fit class."""
 
     # Generate a diffusion tensor distribution

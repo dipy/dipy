@@ -1,10 +1,51 @@
 import argparse
 import inspect
+import re
 import shutil
 import textwrap
 
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
+
+_LATEX_SYMBOLS = {
+    r"\pm": "±",
+    r"\mu": "μ",
+}
+
+
+def _strip_rst_markup(text):
+    """Convert RST and LaTeX inline markup to plain text for CLI display.
+
+    Workflow docstrings are written in reStructuredText with embedded LaTeX
+    so they render correctly in Sphinx HTML. When those docstrings are
+    surfaced in argparse ``--help`` output, the raw markup is unreadable.
+    This helper applies three substitutions, in order:
+
+    1. Strip RST inline roles, keeping the content
+       (e.g. ``:math:`x = 1``` → ``x = 1``).
+    2. Strip LaTeX commands that wrap content in braces, keeping the content
+       (e.g. ``\\text{bvec}`` → ``bvec``).
+    3. Replace known standalone LaTeX symbols with their Unicode equivalents
+       (see ``_LATEX_SYMBOLS``).
+
+    Only the returned string is modified; the original docstring on the
+    function is untouched, so Sphinx HTML rendering is unaffected.
+
+    Parameters
+    ----------
+    text : str
+        Docstring fragment that may contain RST roles or LaTeX commands.
+
+    Returns
+    -------
+    str
+        Plain-text version safe to display in a terminal.
+    """
+    text = re.sub(r":[a-z]+:`([^`]*)`", r"\1", text)
+    text = re.sub(r"\\[a-z]+\{([^}]*)\}", r"\1", text)
+    for cmd, sym in _LATEX_SYMBOLS.items():
+        text = text.replace(cmd, sym)
+    return text
 
 
 def format_key_value_table(data, key_header="Key", value_header="Value", *, sort=True):
@@ -38,10 +79,20 @@ def format_key_value_table(data, key_header="Key", value_header="Value", *, sort
     ]
 
     for key, value in items:
-        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
+        wrapped_value = []
+        for line in value.split("\n"):
+            stripped = line.lstrip()
+            indent = line[: len(line) - len(stripped)]
+            available = max(value_width - len(indent), 10)
+            wrapped_value.extend(
+                indent + w for w in (textwrap.wrap(stripped, width=available) or [""])
+            )
+        wrapped_value = wrapped_value or [""]
         rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
-        for extra_line in wrapped_value[1:]:
-            rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
+        rows.extend(
+            f"| {'':<{key_width}} | {extra_line:<{value_width}} |"
+            for extra_line in wrapped_value[1:]
+        )
     rows.append(separator)
     return "\n".join(rows)
 
@@ -186,9 +237,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         npds = NumpyDocString(doc)
         add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
-        self.description = (
-            f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"
-        )
+        summary = " ".join(npds["Summary"])
+        extended = "\n".join(npds["Extended Summary"])
+        self.description = f"{summary}\n\n{extended}"
 
         if npds["References"]:
             ref_text = [text or "\n" for text in npds["References"]]
@@ -219,10 +270,22 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         if len_args != len(self.doc):
             raise ValueError(
-                self.prog + ": Number of parameters in the "
-                "doc string and run method does not match. "
-                "Please ensure that the number of parameters "
-                "in the run method is same as the doc string."
+                f"{self.prog}: the docstring documents {len(self.doc)} parameters "
+                f"but there are {len_args} command line arguments. Every argument "
+                "must be documented."
+            )
+
+        documented_args = [param[0] for param in self.doc]
+        if documented_args != args:
+            mismatches = "\n".join(
+                f"  argument {i}: {arg!r} is documented as {documented!r}"
+                for i, (arg, documented) in enumerate(zip(args, documented_args))
+                if arg != documented
+            )
+            raise ValueError(
+                f"{self.prog}: docstring parameters are matched to command line "
+                "arguments by position, so both must list the same names in the "
+                f"same order.\n{mismatches}"
             )
 
         for i, arg in enumerate(args):
@@ -233,17 +296,23 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = " ".join(self.doc[i][2])
+            help_msg = _strip_rst_markup("\n".join(self.doc[i][2]))
 
             _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
 
             if is_optional:
+                default_idx = i - (len_args - len_defaults)
+                default_val = defaults[default_idx]
                 _kwargs["metavar"] = dtype.__name__
-                if dtype is bool:
+                if dtype is bool and default_val is None:
+                    _kwargs["action"] = argparse.BooleanOptionalAction
+                    _kwargs["default"] = None
+                    del _kwargs["type"]
+                    del _kwargs["metavar"]
+                elif dtype is bool:
                     _kwargs["action"] = "store_true"
-                    default_ = {arg: False}
-                    self.set_defaults(**default_)
+                    self.set_defaults(**{arg: False})
                     del _kwargs["type"]
                     del _kwargs["metavar"]
             elif dtype is bool:
@@ -254,16 +323,20 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 _kwargs["type"] = str
 
             if isnarg:
-                if is_optional:
+                if is_optional or getattr(workflow, "inputs_are_optional", False):
                     _kwargs["nargs"] = "*"
                 else:
                     _kwargs["nargs"] = "+"
+                if not is_optional:
                     nb_positional_variable += 1
 
             if "out_" in arg:
                 output_args.add_argument(*_args, **_kwargs)
             else:
-                if _kwargs["action"] != "store_true":
+                if _kwargs["action"] not in (
+                    "store_true",
+                    argparse.BooleanOptionalAction,
+                ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
                 self.add_argument(*_args, **_kwargs)
 
@@ -310,8 +383,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             flow_args = self.add_argument_group(f"{name} arguments(optional)")
 
             for i, arg_name in enumerate(args):
-                is_not_optionnal = i < len_args - len_defaults
-                if "out_" in arg_name or is_not_optionnal:
+                is_not_optional = i < len_args - len_defaults
+                if "out_" in arg_name or is_not_optional:
                     continue
 
                 arg_name = f"{short_name}.{arg_name}"
@@ -319,7 +392,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 prefix = "--"
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
-                help_msg = "".join(_doc[i][2])
+                help_msg = _strip_rst_markup("\n".join(_doc[i][2]))
 
                 _args = [f"{prefix}{arg_name}"]
                 _kwargs = {
@@ -329,15 +402,18 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                     "metavar": dtype.__name__,
                 }
 
-                if dtype is bool:
-                    _kwargs["action"] = "store_true"
-                    default_ = {arg_name: False}
-                    self.set_defaults(**default_)
+                default_idx = i - (len_args - len_defaults)
+                default_val = defaults[default_idx]
+                if dtype is bool and default_val is None:
+                    _kwargs["action"] = argparse.BooleanOptionalAction
+                    _kwargs["default"] = None
                     del _kwargs["type"]
                     del _kwargs["metavar"]
                 elif dtype is bool:
-                    _kwargs["type"] = int
-                    _kwargs["choices"] = [0, 1]
+                    _kwargs["action"] = "store_true"
+                    self.set_defaults(**{arg_name: False})
+                    del _kwargs["type"]
+                    del _kwargs["metavar"]
 
                 if dtype is tuple:
                     _kwargs["type"] = str
@@ -345,7 +421,10 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 if isnarg:
                     _kwargs["nargs"] = "*"
 
-                if _kwargs["action"] != "store_true":
+                if _kwargs["action"] not in (
+                    "store_true",
+                    argparse.BooleanOptionalAction,
+                ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
                 flow_args.add_argument(*_args, **_kwargs)
 

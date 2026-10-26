@@ -22,8 +22,8 @@ from dipy.stats.analysis import (
     buan_profile,
     peak_values,
 )
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
@@ -795,18 +795,15 @@ class BundleShapeAnalysis(Workflow):
         for bun in bundles:
             # bundle shape similarity matrix
             ba_matrix = np.zeros((N, N))
-            i = 0
             logger.info(bun)
-            for sub in all_subjects:
-                j = 0
-
+            for i, sub in enumerate(all_subjects):
                 bundle1 = load_tractogram(
                     Path(sub) / "rec_bundles" / bun,
                     reference="same",
                     bbox_valid_check=False,
                 ).streamlines
 
-                for subi in all_subjects:
+                for j, subi in enumerate(all_subjects):
                     logger.info(subi)
 
                     bundle2 = load_tractogram(
@@ -820,9 +817,6 @@ class BundleShapeAnalysis(Workflow):
                     )
 
                     ba_matrix[i][j] = ba_value
-
-                    j += 1
-                i += 1
             logger.info("saving BA score matrix")
             np.save(Path(out_dir) / (bun[:-4] + ".npy"), ba_matrix)
 

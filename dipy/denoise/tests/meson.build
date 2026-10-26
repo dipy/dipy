@@ -17,5 +17,3 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/denoise/tests'
 )
-
-

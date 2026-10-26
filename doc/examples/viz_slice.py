@@ -185,7 +185,7 @@ def left_click_callback(obj, ev):
     obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
 
     i, j, k = obj.picker.GetPointIJK()
-    result_position.message = f"({str(i)}, {str(j)}, {str(k)})"
+    result_position.message = f"({i}, {j}, {k})"
     result_value.message = f"{data[i, j, k]:.8f}"
 
 
@@ -221,7 +221,7 @@ def left_click_callback_mosaic(obj, ev):
     obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
 
     i, j, k = obj.picker.GetPointIJK()
-    result_position.message = f"({str(i)}, {str(j)}, {str(k)})"
+    result_position.message = f"({i}, {j}, {k})"
     result_value.message = f"{data[i, j, k]:.8f}"
 
 

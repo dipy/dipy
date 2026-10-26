@@ -18,7 +18,6 @@ References
 
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
-from libc.stdlib cimport malloc, free
 
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter
@@ -60,7 +59,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef int          rejection_sampling_nbr_sample
     cdef double[3]    voxel_size
     cdef double[3]    inv_voxel_size
-
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
                  double probe_length=0.5, double probe_radius=0,
@@ -123,11 +121,16 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.k_small = 0.0001
         self.rejection_sampling_max_try = 100
-        self.rejection_sampling_nbr_sample = 10 # Adaptively set in Trekker.
+        self.rejection_sampling_nbr_sample = 10  # Adaptively set in Trekker.
 
-        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold=pmf_threshold, **kwargs)
-
+        ProbabilisticDirectionGetter.__init__(
+            self,
+            pmf_gen,
+            max_angle,
+            sphere,
+            pmf_threshold=pmf_threshold,
+            **kwargs,
+        )
 
     cdef void initialize_candidate(self, double[:] init_dir):
         """"Initialize the parallel transport frame.
@@ -178,7 +181,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.last_val += self.pmf_gen.get_pmf_value_c(position,
                                                               self.frame[0])
 
-
     cdef void prepare_propagator(self, double arclength) nogil:
         """Prepare the propagator.
 
@@ -192,8 +194,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double tmp_arclength
 
-        if (fabs(self.k1) < self.k_small
-            and fabs(self.k2) < self.k_small):
+        if fabs(self.k1) < self.k_small and fabs(self.k2) < self.k_small:
             self.propagator[0] = arclength
             self.propagator[1] = 0
             self.propagator[2] = 0
@@ -209,7 +210,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             if fabs(self.k2) < self.k_small:
                 self.k2 = self.k_small
 
-            tmp_arclength  = arclength * arclength / 2.0
+            tmp_arclength = arclength * arclength / 2.0
 
             self.propagator[0] = arclength
             self.propagator[1] = self.k1 * tmp_arclength
@@ -222,7 +223,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.propagator[6] = -self.k2 * arclength
             self.propagator[7] = -self.k1 * self.k2 * tmp_arclength
             self.propagator[8] = (1 - self.k2 * self.k2 * tmp_arclength)
-
 
     cdef double calculate_data_support(self):
         """Calculates data support for the candidate probe."""
@@ -278,9 +278,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.last_val_cand = 0
                 if q == self.probe_quality-1:
                     for i in range(3):
-                        binormal[i] = (self.propagator[6] * frame[0][i]
-                                      + self.propagator[7] * frame[1][i]
-                                      + self.propagator[8] * frame[2][i])
+                        binormal[i] = (
+                            self.propagator[6] * frame[0][i]
+                            + self.propagator[7] * frame[1][i]
+                            + self.propagator[8] * frame[2][i]
+                        )
                     cross(&normal[0], &binormal[0], &tangent[0])
 
                 for c in range(self.probe_count):
@@ -304,7 +306,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         return likelihood
 
-
     cdef int initialize(self, double[:] seed_point, double[:] seed_direction):
         """Sample an initial curve by rejection sampling.
 
@@ -323,13 +324,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double data_support = 0
         cdef double max_posterior = 0
-        cdef int tries
 
         self.position[0] = seed_point[0]
         self.position[1] = seed_point[1]
         self.position[2] = seed_point[2]
 
-        for tries in range(self.rejection_sampling_nbr_sample):
+        for _ in range(self.rejection_sampling_nbr_sample):
             self.initialize_candidate(seed_direction)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -340,7 +340,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(self.rejection_sampling_max_try):
+        for _ in range(self.rejection_sampling_max_try):
             self.initialize_candidate(seed_direction)
             if (random() * max_posterior <= self.calculate_data_support()):
                 self.last_val = self.last_val_cand
@@ -365,17 +365,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double max_posterior = 0
         cdef double data_support = 0
         cdef double[3] tangent
-        cdef int tries
         cdef cnp.npy_intp i
 
         self.prepare_propagator(self.step_size)
 
         for i in range(3):
-            self.position[i] = \
-                (self.propagator[0] * self.frame[0][i] * self.inv_voxel_size[i]
+            self.position[i] = (
+                self.propagator[0] * self.frame[0][i] * self.inv_voxel_size[i]
                 + self.propagator[1] * self.frame[1][i] * self.inv_voxel_size[i]
                 + self.propagator[2] * self.frame[2][i] * self.inv_voxel_size[i]
-                + self.position[i])
+                + self.position[i]
+            )
             tangent[i] = (self.propagator[3] * self.frame[0][i]
                           + self.propagator[4] * self.frame[1][i]
                           + self.propagator[5] * self.frame[2][i])
@@ -390,7 +390,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.frame[0][1] = tangent[1]
         self.frame[0][2] = tangent[2]
 
-        for tries in range(self.rejection_sampling_nbr_sample):
+        for _ in range(self.rejection_sampling_nbr_sample):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -401,14 +401,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(self.rejection_sampling_max_try):
+        for _ in range(self.rejection_sampling_max_try):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             if random() * max_posterior <= self.calculate_data_support():
                 self.last_val = self.last_val_cand
                 return 0
 
         return 1
-
 
     # @cython.boundscheck(False)
     # @cython.wraparound(False)
@@ -428,7 +427,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             double average_voxel_size = 0
 
         if not fixedstep > 0:
-           raise ValueError("PTT only supports fixed step size.")
+            raise ValueError("PTT only supports fixed step size.")
 
         self.step_size = step_size
         for i in range(3):
@@ -440,7 +439,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.max_curvature = 1 / min_radius_curvature_from_angle(
             self.max_angle * M_PI / 180.0, self.step_size / average_voxel_size)
 
-        copy_point(&seed[0], &streamline[0,0])
+        copy_point(&seed[0], &streamline[0, 0])
         i = 0
         stream_status = TRACKPOINT
 
@@ -455,12 +454,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     .check_point_c(<double * > &self.position[0])
                 if stream_status == TRACKPOINT:
                     continue
-                elif (stream_status == ENDPOINT or
-                    stream_status == INVALIDPOINT or
-                    stream_status == OUTSIDEIMAGE):
+                elif (
+                    stream_status == ENDPOINT
+                    or stream_status == INVALIDPOINT
+                    or stream_status == OUTSIDEIMAGE
+                ):
                     break
             else:
                 # maximum length has been reached, return everything
                 i = streamline.shape[0]
         return i, stream_status
-

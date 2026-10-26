@@ -70,3 +70,85 @@ DIPY uses [Sphinx](https://www.sphinx-doc.org/en/master/index.html) to generate
 documentation. The
 [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst)
 contains details about documenting the contributions.
+
+---
+
+## Maintenance & Backport Guide
+
+### Master-First Workflow
+
+DIPY follows a **master-first** development model. All bug fixes and improvements
+must land on `master` first. Backporting to maintenance branches (`maint/X.Y.x`)
+is done after merging to `master` via automated cherry-pick — never the reverse.
+
+**Workflow:** Fix on `master` → Label PR → Merge → Auto-backport to `maint/1.13.x` / `maint/1.12.x`
+
+This ensures `master` is always the most complete branch, and maintenance branches
+receive only curated, tested changes.
+
+### Branch Structure
+
+| Branch | Purpose | PyPI Target |
+|--------|---------|-------------|
+| `master` | Main development | 2.0.0 |
+| `maint/1.13.x` | Next minor series | 1.13.x |
+| `maint/1.12.x` | Current stable patch series | 1.12.x |
+
+### How to Request a Backport
+
+1. Submit your PR targeting `master` as normal.
+2. Before merging, apply one or more backport labels:
+   - `backport-maint/1.13.x` — cherry-pick to the 1.13.x series
+   - `backport-maint/1.12.x` — cherry-pick to the 1.12.x series
+3. Merge the PR into `master`.
+4. The [backport workflow](../.github/workflows/backport.yml) runs automatically
+   and opens a backport PR for each labeled target branch within minutes.
+5. Review and merge the generated backport PRs.
+
+> **When to backport:** Bug fixes and security patches are good candidates.
+> New features that could break API compatibility should generally stay on `master` only.
+
+### Conflict Resolution
+
+When a cherry-pick conflict occurs, the backport action automatically:
+
+1. Posts a comment on the **original PR** with manual cherry-pick instructions.
+2. Opens a **draft backport PR** with the conflict markers committed, so the branch
+   and base are already set up for you to finish manually.
+
+To resolve a conflicted backport draft:
+
+```bash
+# Fetch the draft branch created by the automation.
+git fetch upstream
+git checkout backport-<PR_NUMBER>-to-maint/1.13.x
+
+# Resolve conflicts in your editor, then stage and continue.
+git add <resolved-files>
+git cherry-pick --continue
+
+# Push and mark the draft PR as ready for review.
+git push upstream backport-<PR_NUMBER>-to-maint/1.13.x
+gh pr ready <BACKPORT_PR_NUMBER> --repo dipy/dipy
+```
+
+### Adding a New Maintenance Branch
+
+When a new release series is created (e.g., `maint/1.14.x`):
+
+```bash
+# Step 1: Create the branch from master and push to upstream.
+git fetch upstream
+git checkout master && git merge --ff-only upstream/master
+git branch maint/1.14.x master
+git push upstream maint/1.14.x
+
+# Step 2: Create the GitHub label — this is the ONLY required change.
+gh label create "backport-maint/1.14.x" \
+  --repo dipy/dipy \
+  --color "e4a400" \
+  --description "Backport this PR to maint/1.14.x"
+```
+
+No changes to `.github/workflows/backport.yml` are needed — the workflow is
+fully dynamic and reads the label name to determine the target branch.

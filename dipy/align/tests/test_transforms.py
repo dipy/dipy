@@ -33,7 +33,7 @@ def test_number_of_parameters():
 
 
 @set_random_number_generator()
-def test_param_to_matrix_2d(rng):
+def test_param_to_matrix_2d(rng=None):
     # Test translation matrix 2D
     transform = regtransforms[("TRANSLATION", 2)]
     dx, dy = rng.uniform(size=(2,))
@@ -110,7 +110,7 @@ def test_param_to_matrix_2d(rng):
 
 
 @set_random_number_generator()
-def test_param_to_matrix_3d(rng):
+def test_param_to_matrix_3d(rng=None):
     # Test translation matrix 3D
     transform = regtransforms[("TRANSLATION", 3)]
     dx, dy, dz = rng.uniform(size=(3,))
@@ -215,7 +215,7 @@ def test_identity_parameters():
 
 
 @set_random_number_generator()
-def test_jacobian_functions(rng):
+def test_jacobian_functions(rng=None):
     # Compare the analytical Jacobians with their numerical approximations
     h = 1e-8
     nsamples = 50

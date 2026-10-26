@@ -8,10 +8,7 @@ import sys
 
 from sphinx.util import logging
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
+import tomllib
 
 logger = logging.getLogger(__name__)
 

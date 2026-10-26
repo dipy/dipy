@@ -23,7 +23,7 @@ def test_ascm_static():
 
 
 @set_random_number_generator()
-def test_ascm_random_noise(rng):
+def test_ascm_random_noise(rng=None):
     S0 = 100 + 2 * rng.standard_normal((22, 23, 30))
     S0n1 = nlmeans(S0, sigma=1, rician=False, patch_radius=1, block_radius=1)
     S0n2 = nlmeans(S0, sigma=1, rician=False, patch_radius=2, block_radius=1)
@@ -41,7 +41,7 @@ def test_ascm_random_noise(rng):
 
 
 @set_random_number_generator()
-def test_ascm_rmse_with_nlmeans(rng):
+def test_ascm_rmse_with_nlmeans(rng=None):
     # checks the smoothness
     S0 = np.ones((30, 30, 30)) * 100
     S0[10:20, 10:20, 10:20] = 50
@@ -67,7 +67,7 @@ def test_ascm_rmse_with_nlmeans(rng):
 
 
 @set_random_number_generator()
-def test_sharpness(rng):
+def test_sharpness(rng=None):
     # check the edge-preserving nature
     S0 = np.ones((30, 30, 30)) * 100
     S0[10:20, 10:20, 10:20] = 50

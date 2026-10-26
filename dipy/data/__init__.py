@@ -2,7 +2,6 @@
 
 import gzip
 import json
-from os.path import dirname, exists
 from pathlib import Path
 import pickle
 
@@ -13,6 +12,7 @@ from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data.fetcher import (
     fetch_30_bundle_atlas_hcp842,
+    fetch_atlas_schaefer_2018,
     fetch_bundle_atlas_hcp842,
     fetch_bundle_fa_hcp,
     fetch_bundle_warp_dataset,
@@ -55,6 +55,7 @@ from dipy.data.fetcher import (
     fetch_taiwan_ntu_dsi,
     fetch_target_tractogram_hcp,
     fetch_tissue_data,
+    get_atlas_schaefer_2018,
     get_bundle_atlas_hcp842,
     get_fnames,
     get_target_tractogram_hcp,
@@ -81,12 +82,13 @@ from dipy.data.fetcher import (
     read_tissue_data,
 )
 from dipy.io.image import load_nifti
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import relist_streamlines
 from dipy.utils.arrfuncs import as_native_array
+from dipy.utils.deprecator import warning_for_keywords
 
 __all__ = [
     "fetch_30_bundle_atlas_hcp842",
+    "fetch_atlas_schaefer_2018",
     "fetch_bundle_atlas_hcp842",
     "fetch_bundle_fa_hcp",
     "fetch_bundle_warp_dataset",
@@ -129,6 +131,7 @@ __all__ = [
     "fetch_taiwan_ntu_dsi",
     "fetch_target_tractogram_hcp",
     "fetch_tissue_data",
+    "get_atlas_schaefer_2018",
     "get_bundle_atlas_hcp842",
     "get_fnames",
     "get_target_tractogram_hcp",
@@ -160,7 +163,7 @@ def loads_compat(byte_data):
     return pickle.loads(byte_data, encoding="latin1")
 
 
-DATA_DIR = Path(dirname(__file__)) / "files"
+DATA_DIR = Path(__file__).resolve().parent / "files"
 SPHERE_FILES = {
     "symmetric362": Path(DATA_DIR) / "evenly_distributed_sphere_362.npz",
     "symmetric642": Path(DATA_DIR) / "evenly_distributed_sphere_642.npz",
@@ -287,7 +290,7 @@ def get_sphere(*, name="symmetric362"):
         ...
     DataError: No sphere called "not a sphere name"
 
-    """  # noqa: E501
+    """
     fname = SPHERE_FILES.get(name)
     if fname is None:
         raise DataError(f'No sphere called "{name}"')
@@ -455,14 +458,14 @@ def load_sdp_constraints(model_name, *, order=None):
 
     file = model_name + "_constraint"
     if order is not None:
-        file += f"_{str(order)}"
+        file += f"_{order}"
     if order is None:
         file += "_SC"
     file += ".npz"
 
     path = Path(DATA_DIR) / file
 
-    if not exists(path):
+    if not path.exists():
         raise ValueError(f"Constraints file '{file}' not found.")
 
     try:

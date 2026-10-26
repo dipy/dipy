@@ -11,7 +11,7 @@ import numpy as np
 from trx import trx_file_memmap
 
 import dipy
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -94,6 +94,99 @@ def make5d(data):
     return data.reshape(shape)
 
 
+_RGB_FIELD_NAMES = frozenset({("R", "G", "B"), ("R", "G", "B", "A")})
+
+
+def has_rgb_dtype(data):
+    """Check whether an array has a structured NIfTI ``DT_RGB24`` dtype.
+
+    Returns ``True`` when *data* has a structured numpy dtype whose field
+    names are exactly ``('R', 'G', 'B')`` or ``('R', 'G', 'B', 'A')``,
+    as created by nibabel when loading a NIfTI file with datatype code
+    128 (``DT_RGB24``) or 2304 (``DT_RGBA32``).
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array to inspect.
+
+    Returns
+    -------
+    bool
+        ``True`` when *data* carries a structured RGB/RGBA dtype.
+    """
+    return data.dtype.names is not None and tuple(data.dtype.names) in _RGB_FIELD_NAMES
+
+
+def is_rgb_compatible_data(data):
+    """Check whether a plain numeric array has RGB-compatible shape and values.
+
+    Returns ``True`` when *data* has ``ndim == 4``, the last dimension is
+    3 or 4, the array is non-empty, and values fall within a range
+    consistent with color channels:
+
+    - **uint8**: always compatible (no DWI scanner uses uint8).
+    - **Other integer** (e.g. int16): all values in [0, 255].
+    - **Float**: all values in [0, 1] with no NaN.
+
+    Structured-dtype arrays (e.g. NIfTI ``DT_RGB24``) are not checked
+    here; use `has_rgb_dtype` for those.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array to inspect.
+
+    Returns
+    -------
+    bool
+        ``True`` when *data* has RGB-compatible shape and values.
+    """
+    if data.ndim != 4 or data.shape[-1] not in (3, 4):
+        return False
+    if data.size == 0:
+        return False
+    if data.dtype == np.uint8:
+        return True
+    if data.dtype.kind in ("u", "i"):
+        return int(data.min()) >= 0 and int(data.max()) <= 255
+    if data.dtype.kind == "f":
+        if np.isnan(data).any():
+            return False
+        return float(data.min()) >= 0.0 and float(data.max()) <= 1.0
+    return False
+
+
+def unpack_rgb_array(data):
+    """Convert a structured RGB/RGBA array to a plain numeric array.
+
+    Nibabel represents RGB/RGBA NIfTI images with datatype code 128
+    (``DT_RGB24``) as structured arrays, e.g.
+    ``dtype=[('R','u1'),('G','u1'),('B','u1')]`` with shape
+    ``(X, Y, Z)``.  NumPy ufuncs do not support structured dtypes, so this
+    converts to a plain ``(X, Y, Z, N)`` array where *N* is the number of
+    channels.
+
+    Only arrays whose field names are exactly ``('R', 'G', 'B')`` or
+    ``('R', 'G', 'B', 'A')`` are unpacked.  Other structured dtypes are
+    returned unchanged.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array that may have a structured RGB/RGBA dtype.
+
+    Returns
+    -------
+    np.ndarray
+        Regular numeric array when input was structured RGB/RGBA;
+        otherwise the input unchanged.
+    """
+    if has_rgb_dtype(data):
+        return np.stack([data[name] for name in data.dtype.names], axis=-1)
+    return data
+
+
 @warning_for_keywords()
 def decfa(img_orig, *, scale=False):
     """
@@ -106,8 +199,8 @@ def decfa(img_orig, *, scale=False):
         the elements on the last dimension represent R, G and B components.
 
     scale: bool.
-        Whether to scale the incoming data from the 0-1 to the 0-255 range
-        expected in the output.
+        Whether to scale data from the 0-1 to the 0-255 range.
+        Ignored for integer data, which already represents channel values.
 
     Returns
     -------
@@ -117,6 +210,12 @@ def decfa(img_orig, *, scale=False):
 
     Notes
     -----
+    The output uses NIfTI datatype code 128 (``DT_RGB24``), stored as a
+    structured dtype with fields ``('R', 'G', 'B')``.  The intent code is
+    set to 1001 (``NIFTI_INTENT_ESTIMATE``) with name ``"Color FA"``.
+    Nibabel reconstructs the structured dtype from the datatype code on
+    load; the intent code is informational metadata only.
+
     For a description of this format, see:
 
     https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
@@ -127,12 +226,12 @@ def decfa(img_orig, *, scale=False):
 
     data_orig = np.asanyarray(img_orig.dataobj)
 
-    if scale:
+    if scale and not np.issubdtype(data_orig.dtype, np.integer):
         data_orig = (data_orig * 255).astype("uint8")
 
-    for ii in np.ndindex(img_orig.shape[:3]):
-        val = data_orig[ii]
-        out_data[ii] = (val[0], val[1], val[2])
+    out_data["R"] = data_orig[..., 0]
+    out_data["G"] = data_orig[..., 1]
+    out_data["B"] = data_orig[..., 2]
 
     new_hdr = img_orig.header
     new_hdr["dim"][4] = 1
@@ -167,9 +266,9 @@ def decfa_to_float(img_orig):
     data_orig = np.asanyarray(img_orig.dataobj)
     out_data = np.zeros(data_orig.shape + (3,), dtype=np.uint8)
 
-    for ii in np.ndindex(img_orig.shape[:3]):
-        val = data_orig[ii]
-        out_data[ii] = np.array([val[0], val[1], val[2]])
+    out_data[..., 0] = data_orig["R"]
+    out_data[..., 1] = data_orig["G"]
+    out_data[..., 2] = data_orig["B"]
 
     new_hdr = img_orig.header
     new_hdr["dim"][4] = 3
@@ -524,7 +623,8 @@ def read_img_arr_or_path(data, *, affine=None):
     return data, affine
 
 
-def recursive_compare(d1, d2, level="root"):
+@warning_for_keywords(from_version="1.13.0")
+def recursive_compare(d1, d2, *, level="root"):
     """Recursively compare two dictionaries or lists for matching structure and dtypes.
 
     This function is primarily used to compare dtype dictionaries, ensuring that

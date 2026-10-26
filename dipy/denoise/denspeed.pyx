@@ -22,9 +22,15 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-
-def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=None):
+def nlmeans_3d_classic(
+    arr,
+    mask=None,
+    sigma=None,
+    patch_radius=1,
+    block_radius=5,
+    rician=True,
+    num_threads=None,
+):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -55,24 +61,24 @@ def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
     """
 
     if arr.ndim != 3:
-        raise ValueError('data needs to be a 3D ndarray', arr.shape)
+        raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
-        mask = np.ones(arr.shape, dtype='f8')
+        mask = np.ones(arr.shape, dtype="f8")
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ascontiguousarray(mask, dtype="f8")
 
     if mask.ndim != 3:
-        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+        raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
 
     if sigma.ndim != 3:
-        raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
+        raise ValueError(f'sigma needs to be a 3D ndarray, got shape {sigma.shape}')
 
-    arr = np.ascontiguousarray(arr, dtype='f8')
+    arr = np.ascontiguousarray(arr, dtype="f8")
     arr = add_padding_reflection(arr, block_radius)
-    mask = add_padding_reflection(mask.astype('f8'), block_radius)
-    sigma = np.ascontiguousarray(sigma, dtype='f8')
-    sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+    mask = add_padding_reflection(mask.astype("f8"), block_radius)
+    sigma = np.ascontiguousarray(sigma, dtype="f8")
+    sigma = add_padding_reflection(sigma.astype("f8"), block_radius)
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                          rician, num_threads)
 
@@ -89,16 +95,15 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     """
 
     cdef:
-        cnp.npy_intp i, j, k, I, J, K
+        cnp.npy_intp i, j, k, dim_i, dim_j, dim_k
         double[:, :, ::1] out = np.zeros_like(arr)
-        double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
         int threads_to_use = -1
 
-    I = arr.shape[0]
-    J = arr.shape[1]
-    K = arr.shape[2]
+    dim_i = arr.shape[0]
+    dim_j = arr.shape[1]
+    dim_k = arr.shape[2]
 
     threads_to_use = determine_num_threads(num_threads)
     set_num_threads(threads_to_use)
@@ -106,9 +111,9 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     # move the block
     with nogil, parallel():
 
-        for i in prange(B, I - B, schedule="dynamic"):
-            for j in range(B, J - B):
-                for k in range(B, K - B):
+        for i in prange(B, dim_i - B, schedule="dynamic"):
+            for j in range(B, dim_j - B):
+                for k in range(B, dim_k - B):
 
                     if mask[i, j, k] == 0:
                         continue
@@ -127,9 +132,15 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     return np.sqrt(new)
 
 
-cdef double process_block(double[:, :, ::1] arr,
-                          cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
-                          cnp.npy_intp B, cnp.npy_intp P, double[:, :, ::1] sigma) nogil:
+cdef double process_block(
+    double[:, :, ::1] arr,
+    cnp.npy_intp i,
+    cnp.npy_intp j,
+    cnp.npy_intp k,
+    cnp.npy_intp B,
+    cnp.npy_intp P,
+    double[:, :, ::1] sigma,
+) nogil:
     """ Process the block with center at (i, j, k)
 
     Parameters
@@ -151,7 +162,7 @@ cdef double process_block(double[:, :, ::1] arr,
     """
 
     cdef:
-        cnp.npy_intp m, n, o, M, N, O, patch_vol_size, a, b, c, cnt, step
+        cnp.npy_intp m, n, o, patch_vol_size, a, b, c, cnt
         double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
@@ -229,7 +240,6 @@ def add_padding_reflection(double[:, :, ::1] arr, padding):
     cdef:
         double[:, :, ::1] final
         cnp.npy_intp i, j, k
-        cnp.npy_intp B = padding
         cnp.npy_intp[::1] indices_i = correspond_indices(arr.shape[0], padding)
         cnp.npy_intp[::1] indices_j = correspond_indices(arr.shape[1], padding)
         cnp.npy_intp[::1] indices_k = correspond_indices(arr.shape[2], padding)
@@ -281,26 +291,30 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
     for i in range(I):
         for j in range(J):
-            memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+            memcpy(
+                &dest[i * J * K + j * K],
+                &source[i + min_i, j + min_j, min_k],
+                K * sizeof(double),
+            )
 
     return 1
 
 
 # ==== BLOCKWISE NON-LOCAL MEANS IMPLEMENTATION ====
 
-cdef inline int _int_max(int a, int b):
+cdef inline cnp.npy_intp _int_max(cnp.npy_intp a, cnp.npy_intp b):
     return a if a >= b else b
-cdef inline int _int_min(int a, int b):
+cdef inline cnp.npy_intp _int_min(cnp.npy_intp a, cnp.npy_intp b):
     return a if a <= b else b
 
 
 def _firdn_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = len(f)
-    cdef int klen = len(h)
-    cdef int outLen = (n + klen) // 2
+    cdef cnp.npy_intp n = len(f)
+    cdef cnp.npy_intp klen = len(h)
+    cdef cnp.npy_intp outLen = (n + klen) // 2
     cdef double ss
-    cdef int i, k, limInf, limSup, x = 0, ox = 0, ks = 0
-    for i in range(outLen):
+    cdef cnp.npy_intp k, limInf, limSup, x = 0, ox = 0, ks = 0
+    for _ in range(outLen):
         ss = 0
         limInf = _int_max(0, x - klen + 1)
         limSup = 1 + _int_min(n - 1, x)
@@ -314,10 +328,10 @@ def _firdn_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _upfir_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = f.shape[0]
-    cdef int klen = h.shape[0]
-    cdef int outLen = 2 * n + klen - 2
-    cdef int x, limInf, limSup, k, ks
+    cdef cnp.npy_intp n = f.shape[0]
+    cdef cnp.npy_intp klen = h.shape[0]
+    cdef cnp.npy_intp outLen = 2 * n + klen - 2
+    cdef cnp.npy_intp x, limInf, limSup, k, ks
     cdef double ss
     for x in range(outLen):
         limInf = _int_max(0, x - klen + 1)
@@ -337,16 +351,14 @@ def _upfir_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _firdn_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
-    cdef int j
+    cdef cnp.npy_intp m = F.shape[1]
+    cdef cnp.npy_intp j
     for j in range(m):
         _firdn_vector(F[:, j], h, out[:, j])
 
 
 def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
+    cdef cnp.npy_intp m = F.shape[1]
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
 
@@ -392,8 +404,14 @@ cpdef upfir(double[:, :] image, double[:] h):
     return filtered
 
 
-cdef void _average_block(double[:, :, :] image, int center_y, int center_x, int center_z,
-                         double[:, :, :] weighted_average, double weight) noexcept nogil:
+cdef void _average_block(
+    double[:, :, :] image,
+    int center_y,
+    int center_x,
+    int center_z,
+    double[:, :, :] weighted_average,
+    double weight,
+) noexcept nogil:
     """
     Compute the weighted average of the patches in a blockwise manner.
 
@@ -440,9 +458,13 @@ cdef void _average_block(double[:, :, :] image, int center_y, int center_x, int 
 
                 if is_outside_bounds == 1:
                     # Use center voxel value for out-of-bounds locations
-                    weighted_average[offset_y, offset_x, offset_z] += weight * (image[center_y, center_x, center_z]**2)
+                    weighted_average[offset_y, offset_x, offset_z] += weight * (
+                        image[center_y, center_x, center_z] ** 2
+                    )
                 else:
-                    weighted_average[offset_y, offset_x, offset_z] += weight * (image[voxel_y, voxel_x, voxel_z]**2)
+                    weighted_average[offset_y, offset_x, offset_z] += weight * (
+                        image[voxel_y, voxel_x, voxel_z] ** 2
+                    )
 
 
 cdef void _value_block(double[:, :, :] denoised_estimate, double[:, :, :] weight_count,
@@ -452,8 +474,9 @@ cdef void _value_block(double[:, :, :] denoised_estimate, double[:, :, :] weight
     """
     Computes the final denoised estimate for a block and accumulates it.
 
-    This function processes each voxel in a block centered at (center_y, center_x, center_z),
-    computes the denoised value from weighted averages, and accumulates the results.
+    This function processes each voxel in a block centered at
+    (center_y, center_x, center_z), computes the denoised value from
+    weighted averages, and accumulates the results.
 
     Parameters
     ----------
@@ -506,9 +529,15 @@ cdef void _value_block(double[:, :, :] denoised_estimate, double[:, :, :] weight
                     # Compute denoised intensity from weighted average
                     if total_weight > 0:
                         if is_rician:
-                            denoised_intensity = (weighted_average[offset_y, offset_x, offset_z] / total_weight) - noise_variance_doubled
+                            denoised_intensity = (
+                                weighted_average[offset_y, offset_x, offset_z]
+                                / total_weight
+                            ) - noise_variance_doubled
                         else:
-                            denoised_intensity = weighted_average[offset_y, offset_x, offset_z] / total_weight
+                            denoised_intensity = (
+                                weighted_average[offset_y, offset_x, offset_z]
+                                / total_weight
+                            )
 
                         if denoised_intensity > 0:
                             denoised_intensity = sqrt(denoised_intensity)
@@ -519,14 +548,22 @@ cdef void _value_block(double[:, :, :] denoised_estimate, double[:, :, :] weight
 
                     # Accumulate results
                     current_count = weight_count[voxel_y, voxel_x, voxel_z]
-                    denoised_estimate[voxel_y, voxel_x, voxel_z] = current_estimate + denoised_intensity
+                    denoised_estimate[voxel_y, voxel_x, voxel_z] = (
+                        current_estimate + denoised_intensity
+                    )
                     weight_count[voxel_y, voxel_x, voxel_z] = current_count + 1.0
 
 
-cdef double _patch_distance(double[:, :, :] image,
-                           int patch1_center_y, int patch1_center_x, int patch1_center_z,
-                           int patch2_center_y, int patch2_center_x, int patch2_center_z,
-                           int patch_radius) nogil:
+cdef double _patch_distance(
+    double[:, :, :] image,
+    int patch1_center_y,
+    int patch1_center_x,
+    int patch1_center_z,
+    int patch2_center_y,
+    int patch2_center_x,
+    int patch2_center_z,
+    int patch_radius,
+) nogil:
     """
     Computes the squared distance between two cubic patches in the image.
 
@@ -606,27 +643,39 @@ cdef double _patch_distance(double[:, :, :] image,
                     voxel2_z = 2 * img_depth - voxel2_z - 1
 
                 # Compute squared difference
-                intensity_diff = image[voxel1_y, voxel1_x, voxel1_z] - image[voxel2_y, voxel2_x, voxel2_z]
+                intensity_diff = (
+                    image[voxel1_y, voxel1_x, voxel1_z]
+                    - image[voxel2_y, voxel2_x, voxel2_z]
+                 )
                 squared_distance_sum += intensity_diff * intensity_diff
                 voxel_count += 1
 
     return squared_distance_sum / voxel_count
 
 
-cdef void _process_block_complete(double[:, :, :] image,
-                                double[:, :, :] mask,
-                                double[:, :, :] local_means,
-                                double[:, :, :] local_variances,
-                                double[:, :, :] accumulated_estimates,
-                                double[:, :, :] weight_counts,
-                                double[:, :, :] workspace,
-                                int center_y, int center_x, int center_z,
-                                int patch_radius, int block_radius,
-                                double filtering_strength,
-                                double noise_variance_doubled, int is_rician,
-                                double epsilon, double mean_ratio_threshold,
-                                double variance_ratio_min,
-                                int img_height, int img_width, int img_depth) noexcept nogil:
+cdef void _process_block_complete(
+    double[:, :, :] image,
+    double[:, :, :] mask,
+    double[:, :, :] local_means,
+    double[:, :, :] local_variances,
+    double[:, :, :] accumulated_estimates,
+    double[:, :, :] weight_counts,
+    double[:, :, :] workspace,
+    int center_y,
+    int center_x,
+    int center_z,
+    int patch_radius,
+    int block_radius,
+    double filtering_strength,
+    double noise_variance_doubled,
+    int is_rician,
+    double epsilon,
+    double mean_ratio_threshold,
+    double variance_ratio_min,
+    int img_height,
+    int img_width,
+    int img_depth,
+) noexcept nogil:
     """
     Process a complete block including weight computation and final application.
 
@@ -664,13 +713,19 @@ cdef void _process_block_complete(double[:, :, :] image,
                     neighbor_y = center_y + offset_y
                     if neighbor_y < 0 or neighbor_y >= img_height:
                         continue
-                    if neighbor_y == center_y and neighbor_x == center_x and neighbor_z == center_z:
+                    if (
+                        neighbor_y == center_y
+                        and neighbor_x == center_x
+                        and neighbor_z == center_z
+                    ):
                         continue
                     if mask[neighbor_y, neighbor_x, neighbor_z] == 0:
                         continue
 
                     neighbor_mean = local_means[neighbor_y, neighbor_x, neighbor_z]
-                    neighbor_variance = local_variances[neighbor_y, neighbor_x, neighbor_z]
+                    neighbor_variance = local_variances[
+                        neighbor_y, neighbor_x, neighbor_z
+                    ]
 
                     # Skip patches with insufficient signal
                     if neighbor_mean <= epsilon or neighbor_variance <= epsilon:
@@ -680,15 +735,25 @@ cdef void _process_block_complete(double[:, :, :] image,
                     mean_ratio = current_mean / neighbor_mean
                     variance_ratio = current_variance / neighbor_variance
 
-                    if (mean_ratio < mean_ratio_threshold or mean_ratio > (1.0 / mean_ratio_threshold) or
-                        variance_ratio < variance_ratio_min or variance_ratio > variance_ratio_max):
+                    if (
+                        mean_ratio < mean_ratio_threshold
+                        or mean_ratio > (1.0 / mean_ratio_threshold)
+                        or variance_ratio < variance_ratio_min
+                        or variance_ratio > variance_ratio_max
+                    ):
                         continue
 
                     # Compute patch distance
-                    patch_distance = _patch_distance(image,
-                                                    center_y, center_x, center_z,
-                                                    neighbor_y, neighbor_x, neighbor_z,
-                                                    block_radius)
+                    patch_distance = _patch_distance(
+                        image,
+                        center_y,
+                        center_x,
+                        center_z,
+                        neighbor_y,
+                        neighbor_x,
+                        neighbor_z,
+                        block_radius,
+                    )
 
                     # Compute similarity weight using original nlmeans formula
                     # Original: w = exp(-d / (h * h)) where h is the noise sigma
@@ -698,14 +763,29 @@ cdef void _process_block_complete(double[:, :, :] image,
                         max_weight = similarity_weight
 
                     # Accumulate weighted averages directly
-                    _average_block(image, neighbor_y, neighbor_x, neighbor_z, workspace, similarity_weight)
+                    _average_block(
+                        image,
+                        neighbor_y,
+                        neighbor_x,
+                        neighbor_z,
+                        workspace,
+                        similarity_weight,
+                    )
                     accumulator_weight += similarity_weight
 
     # Apply accumulated weighted averages to final estimate
     if accumulator_weight > 0.0:
-        _value_block(accumulated_estimates, weight_counts,
-                   center_y, center_x, center_z, workspace,
-                   accumulator_weight, noise_variance_doubled, is_rician)
+        _value_block(
+            accumulated_estimates,
+            weight_counts,
+            center_y,
+            center_x,
+            center_z,
+            workspace,
+            accumulator_weight,
+            noise_variance_doubled,
+            is_rician,
+        )
 
 
 cdef inline void _clear_workspace(double[:, :, :] workspace) noexcept nogil:
@@ -728,7 +808,9 @@ cdef inline void _clear_workspace(double[:, :, :] workspace) noexcept nogil:
                 workspace[i, j, k] = 0.0
 
 
-cdef double _local_mean(double[:, :, :] image, int center_y, int center_x, int center_z, int patch_radius) nogil:
+cdef double _local_mean(
+    double[:, :, :] image, int center_y, int center_x, int center_z, int patch_radius
+) nogil:
     """
     Computes the local mean of a cubic patch centered at (center_y, center_x, center_z).
 
@@ -785,10 +867,17 @@ cdef double _local_mean(double[:, :, :] image, int center_y, int center_x, int c
     return intensity_sum / voxel_count
 
 
-cdef double _local_variance(double[:, :, :] image, double mean_intensity,
-                           int center_y, int center_x, int center_z, int patch_radius) nogil:
+cdef double _local_variance(
+    double[:, :, :] image,
+    double mean_intensity,
+    int center_y,
+    int center_x,
+    int center_z,
+    int patch_radius,
+) nogil:
     """
-    Computes the local variance of a cubic patch centered at (center_y, center_x, center_z).
+    Computes the local variance of a cubic patch centered at
+    (center_y, center_x, center_z).
 
     Uses reflection padding for boundary handling.
 
@@ -851,7 +940,15 @@ cdef double _local_variance(double[:, :, :] image, double mean_intensity,
         return 0.0
 
 
-def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_radius, int block_radius, double noise_sigma, int is_rician, num_threads=None):
+def nlmeans_3d_blockwise(
+    double[:, :, :] image,
+    double[:, :, :] mask,
+    int patch_radius,
+    int block_radius,
+    noise_sigma,
+    int is_rician,
+    num_threads=None,
+):
     """
     Non-Local Means Denoising Using Blockwise Averaging.
 
@@ -873,8 +970,10 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     block_radius : int
         Radius for the blocks used in weighted averaging. Each block has
         size (2*block_radius + 1)^3.
-    noise_sigma : double
-        Estimated noise standard deviation in the input image.
+    noise_sigma : double or 3D ndarray
+        Estimated noise standard deviation in the input image. Can be a
+        scalar (uniform noise level) or a 3D sigma map with shape matching
+        ``image.shape``.
     is_rician : int
         1 if Rician noise model should be used, 0 for Gaussian noise model.
     num_threads : int, optional
@@ -902,15 +1001,36 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
         threads_to_use = determine_num_threads(num_threads)
 
     # Algorithm parameters
-    cdef double noise_variance_doubled = 2.0 * noise_sigma * noise_sigma
-    cdef double filtering_strength = noise_sigma * noise_sigma
+    cdef bint use_sigma_map = False
+    cdef double sigma_scalar = 0.0
+    cdef double[:, :, :] sigma_map = None
+    cdef double current_sigma
+    cdef double current_sigma_sq
+    cdef double local_noise_variance_doubled
+    cdef double local_filtering_strength
+
+    if hasattr(noise_sigma, "ndim"):
+        if noise_sigma.ndim != 3:
+            raise ValueError(
+                f'noise_sigma should be scalar or a 3D ndarray, '
+                f'got {getattr(noise_sigma, "shape", type(noise_sigma))}'
+            )
+        if noise_sigma.shape != (img_height, img_width, img_depth):
+            raise ValueError(
+                f'3D noise_sigma shape {noise_sigma.shape} does not match '
+                f'image shape ({img_height}, {img_width}, {img_depth})'
+            )
+        sigma_map = np.ascontiguousarray(noise_sigma, dtype="f8")
+        use_sigma_map = True
+    else:
+        sigma_scalar = float(noise_sigma)
+
     cdef int block_size = 2 * block_radius + 1
 
     # Statistical filtering thresholds
     cdef double epsilon = 1e-5
     cdef double mean_ratio_threshold = 0.95
     cdef double variance_ratio_min = 0.5 + 1e-7
-    cdef double variance_ratio_max = 1.0 / variance_ratio_min
 
     # Output arrays
     cdef double[:, :, :] denoised_image = np.zeros_like(image)
@@ -919,18 +1039,9 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     cdef double[:, :, :] accumulated_estimates = np.zeros_like(image)
     cdef double[:, :, :] weight_counts = np.zeros_like(image)
 
-    # Thread-local working memory (allocated per thread to avoid race conditions)
-    cdef double *thread_weighted_averages = NULL
-    cdef int block_volume = block_size * block_size * block_size
-
     # Loop variables
     cdef int center_y, center_x, center_z
-    cdef int neighbor_y, neighbor_x, neighbor_z
-    cdef int offset_y, offset_x, offset_z
-    cdef double mean_ratio, variance_ratio
-    cdef double patch_distance, similarity_weight, max_weight, total_weight
     cdef double current_mean, current_variance
-    cdef double neighbor_mean, neighbor_variance
     cdef int thread_id
 
     # Set number of threads
@@ -938,7 +1049,9 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
 
     # Pre-allocate weighted average workspace (one per potential thread)
     cdef int max_threads = threads_to_use
-    cdef double[:, :, :, :] thread_workspaces = np.zeros((max_threads, block_size, block_size, block_size), dtype=np.float64)
+    cdef double[:, :, :, :] thread_workspaces = (
+        np.zeros((max_threads, block_size, block_size, block_size), dtype=np.float64)
+    )
 
     # Phase 1: Compute local statistics (means and variances) in parallel
     with nogil, parallel():
@@ -946,36 +1059,103 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
             for center_x in range(img_width):
                 for center_y in range(img_height):
                     if mask[center_y, center_x, center_z] > 0:
-                        current_mean = _local_mean(image, center_y, center_x, center_z, 1)  # 3x3x3 patch
+                        current_mean = _local_mean(
+                            image, center_y, center_x, center_z, 1
+                        )  # 3x3x3 patch
                         local_means[center_y, center_x, center_z] = current_mean
                         local_variances[center_y, center_x, center_z] = _local_variance(
                             image, current_mean, center_y, center_x, center_z, 1)
 
     # Phase 2: Process blocks with stride 2 for efficiency
-    # Avoid reduction variables entirely by processing each block completely
-    with nogil, parallel():
-        for center_z in prange(0, img_depth, 2, schedule="dynamic"):
-            thread_id = threadid()
-            for center_x in range(0, img_width, 2):
-                for center_y in range(0, img_height, 2):
-                    if mask[center_y, center_x, center_z] == 0:
-                        continue
+    # Avoid reduction variables entirely by processing each block completely.
+    # Two separate code paths avoid a per-voxel branch on use_sigma_map.
+    cdef double fixed_sigma_sq = sigma_scalar * sigma_scalar
+    if fixed_sigma_sq <= 0:
+        fixed_sigma_sq = epsilon
+    cdef double fixed_noise_variance_doubled = 2.0 * fixed_sigma_sq
+    cdef double fixed_filtering_strength = fixed_sigma_sq
 
-                    current_mean = local_means[center_y, center_x, center_z]
-                    current_variance = local_variances[center_y, center_x, center_z]
+    if use_sigma_map:
+        with nogil, parallel():
+            for center_z in prange(0, img_depth, 2, schedule="dynamic"):
+                thread_id = threadid()
+                for center_x in range(0, img_width, 2):
+                    for center_y in range(0, img_height, 2):
+                        if mask[center_y, center_x, center_z] == 0:
+                            continue
 
-                    # Clear workspace for this thread
-                    _clear_workspace(thread_workspaces[thread_id])
+                        current_mean = local_means[center_y, center_x, center_z]
+                        current_variance = local_variances[center_y, center_x, center_z]
 
-                    # Process this block completely in one go
-                    _process_block_complete(image, mask, local_means, local_variances,
-                                          accumulated_estimates, weight_counts,
-                                          thread_workspaces[thread_id],
-                                          center_y, center_x, center_z,
-                                          patch_radius, block_radius, filtering_strength,
-                                          noise_variance_doubled, is_rician,
-                                          epsilon, mean_ratio_threshold, variance_ratio_min,
-                                          img_height, img_width, img_depth)
+                        _clear_workspace(thread_workspaces[thread_id])
+
+                        current_sigma = sigma_map[center_y, center_x, center_z]
+                        current_sigma_sq = current_sigma * current_sigma
+                        if current_sigma_sq <= 0:
+                            current_sigma_sq = epsilon
+                        local_noise_variance_doubled = 2.0 * current_sigma_sq
+                        local_filtering_strength = current_sigma_sq
+
+                        _process_block_complete(
+                            image,
+                            mask,
+                            local_means,
+                            local_variances,
+                            accumulated_estimates,
+                            weight_counts,
+                            thread_workspaces[thread_id],
+                            center_y,
+                            center_x,
+                            center_z,
+                            patch_radius,
+                            block_radius,
+                            local_filtering_strength,
+                            local_noise_variance_doubled,
+                            is_rician,
+                            epsilon,
+                            mean_ratio_threshold,
+                            variance_ratio_min,
+                            img_height,
+                            img_width,
+                            img_depth,
+                        )
+    else:
+        with nogil, parallel():
+            for center_z in prange(0, img_depth, 2, schedule="dynamic"):
+                thread_id = threadid()
+                for center_x in range(0, img_width, 2):
+                    for center_y in range(0, img_height, 2):
+                        if mask[center_y, center_x, center_z] == 0:
+                            continue
+
+                        current_mean = local_means[center_y, center_x, center_z]
+                        current_variance = local_variances[center_y, center_x, center_z]
+
+                        _clear_workspace(thread_workspaces[thread_id])
+
+                        _process_block_complete(
+                            image,
+                            mask,
+                            local_means,
+                            local_variances,
+                            accumulated_estimates,
+                            weight_counts,
+                            thread_workspaces[thread_id],
+                            center_y,
+                            center_x,
+                            center_z,
+                            patch_radius,
+                            block_radius,
+                            fixed_filtering_strength,
+                            fixed_noise_variance_doubled,
+                            is_rician,
+                            epsilon,
+                            mean_ratio_threshold,
+                            variance_ratio_min,
+                            img_height,
+                            img_width,
+                            img_depth,
+                        )
 
     # Phase 3: Finalize denoised estimates
     with nogil, parallel():
@@ -990,7 +1170,9 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
                             weight_counts[center_y, center_x, center_z])
                     else:
                         # Fallback to original value if no similar patches found
-                        denoised_image[center_y, center_x, center_z] = image[center_y, center_x, center_z]
+                        denoised_image[center_y, center_x, center_z] = image[
+                            center_y, center_x, center_z
+                        ]
 
     # Restore default thread count
     restore_default_num_threads()
@@ -999,7 +1181,7 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=None, method='classic'):
+               block_radius=5, rician=True, num_threads=None, method="classic"):
     """ Non-local means for denoising 3D images with selectable algorithm
 
     Parameters
@@ -1033,61 +1215,70 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     """
 
     if arr.ndim != 3:
-        raise ValueError('data needs to be a 3D ndarray', arr.shape)
+        raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
-        mask = np.ones(arr.shape, dtype='f8')
+        mask = np.ones(arr.shape, dtype="f8")
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ascontiguousarray(mask, dtype="f8")
 
     if mask.ndim != 3:
-        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+        raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
 
     # Handle sigma validation based on method
-    if method == 'classic':
+    if method == "classic":
         # Classic method requires 3D sigma array
-        if not hasattr(sigma, 'ndim') or sigma.ndim != 3:
-            raise ValueError('sigma needs to be a 3D ndarray for classic method', getattr(sigma, 'shape', type(sigma)))
-    elif method == 'blockwise':
+        if not hasattr(sigma, "ndim") or sigma.ndim != 3:
+            raise ValueError(
+                f'sigma needs to be a 3D ndarray for classic method, '
+                f'got {getattr(sigma, "shape", type(sigma))}'
+            )
+    elif method == "blockwise":
         # Blockwise method can accept scalar or array sigma
-        if hasattr(sigma, 'ndim'):
+        if hasattr(sigma, "ndim"):
             if sigma.ndim > 3:
-                raise ValueError('sigma should be at most 3D for blockwise method', sigma.shape)
+                raise ValueError(
+                    f'sigma should be at most 3D for blockwise method, '
+                    f'got shape {sigma.shape}'
+                )
         # Scalar sigma is fine for blockwise method
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
 
-    arr = np.ascontiguousarray(arr, dtype='f8')
+    arr = np.ascontiguousarray(arr, dtype="f8")
 
-    if method == 'classic':
+    if method == "classic":
         # Use original classic algorithm with padding
         arr = add_padding_reflection(arr, block_radius)
-        mask = add_padding_reflection(mask.astype('f8'), block_radius)
-        sigma = np.ascontiguousarray(sigma, dtype='f8')
-        sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+        mask = add_padding_reflection(mask.astype("f8"), block_radius)
+        sigma = np.ascontiguousarray(sigma, dtype="f8")
+        sigma = add_padding_reflection(sigma.astype("f8"), block_radius)
         arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                              rician, num_threads)
         return remove_padding(arrnlm, block_radius)
-    elif method == 'blockwise':
+    elif method == "blockwise":
         # Use new blockwise algorithm without padding
-        # For blockwise, we need a scalar sigma but can accept arrays
-        if hasattr(sigma, 'shape'):
+        # For blockwise, scalar or 3D sigma map are supported
+        if hasattr(sigma, "shape"):
             if sigma.shape == arr.shape:
-                # 3D sigma array - take the mean for uniform noise estimation
-                sigma_scalar = np.mean(sigma)
+                sigma_input = np.ascontiguousarray(sigma, dtype="f8")
             elif sigma.ndim == 1:
-                # 1D sigma array - take the mean (for 4D case handled above)
-                sigma_scalar = np.mean(sigma)
+                # 1D sigma for 3D input: take the mean as a fallback.
+                # For 4D inputs, nlmeans.py extracts per-volume scalars
+                # before reaching here.
+                sigma_input = float(np.mean(sigma))
             elif sigma.shape == ():
                 # 0-D array (scalar in array form)
-                sigma_scalar = float(sigma)
+                sigma_input = float(sigma)
             else:
-                raise ValueError(f'Invalid sigma shape {sigma.shape} for blockwise method')
+                raise ValueError(
+                    f"Invalid sigma shape {sigma.shape} for blockwise method"
+                )
         else:
             # Scalar sigma
-            sigma_scalar = float(sigma)
+            sigma_input = float(sigma)
 
         return nlmeans_3d_blockwise(arr, mask, patch_radius, block_radius,
-                                    sigma_scalar, int(rician), num_threads)
+                                    sigma_input, int(rician), num_threads)
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")

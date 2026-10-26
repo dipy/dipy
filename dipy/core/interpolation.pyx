@@ -4,24 +4,24 @@ cimport cython
 cimport numpy as cnp
 
 import numpy as np
-import warnings
 
 from libc.math cimport floor
 
-from scipy.interpolate import Rbf, RBFInterpolator
+from scipy.interpolate import RBFInterpolator
 
 from dipy.align.fused_types cimport floating, number
 
 
 def rbf_interpolation(data, sphere_origin, sphere_target, *,
-                      function='multiquadric', epsilon=None, smoothing=0.1):
+                      function="multiquadric", epsilon=None, smoothing=0.1):
     """Interpolate `data` on the sphere, using radial basis functions,
     where `data` can be scalar- (1D), vector- (2D), or tensor-valued (3D and beyond).
 
     Parameters
     ----------
     data : (..., N) ndarray
-        Values of the spherical function evaluated at the N positions specified by `sphere_origin`.
+        Values of the spherical function evaluated at the N positions
+        specified by `sphere_origin`.
     sphere_origin : Sphere
         N positions on the unit sphere where the spherical function is evaluated.
     sphere_target : Sphere
@@ -33,17 +33,19 @@ def rbf_interpolation(data, sphere_origin, sphere_target, *,
         'multiquadric', 'inverse_multiquadric', 'inverse_quadratic', 'gaussian'}.
     epsilon : float, optional
         Radial basis function spread parameter.
-        Defaults to 1 when `function` is 'linear', 'thin_plate_spline', 'cubic', or 'quintic'.
-        Otherwise, `epsilon` must be specified.
+        Defaults to 1 when `function` is 'linear', 'thin_plate_spline',
+        'cubic', or 'quintic'. Otherwise, `epsilon` must be specified.
     smoothing : float, optional
-        Smoothing parameter. When `smoothing` is 0, the interpolation is exact.
-        As `smoothing` increases, the interpolation approaches a least-squares fit of `data`
-        using the supplied radial basis function. Default: 0.
+        Smoothing parameter. When `smoothing` is 0, the interpolation
+        is exact. As `smoothing` increases, the interpolation
+        approaches a least-squares fit of `data` using the supplied
+        radial basis function. Default: 0.
 
     Returns
     -------
     v : (..., M) ndarray
-        Interpolated values of the spherical function at M positions specified by `sphere_target`.
+        Interpolated values of the spherical function at M positions
+        specified by `sphere_target`.
 
     See Also
     --------
@@ -89,7 +91,9 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     return summ
 
 
-cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) noexcept nogil:
+cdef void splitoffset(
+    float *offset, cnp.npy_intp *index, cnp.npy_intp shape
+) noexcept nogil:
     """Splits a global offset into an integer index and a relative offset"""
     offset[0] -= .5
     if offset[0] <= 0:
@@ -130,7 +134,7 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
         cnp.npy_intp x_ind, y_ind, z_ind, ii, jj, kk, LL
         cnp.npy_intp last_d = data.shape[3]
         bint bounds_check
-        cnp.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+        cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] result
 
     bounds_check = (x < 0 or y < 0 or z < 0 or
                     x > data.shape[0] or
@@ -143,13 +147,13 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
     splitoffset(&y, &y_ind, data.shape[1])
     splitoffset(&z, &z_ind, data.shape[2])
 
-    result = np.zeros(last_d, dtype='float32')
+    result = np.zeros(last_d, dtype="float32")
     for ii from 0 <= ii <= 1:
         for jj from 0 <= jj <= 1:
             for kk from 0 <= kk <= 1:
                 weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
                 for LL from 0 <= LL < last_d:
-                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
+                    result[LL] += data[x_ind+ii, y_ind+jj, z_ind+kk, LL]*weight
     return result
 
 
@@ -187,7 +191,6 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
     """
     cdef:
         double w[8]
-        double values[24]
         cnp.npy_intp index[24]
         cnp.npy_intp off, i, j
         double *ds=<double *> cnp.PyArray_DATA(data)
@@ -243,25 +246,41 @@ cdef void _trilinear_interpolation_iso(double *X,
     # the initial rectangular box for more on trilinear have a look here
     # https://en.wikipedia.org/wiki/Trilinear_interpolation
     # http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
-    W[0]=nd[0] * nd[1] * nd[2]
-    W[1]= d[0] * nd[1] * nd[2]
-    W[2]=nd[0] *  d[1] * nd[2]
-    W[3]=nd[0] * nd[1] *  d[2]
-    W[4]= d[0] *  d[1] * nd[2]
-    W[5]=nd[0] *  d[1] *  d[2]
-    W[6]= d[0] * nd[1] *  d[2]
-    W[7]= d[0] *  d[1] *  d[2]
+    W[0] = nd[0] * nd[1] * nd[2]
+    W[1] = d[0] * nd[1] * nd[2]
+    W[2] = nd[0] * d[1] * nd[2]
+    W[3] = nd[0] * nd[1] * d[2]
+    W[4] = d[0] * d[1] * nd[2]
+    W[5] = nd[0] * d[1] * d[2]
+    W[6] = d[0] * nd[1] * d[2]
+    W[7] = d[0] * d[1] * d[2]
     # indices
     # the indices give you the indices of the neighboring voxels (the corners
     # of the box) e.g. the qa coordinates
-    IN[0] =<cnp.npy_intp>Xf[0];   IN[1] =<cnp.npy_intp>Xf[1];    IN[2] =<cnp.npy_intp>Xf[2]
-    IN[3] =<cnp.npy_intp>Xf[0]+1; IN[4] =<cnp.npy_intp>Xf[1];    IN[5] =<cnp.npy_intp>Xf[2]
-    IN[6] =<cnp.npy_intp>Xf[0];   IN[7] =<cnp.npy_intp>Xf[1]+1;  IN[8] =<cnp.npy_intp>Xf[2]
-    IN[9] =<cnp.npy_intp>Xf[0];   IN[10]=<cnp.npy_intp>Xf[1];    IN[11]=<cnp.npy_intp>Xf[2]+1
-    IN[12]=<cnp.npy_intp>Xf[0]+1; IN[13]=<cnp.npy_intp>Xf[1]+1;  IN[14]=<cnp.npy_intp>Xf[2]
-    IN[15]=<cnp.npy_intp>Xf[0];   IN[16]=<cnp.npy_intp>Xf[1]+1;  IN[17]=<cnp.npy_intp>Xf[2]+1
-    IN[18]=<cnp.npy_intp>Xf[0]+1; IN[19]=<cnp.npy_intp>Xf[1];    IN[20]=<cnp.npy_intp>Xf[2]+1
-    IN[21]=<cnp.npy_intp>Xf[0]+1; IN[22]=<cnp.npy_intp>Xf[1]+1;  IN[23]=<cnp.npy_intp>Xf[2]+1
+    IN[0] =<cnp.npy_intp>Xf[0]
+    IN[1] =<cnp.npy_intp>Xf[1]
+    IN[2] =<cnp.npy_intp>Xf[2]
+    IN[3] =<cnp.npy_intp>Xf[0]+1
+    IN[4] =<cnp.npy_intp>Xf[1]
+    IN[5] =<cnp.npy_intp>Xf[2]
+    IN[6] =<cnp.npy_intp>Xf[0]
+    IN[7] =<cnp.npy_intp>Xf[1]+1
+    IN[8] =<cnp.npy_intp>Xf[2]
+    IN[9] =<cnp.npy_intp>Xf[0]
+    IN[10]=<cnp.npy_intp>Xf[1]
+    IN[11]=<cnp.npy_intp>Xf[2]+1
+    IN[12]=<cnp.npy_intp>Xf[0]+1
+    IN[13]=<cnp.npy_intp>Xf[1]+1
+    IN[14]=<cnp.npy_intp>Xf[2]
+    IN[15]=<cnp.npy_intp>Xf[0]
+    IN[16]=<cnp.npy_intp>Xf[1]+1
+    IN[17]=<cnp.npy_intp>Xf[2]+1
+    IN[18]=<cnp.npy_intp>Xf[0]+1
+    IN[19]=<cnp.npy_intp>Xf[1]
+    IN[20]=<cnp.npy_intp>Xf[2]+1
+    IN[21]=<cnp.npy_intp>Xf[0]+1
+    IN[22]=<cnp.npy_intp>Xf[1]+1
+    IN[23]=<cnp.npy_intp>Xf[2]+1
     return
 
 
@@ -364,7 +383,6 @@ def trilinear_interpolate4d(floating[:, :, :, :] data,
     return out
 
 
-
 def nearestneighbor_interpolate(data, point):
     index = tuple(np.round(point).astype(int))
     return data[index]
@@ -402,8 +420,9 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_vector_2d[floating](field,
-                locations[i, 0], locations[i, 1], &out[i, 0])
+            inside[i] = _interpolate_vector_2d[floating](
+                field, locations[i, 0], locations[i, 1], &out[i, 0]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -512,8 +531,9 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_2d[floating](image,
-                locations[i, 0], locations[i, 1], &out[i])
+            inside[i] = _interpolate_scalar_2d[floating](
+                image, locations[i, 0], locations[i, 1], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -616,8 +636,9 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_nn_2d[number](image,
-                locations[i, 0], locations[i, 1], &out[i])
+            inside[i] = _interpolate_scalar_nn_2d[number](
+                image, locations[i, 0], locations[i, 1], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -709,14 +730,15 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_nn_3d[number](image,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
+            inside[i] = _interpolate_scalar_nn_3d[number](
+                image, locations[i, 0], locations[i, 1], locations[i, 2], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
-cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
-                                         double dii, double djj,
-                                         number *out) noexcept nogil:
+cdef inline int _interpolate_scalar_nn_3d(
+    number[:, :, :] volume, double dkk, double dii, double djj, number *out
+) noexcept nogil:
     r"""Nearest-neighbor interpolation of a 3D scalar image
 
     Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
@@ -809,11 +831,12 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
         cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-        double[:,:] _locations = np.array(locations, dtype=np.float64)
+        double[:, :] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_3d[floating](image,
-                _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i])
+            inside[i] = _interpolate_scalar_3d[floating](
+                image, _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -945,8 +968,9 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_vector_3d[floating](field,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0])
+            inside[i] = _interpolate_vector_3d[floating](
+                field, locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -990,7 +1014,7 @@ cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
         out[1] = 0
         out[2] = 0
         return 0
-    #---top-left
+    # ---top-left
     kk = <int>floor(dkk)
     ii = <int>floor(dii)
     jj = <int>floor(djj)
@@ -1081,7 +1105,7 @@ class NearestNeighborInterpolator(Interpolator):
     def __getitem__(self, index):
         index = tuple(index / self.voxel_size)
         if min(index) < 0:
-            raise OutsideImage('Negative Index')
+            raise OutsideImage("Negative Index")
         try:
             return self.data[tuple(np.array(index).astype(int))]
         except IndexError:

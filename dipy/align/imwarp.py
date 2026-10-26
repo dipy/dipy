@@ -7,36 +7,12 @@ from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
+from dipy.align import vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
-from dipy.testing.decorators import warning_for_keywords
+from dipy.align.utils import RegistrationStages
+from dipy.utils import VerbosityLevels
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
-
-RegistrationStages = Bunch(
-    INIT_START=0,
-    INIT_END=1,
-    OPT_START=2,
-    OPT_END=3,
-    SCALE_START=4,
-    SCALE_END=5,
-    ITER_START=6,
-    ITER_END=7,
-)
-"""Registration Stages
-
-This enum defines the different stages which the Volumetric Registration
-may be in. The value of the stage is passed as a parameter to the call-back
-function so that it can react accordingly.
-
-INIT_START: optimizer initialization starts
-INIT_END: optimizer initialization ends
-OPT_START: optimization starts
-OPT_END: optimization ends
-SCALE_START: optimization at a new scale space resolution starts
-SCALE_END: optimization at the current scale space resolution ends
-ITER_START: a new iteration starts
-ITER_END: the current iteration ends
-"""
 
 
 def mult_aff(A, B):
@@ -257,8 +233,8 @@ class DiffeomorphicMap:
 
         Creates a zero displacement field (the identity transformation).
         """
-        self.forward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
-        self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
+        self.forward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=np.float32)
+        self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=np.float32)
 
     @warning_for_keywords()
     def _get_warping_function(self, interpolation, *, warp_coordinates=False):
@@ -295,7 +271,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_forward(self, points, *, coord2world=None, world2coord=None):
-        r"""Warps the list of points in the forward direction
+        r"""Warps the list of points in the forward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -306,9 +282,15 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+            Input points (or streamlines) to be warped in the forward direction.
+        coord2world : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
+        world2coord : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
+
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         coord2prealigned = mult_aff(self.prealign, coord2world)
@@ -319,7 +301,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_backward(self, points, *, coord2world=None, world2coord=None):
-        """Warps the list of points in the backward direction
+        """Warps the list of points in the backward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -330,9 +312,15 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+            Input points (or streamlines) to be warped in the backward direction.
+        coord2world : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
+        world2coord : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
+
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         world2invprealigned = mult_aff(world2coord, self.prealign_inv)
@@ -354,6 +342,7 @@ class DiffeomorphicMap:
         image_world2grid=None,
         out_shape=None,
         out_grid2world=None,
+        num_threads=None,
     ):
         """Warps an image in the forward direction
 
@@ -378,6 +367,9 @@ class DiffeomorphicMap:
             the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
+        num_threads : int or None, optional
+            Number of OpenMP threads used for image warping. If None, use
+            DIPY's default thread count.
 
         Returns
         -------
@@ -450,12 +442,12 @@ class DiffeomorphicMap:
 
         # Convert the data to required types to use the cythonized functions
         if interpolation == "nearest":
-            if image.dtype is np.dtype("float64") and floating is np.float32:
-                image = image.astype(floating)
+            if image.dtype is np.dtype("float64"):
+                image = image.astype(np.float32)
             elif image.dtype is np.dtype("int64"):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype=floating)
+            image = np.asarray(image, dtype=np.float32)
 
         warp_f = self._get_warping_function(interpolation)
 
@@ -466,6 +458,7 @@ class DiffeomorphicMap:
             affine_idx_out=affine_idx_out,
             affine_disp=affine_disp,
             out_shape=out_shape,
+            num_threads=num_threads,
         )
         return warped
 
@@ -478,6 +471,7 @@ class DiffeomorphicMap:
         image_world2grid=None,
         out_shape=None,
         out_grid2world=None,
+        num_threads=None,
     ):
         """Warps an image in the backward direction
 
@@ -502,6 +496,9 @@ class DiffeomorphicMap:
             the number of slices, rows and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
+        num_threads : int or None, optional
+            Number of OpenMP threads used for image warping. If None, use
+            DIPY's default thread count.
 
         Returns
         -------
@@ -573,12 +570,12 @@ class DiffeomorphicMap:
         affine_disp = mult_aff(W, Pinv)
 
         if interpolation == "nearest":
-            if image.dtype is np.dtype("float64") and floating is np.float32:
-                image = image.astype(floating)
+            if image.dtype is np.dtype("float64"):
+                image = image.astype(np.float32)
             elif image.dtype is np.dtype("int64"):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype=floating)
+            image = np.asarray(image, dtype=np.float32)
 
         warp_f = self._get_warping_function(interpolation)
 
@@ -589,6 +586,7 @@ class DiffeomorphicMap:
             affine_idx_out=affine_idx_out,
             affine_disp=affine_disp,
             out_shape=out_shape,
+            num_threads=num_threads,
         )
 
         return warped
@@ -602,6 +600,7 @@ class DiffeomorphicMap:
         image_world2grid=None,
         out_shape=None,
         out_grid2world=None,
+        num_threads=None,
     ):
         """Warps an image in the forward direction
 
@@ -625,6 +624,9 @@ class DiffeomorphicMap:
             the number of slices, rows and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
+        num_threads : int or None, optional
+            Number of OpenMP threads used for image warping. If None, use
+            DIPY's default thread count.
 
         Returns
         -------
@@ -645,6 +647,7 @@ class DiffeomorphicMap:
                 image_world2grid=image_world2grid,
                 out_shape=out_shape,
                 out_grid2world=out_grid2world,
+                num_threads=num_threads,
             )
         else:
             warped = self._warp_forward(
@@ -653,6 +656,7 @@ class DiffeomorphicMap:
                 image_world2grid=image_world2grid,
                 out_shape=out_shape,
                 out_grid2world=out_grid2world,
+                num_threads=num_threads,
             )
         return np.asarray(warped)
 
@@ -665,6 +669,7 @@ class DiffeomorphicMap:
         image_world2grid=None,
         out_shape=None,
         out_grid2world=None,
+        num_threads=None,
     ):
         """Warps an image in the backward direction
 
@@ -688,6 +693,9 @@ class DiffeomorphicMap:
             the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
+        num_threads : int or None, optional
+            Number of OpenMP threads used for image warping. If None, use
+            DIPY's default thread count.
 
         Returns
         -------
@@ -706,6 +714,7 @@ class DiffeomorphicMap:
                 image_world2grid=image_world2grid,
                 out_shape=out_shape,
                 out_grid2world=out_grid2world,
+                num_threads=num_threads,
             )
         else:
             warped = self._warp_backward(
@@ -714,6 +723,7 @@ class DiffeomorphicMap:
                 image_world2grid=image_world2grid,
                 out_shape=out_shape,
                 out_grid2world=out_grid2world,
+                num_threads=num_threads,
             )
         return np.asarray(warped)
 
@@ -731,12 +741,14 @@ class DiffeomorphicMap:
         Parameters
         ----------
         points : array, shape (N, dim) or Streamlines object
-
+            Input points (or streamlines) to be warped. Can be an array of
+            shape (N, dim) or a Streamlines object.
         coord2world : array, shape (dim+1, dim+1), optional
-            affine matrix mapping points to world coordinates
-
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
         world2coord : array, shape (dim+1, dim+1), optional
-            affine matrix mapping world coordinates to points
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
 
         """
         return self._transform_coordinates(
@@ -757,12 +769,14 @@ class DiffeomorphicMap:
         Parameters
         ----------
         points : array, shape (N, dim) or Streamlines object
-
+            Input points (or streamlines) to be warped. Can be an array of
+            shape (N, dim) or a Streamlines object.
         coord2world : array, shape (dim+1, dim+1), optional
-            affine matrix mapping points to world coordinates
-
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
         world2coord : array, shape (dim+1, dim+1), optional
-            affine matrix mapping world coordinates to points
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
 
         """
         return self._transform_coordinates(
@@ -854,12 +868,18 @@ class DiffeomorphicMap:
         self.disp_grid2world = expanded_grid2world
         self.disp_world2grid = expanded_world2grid
 
-    def compute_inversion_error(self):
+    def compute_inversion_error(self, *, num_threads=None):
         """Inversion error of the displacement fields
 
         Estimates the inversion error of the displacement fields by computing
         statistics of the residual vectors obtained after composing the forward
         and backward displacement fields.
+
+        Parameters
+        ----------
+        num_threads : int or None, optional
+            Number of OpenMP threads to use for displacement-field composition.
+            If None, use DIPY's default OpenMP thread count.
 
         Returns
         -------
@@ -888,7 +908,15 @@ class DiffeomorphicMap:
         else:
             compose_f = vfu.compose_vector_fields_3d
 
-        residual, stats = compose_f(self.backward, self.forward, None, Dinv, 1.0, None)
+        residual, stats = compose_f(
+            self.backward,
+            self.forward,
+            None,
+            Dinv,
+            1.0,
+            None,
+            num_threads=num_threads,
+        )
 
         return np.asarray(residual), np.asarray(stats)
 
@@ -919,7 +947,7 @@ class DiffeomorphicMap:
         new_map.is_inverse = self.is_inverse
         return new_map
 
-    def warp_endomorphism(self, phi):
+    def warp_endomorphism(self, phi, *, num_threads=None):
         """Composition of this DiffeomorphicMap with a given endomorphism
 
         Creates a new DiffeomorphicMap C with the same properties as self and
@@ -934,6 +962,9 @@ class DiffeomorphicMap:
         ----------
         phi : DiffeomorphicMap object
             the endomorphism to be warped by this diffeomorphic map
+        num_threads : int or None, optional
+            Number of OpenMP threads to use for displacement-field composition.
+            If None, use DIPY's default OpenMP thread count.
 
         Returns
         -------
@@ -966,11 +997,24 @@ class DiffeomorphicMap:
         else:
             compose_f = vfu.compose_vector_fields_3d
 
-        forward, stats = compose_f(d1, d2, None, premult_disp, 1.0, None)
-        (
-            backward,
-            stats,
-        ) = compose_f(d2_inv, d1_inv, None, premult_disp, 1.0, None)
+        forward, _ = compose_f(
+            d1,
+            d2,
+            None,
+            premult_disp,
+            1.0,
+            None,
+            num_threads=num_threads,
+        )
+        backward, _ = compose_f(
+            d2_inv,
+            d1_inv,
+            None,
+            premult_disp,
+            1.0,
+            None,
+            num_threads=num_threads,
+        )
 
         composition = self.shallow_copy()
         composition.forward = forward
@@ -1105,6 +1149,8 @@ class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
+    """Symmetric Diffeomorphic Registration algorithm."""
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -1117,6 +1163,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         inv_iter=20,
         inv_tol=1e-3,
         callback=None,
+        num_threads=None,
     ):
         """Symmetric Diffeomorphic Registration (SyN) Algorithm
 
@@ -1151,13 +1198,26 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             a function receiving a SymmetricDiffeomorphicRegistration object
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
+        num_threads : int or None, optional
+            Number of OpenMP threads used for displacement-field composition,
+            inversion, and image warping. If None, use DIPY's default OpenMP
+            thread count. This respects OMP_NUM_THREADS when set; otherwise,
+            all available threads are used. Negative values follow
+            ``dipy.utils.omp.determine_num_threads`` (``-1`` uses all
+            available cores).
         """
-        super(SymmetricDiffeomorphicRegistration, self).__init__(metric=metric)
+        super().__init__(metric=metric)
         if level_iters is None:
             level_iters = [100, 100, 25]
 
         if len(level_iters) == 0:
             raise ValueError("The iterations list cannot be empty")
+
+        if num_threads is not None:
+            if not isinstance(num_threads, int):
+                raise TypeError("num_threads must be an int or None")
+            if num_threads == 0:
+                raise ValueError("num_threads cannot be 0")
 
         self.set_level_iters(level_iters)
         self.step_length = step_length
@@ -1170,6 +1230,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.full_energy_profile = []
         self.verbosity = VerbosityLevels.STATUS
         self.callback = callback
+        self.num_threads = num_threads
         self.moving_ss = None
         self.static_ss = None
         self.static_direction = None
@@ -1222,6 +1283,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             disp_world2grid,
             time_scaling,
             current_displacement,
+            num_threads=self.num_threads,
         )
 
         return np.array(current_displacement), np.array(mean_norm)
@@ -1465,6 +1527,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             image_world2grid=None,
             out_shape=current_disp_shape,
             out_grid2world=current_disp_grid2world,
+            num_threads=self.num_threads,
         )
         wmoving = self.moving_to_ref.transform_inverse(
             current_moving,
@@ -1472,6 +1535,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             image_world2grid=None,
             out_shape=current_disp_shape,
             out_grid2world=current_disp_grid2world,
+            num_threads=self.num_threads,
         )
         # Pass both images to the metric. Now both images are sampled on the
         # reference grid (equal to the static image's grid) and the direction
@@ -1614,6 +1678,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.inv_iter,
                 self.inv_tol,
                 start=self.static_to_ref.backward,
+                num_threads=self.num_threads,
             )
         )
 
@@ -1626,6 +1691,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.inv_iter,
                 self.inv_tol,
                 start=self.moving_to_ref.backward,
+                num_threads=self.num_threads,
             )
         )
 
@@ -1638,6 +1704,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.inv_iter,
                 self.inv_tol,
                 start=self.static_to_ref.forward,
+                num_threads=self.num_threads,
             )
         )
 
@@ -1650,6 +1717,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.inv_iter,
                 self.inv_tol,
                 start=self.moving_to_ref.forward,
+                num_threads=self.num_threads,
             )
         )
 
@@ -1742,14 +1810,18 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.callback(self, RegistrationStages.SCALE_END)
 
         # Reporting mean and std in stats[1] and stats[2]
-        residual, stats = self.static_to_ref.compute_inversion_error()
+        residual, stats = self.static_to_ref.compute_inversion_error(
+            num_threads=self.num_threads
+        )
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             logger.info(
                 f"Static-Reference Residual error: {stats[1]:0.6f} ({stats[2]:0.6f})"
             )
 
-        residual, stats = self.moving_to_ref.compute_inversion_error()
+        residual, stats = self.moving_to_ref.compute_inversion_error(
+            num_threads=self.num_threads
+        )
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             logger.info(
@@ -1758,11 +1830,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         # Compose the two partial transformations
         self.static_to_moving = self.moving_to_ref.warp_endomorphism(
-            self.static_to_ref.inverse()
+            self.static_to_ref.inverse(), num_threads=self.num_threads
         ).inverse()
 
         # Report mean and std for the composed deformation field
-        residual, stats = self.static_to_moving.compute_inversion_error()
+        residual, stats = self.static_to_moving.compute_inversion_error(
+            num_threads=self.num_threads
+        )
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             logger.info(f"Final residual error: {stats[1]:0.6f} ({stats[2]:0.6f})")
         if self.callback is not None:
@@ -1818,8 +1892,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 logger.info(f"Pre-align: {prealign}")
 
         self._init_optimizer(
-            static.astype(floating),
-            moving.astype(floating),
+            static.astype(np.float32),
+            moving.astype(np.float32),
             static_grid2world,
             moving_grid2world,
             prealign,

@@ -8,7 +8,7 @@ from dipy.tracking import distances as pf, metrics as tm
 
 
 @set_random_number_generator()
-def test_splines(rng):
+def test_splines(rng=None):
     # create a helix
     t = np.linspace(0, 1.75 * 2 * np.pi, 100)
     x = np.sin(t)

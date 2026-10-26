@@ -22,6 +22,7 @@ Wno_implicit_function_declaration = cc.get_supported_arguments('-Wno-implicit-fu
 Wno_parentheses = cc.get_supported_arguments('-Wno-parentheses')
 Wno_switch = cc.get_supported_arguments('-Wno-switch')
 Wno_unused_label = cc.get_supported_arguments('-Wno-unused-label')
+Wno_unused_but_set_variable = cc.get_supported_arguments('-Wno-unused-but-set-variable')
 Wno_unused_variable = cc.get_supported_arguments('-Wno-unused-variable')
 
 # C++ warning flags
@@ -192,6 +193,12 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
   endif
 endif
 
+# Cython can emit OpenMP scheduling variables outside the guarded OpenMP block.
+# Without OpenMP, these variables are assigned but never used.
+if not omp.found()
+  cython_c_args += Wno_unused_but_set_variable
+endif
+
 # SSE intrinsics
 sse2_cflags = []
 sse_prog = '''
@@ -307,6 +314,29 @@ if cc.compiles(neon_prog, args: test_neon_cflags, name: 'ARM NEON intrinsics')
   neon_cflags = test_neon_cflags
   cython_c_args += neon_cflags
   cython_cpp_args = cython_c_args
+endif
+
+# Treat compiler warnings as errors for Cython-generated C/C++ code.
+if cc.get_id() == 'msvc'
+  cython_c_args += ['/WX']
+else
+  cython_c_args += cc.get_supported_arguments('-Werror')
+endif
+cython_cpp_args = cython_c_args
+
+# MSVC's C++ front-end raises C4551 on Cython's own
+# `(void)some_utility_func;` unused-function-silencing boilerplate
+# (its C front-end does not). Not fixable in dipy sources.
+if cpp.get_id() == 'msvc'
+  cython_cpp_args += ['/wd4551']
+endif
+
+# GCC raises -Wmaybe-uninitialized on __pyx_clineno in Cython-generated code.
+# This is a well-known false positive: Cython always initializes the variable
+# before use, but GCC's flow analysis cannot prove it. Not fixable in sources.
+if cc.get_id() == 'gcc'
+  cython_c_args += cc.get_supported_arguments('-Wno-maybe-uninitialized')
+  cython_cpp_args += cpp.get_supported_arguments('-Wno-maybe-uninitialized')
 endif
 
 

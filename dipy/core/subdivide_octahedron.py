@@ -12,7 +12,7 @@ produced by 2d (lon-lat) parameterization methods.
 """
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

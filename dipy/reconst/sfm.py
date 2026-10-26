@@ -28,7 +28,7 @@ import dipy.data as dpd
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.cache import Cache
 import dipy.sims.voxel as sims
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 

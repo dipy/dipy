@@ -24,7 +24,7 @@ cdef class PmfGen:
     def __init__(self,
                  double[:, :, :, :] data,
                  object sphere):
-        self.data = np.asarray(data, dtype=float, order='C')
+        self.data = np.asarray(data, dtype=float, order="C")
         self.vertices = np.asarray(sphere.vertices, dtype=float)
         self.pmf = np.zeros(self.vertices.shape[0])
         self.sphere = sphere
@@ -104,7 +104,7 @@ cdef class SimplePmfGen(PmfGen):
             double pmf_value = 0
 
         idx = self.find_closest(xyz)
-        trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+        trilinear_interpolate4d_c(self.data[:, :, :, idx:idx+1],
                                   point,
                                   &pmf_value)
         return pmf_value
@@ -173,7 +173,7 @@ cdef class SHCoeffPmfGen(PmfGen):
 cdef class SimplePeakGen(PmfGen):
     """PmfGen subclass for sphere-based peak data.
 
-    This class stores peak indices and values, providing the PmfGen 
+    This class stores peak indices and values, providing the PmfGen
     interface required by the tractogram generator.
 
     Parameters
@@ -229,9 +229,11 @@ cdef class SimplePeakGen(PmfGen):
                 "peak_indices and peak_values must be 4D arrays"
             )
 
-        if (indices_arr.shape[0] != values_arr.shape[0] or
+        if (
+            indices_arr.shape[0] != values_arr.shape[0] or
             indices_arr.shape[1] != values_arr.shape[1] or
-            indices_arr.shape[2] != values_arr.shape[2]):
+            indices_arr.shape[2] != values_arr.shape[2]
+        ):
             raise ValueError(
                 "peak_indices and peak_values must have matching spatial dimensions"
             )
@@ -465,9 +467,11 @@ cdef class SimplePeakGen(PmfGen):
             for i in range(3):
                 xyz[i] = index[m * 3 + i]
 
-            if (xyz[0] < 0 or xyz[0] >= self.peak_shape[0] or
-                xyz[1] < 0 or xyz[1] >= self.peak_shape[1] or
-                xyz[2] < 0 or xyz[2] >= self.peak_shape[2]):
+            if (
+                xyz[0] < 0 or xyz[0] >= self.peak_shape[0]
+                or xyz[1] < 0 or xyz[1] >= self.peak_shape[1]
+                or xyz[2] < 0 or xyz[2] >= self.peak_shape[2]
+            ):
                 continue
 
             out_valid[m] = 1

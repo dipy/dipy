@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 import sys
 import warnings
@@ -38,17 +39,25 @@ def teardown_module(module):
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
 def test_default_weights():
     file_path = get_fnames(name="synthseg_test_data")
     input_arr = np.load(file_path)["input"][0]
     output_arr = np.load(file_path)["output"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    results_arr = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)[..., 5]
+
+    with pytest.warns(UserWarning, match="SynthSeg model space"):
+        results_arr, _, _ = synthseg_model.predict(
+            input_arr, np.eye(4), return_prob=True
+        )
+
+    results_arr = results_arr[..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
 def test_default_weights_batch():
     file_path = get_fnames(name="synthseg_test_data")
     data = np.load(file_path)
@@ -59,10 +68,101 @@ def test_default_weights_batch():
 
     synthseg_model = synthseg.SynthSeg()
     fake_affine = np.array([np.eye(4)])
-    results_arr = synthseg_model.predict(
-        input_arr, fake_affine, batch_size=1, return_prob=True
-    )[0, ..., 5]
+
+    with pytest.warns(UserWarning, match="SynthSeg model space"):
+        results_arr, _, _ = synthseg_model.predict(
+            input_arr, fake_affine, batch_size=1, return_prob=True
+        )
+
+    results_arr = results_arr[0, ..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
+@pytest.mark.filterwarnings("ignore:The probability maps are returned.*:UserWarning")
+def test_input_shapes(monkeypatch):
+    synthseg_model = synthseg.SynthSeg()
+
+    def mock_predict(img):
+        prediction = np.zeros(
+            (img.shape[0], 33) + tuple(img.shape[2:]), dtype=np.float32
+        )
+        prediction[:, 0] = 1
+        return prediction
+
+    monkeypatch.setattr(synthseg_model, "_SynthSeg__predict", mock_predict)
+
+    shape_cases = [
+        ((17, 25, 31), (32, 32, 32)),
+        ((32, 48, 64), (32, 64, 64)),
+        ((34, 47, 65), (64, 64, 64)),
+    ]
+    for shape, model_shape in shape_cases:
+        input_arr = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
+
+        labels, _, mask = synthseg_model.predict(input_arr, np.eye(4))
+        npt.assert_equal(labels.shape, shape)
+        npt.assert_equal(mask.shape, shape)
+
+        probabilities, _, _ = synthseg_model.predict(
+            input_arr, np.eye(4), return_prob=True
+        )
+        npt.assert_equal(probabilities.shape, model_shape + (33,))
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
+def test_default_weights_labels():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    labels, label_dict, _ = synthseg_model.predict(input_arr, np.eye(4))
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_mask():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    labels, label_dict, masks = synthseg_model.predict(
+        input_arr, np.eye(4), finalize_mask=False
+    )
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(masks.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    npt.assert_equal(masks.dtype, np.int32)
+    npt.assert_array_equal(masks, labels > 0)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_finalize_mask():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+
+    with pytest.warns(UserWarning, match="The finalized brain mask"):
+        labels, label_dict, masks = synthseg_model.predict(
+            input_arr,
+            np.eye(4),
+            finalize_mask=True,
+        )
+
+    expected_mask = synthseg.remove_holes_and_islands(labels > 0).astype(np.int32)
+
+    npt.assert_equal(masks.shape, input_arr.shape)
+    npt.assert_equal(masks.dtype, np.int32)
+    npt.assert_array_equal(masks, expected_mask)
+    assert isinstance(label_dict, dict)
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
@@ -71,3 +171,12 @@ def test_T1_error():
     synthseg_model = synthseg.SynthSeg()
     fake_affine = np.array([np.eye(4), np.eye(4), np.eye(4)])
     npt.assert_raises(ValueError, synthseg_model.predict, T1, fake_affine)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_quiet_model_leaves_the_dipy_logger_alone():
+    dipy_logger = logging.getLogger("dipy")
+    level = dipy_logger.level
+    synthseg.SynthSeg(verbose=False)
+    npt.assert_equal(dipy_logger.level, level)
+    npt.assert_equal(dipy_logger.isEnabledFor(logging.WARNING), True)

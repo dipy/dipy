@@ -1,8 +1,11 @@
-# init for nn aka the deep neural network module
+"""Neural network tools.
+
+Deep learning models and utilities for diffusion MRI processing.
+"""
+
 import os
 import sys
 
-from dipy.utils.deprecator import deprecate_with_version
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -49,13 +52,6 @@ def _load_backend():
         import dipy.nn.tf.histo_resdnn as histo_resdnn_module
         import dipy.nn.tf.model as model_module
         import dipy.nn.tf.synb0 as synb0_module
-
-        msg = (
-            "`dipy.nn.tf` module uses TensorFlow, which is deprecated in DIPY 1.10.0. "
-            "Please install PyTorch to use the `dipy.nn.torch` module instead."
-        )
-        dec = deprecate_with_version(msg, since="1.10.0", until="2.0.0")
-        dec(lambda x=None: x)()
 
         sys.modules["dipy.nn.evac"] = evac_module
         sys.modules["dipy.nn.histo_resdnn"] = histo_resdnn_module

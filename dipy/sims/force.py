@@ -1,5 +1,5 @@
 """
-FORCE: Forward modeling for complex microstructure estimation
+FORCE: Forward matching for complex microstructure estimation
 
 This module provides signal simulation for matching-based diffusion MRI
 reconstruction using multi-compartment tissue models.
@@ -11,7 +11,7 @@ from real diffusion MRI data.
 
 References
 ----------
-:footcite:p:`Shah2025`
+:footcite:p:`Shah2026`
 """
 
 import ast
@@ -19,6 +19,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
 import multiprocessing as mp
 import os
+from pathlib import Path
 import sys
 import tempfile
 
@@ -26,9 +27,52 @@ import numpy as np
 
 from dipy.data import default_sphere
 from dipy.reconst.bingham import _single_bingham_to_sf as bingham_to_sf
+from dipy.sims._force_core import (
+    DEFAULT_THREE_FIBER_MIN_ANGLE,
+    DEFAULT_TWO_FIBER_MIN_ANGLE,
+)
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
+
+# Reference ODI sampling grid. The library samples orientation-dispersion
+# values from ``linspace(*odi_range, num_odi_values)``; these constants define
+# the default grid and its density, which ``resolve_num_odi_values`` uses to
+# autoscale the number of grid points to any custom ``odi_range``.
+DEFAULT_ODI_RANGE = (0.01, 0.3)
+DEFAULT_NUM_ODI_VALUES = 10
+DEFAULT_FORCE_SEED = 2298
+
+
+@warning_for_keywords(from_version="1.13.0")
+def resolve_num_odi_values(odi_range, *, num_odi_values=None):
+    """Resolve the number of ODI grid points, autoscaling when unset.
+
+    Parameters
+    ----------
+    odi_range : tuple
+        ``(min, max)`` orientation-dispersion-index range.
+    num_odi_values : int or None, optional
+        Explicit number of grid points. When ``None``, the grid is autoscaled
+        so its spacing matches the default grid
+        (``DEFAULT_NUM_ODI_VALUES`` points across ``DEFAULT_ODI_RANGE``),
+        keeping sampling density constant as ``odi_range`` widens or narrows.
+
+    Returns
+    -------
+    n : int
+        Number of ODI grid points (always >= 2).
+    """
+    if num_odi_values is not None:
+        n = int(num_odi_values)
+        if n < 2:
+            raise ValueError(f"num_odi_values must be >= 2; got {n}.")
+        return n
+    lo, hi = float(odi_range[0]), float(odi_range[1])
+    default_lo, default_hi = DEFAULT_ODI_RANGE
+    spacing = (default_hi - default_lo) / (DEFAULT_NUM_ODI_VALUES - 1)
+    return max(2, int(round((hi - lo) / spacing)) + 1)
 
 
 def dispersion_lut(target_sphere, odi_list):
@@ -105,40 +149,39 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50, n=1):
     return min_shells, shell_mask
 
 
-def init_worker(base_seed=None):
+@warning_for_keywords(from_version="1.13.0")
+@deprecated_params("base_seed", since="1.13.0", until="2.0.0")
+def init_worker(*, base_seed=None):
     """Initialize a ProcessPoolExecutor worker with a unique RNG state.
 
-    With ``base_seed=None``, seed = PID + high-resolution time so every
-    worker has a different stream. With ``initargs=(base_seed,)`` for
-    reproducibility, seed = base_seed + PID so workers differ but the run
-    is reproducible for a fixed worker count.
+    Seeds the global :mod:`numpy.random` and :mod:`random` states from the
+    PID and high-resolution time so forked workers do not inherit identical
+    streams from the parent.
 
     Parameters
     ----------
-    base_seed : int, optional
-        Base seed for reproducible worker initialization.
+    base_seed : int or None, optional
+        Deprecated and ignored.
     """
     import random
     import time
 
-    if base_seed is not None:
-        seed = (int(base_seed) + os.getpid()) % (2**32)
-    else:
-        # Unique per process and run: PID + high-resolution time
-        seed = (os.getpid() * (2**16) + int(time.perf_counter_ns())) % (2**32)
+    # Unique per process and run: PID + high-resolution time
+    seed = (os.getpid() * (2**16) + int(time.perf_counter_ns())) % (2**32)
     np.random.seed(seed)
     random.seed(seed)
 
 
 def _create_memmap(output_dir, name, dtype, shape):
     """Create a memory-mapped file."""
-    path = os.path.join(output_dir, f"{name}.mmap")
+    path = output_dir / f"{name}.mmap"
     return np.memmap(path, mode="w+", dtype=dtype, shape=shape), path
 
 
 def _generate_batch_worker(
     start_idx,
     batch_size,
+    batch_seed,
     sphere,
     evecs,
     bingham,
@@ -149,13 +192,14 @@ def _generate_batch_worker(
     tort,
     memmap_info,
     diffusivity_cfg,
+    min_crossing_angles,
 ):
-    """Worker function for parallel batch generation.
-
-    Opens memmaps by path in each process and writes directly.
-    """
+    """Worker function for parallel batch generation."""
     from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
     from dipy.sims._multi_tensor_omp import multi_tensor
+
+    if batch_seed is not None:
+        np.random.seed(batch_seed)
 
     # Unpack memmap info
     (
@@ -274,7 +318,17 @@ def _generate_batch_worker(
     for i in range(batch_size):
         idx = start_idx + i
         res = create_mixed_signal(
-            sphere, evecs, bingham, odi, bval, bvec, multi_tensor, wm_thresh, tort
+            sphere,
+            evecs,
+            bingham,
+            odi,
+            bval,
+            bvec,
+            multi_tensor,
+            wm_thresh,
+            tort,
+            min_crossing_angles[0],
+            min_crossing_angles[1],
         )
         (
             signals_mm[idx],
@@ -379,10 +433,13 @@ def generate_force_simulations(
     output_dir=None,
     num_cpus=1,
     batch_size=1000,
+    seed=DEFAULT_FORCE_SEED,
     wm_threshold=0.5,
     tortuosity=False,
-    odi_range=(0.01, 0.3),
-    num_odi_values=10,
+    odi_range=DEFAULT_ODI_RANGE,
+    num_odi_values=None,
+    two_fiber_min_angle=DEFAULT_TWO_FIBER_MIN_ANGLE,
+    three_fiber_min_angle=DEFAULT_THREE_FIBER_MIN_ANGLE,
     diffusivity_config=None,
     dtype=np.float32,
     compute_dti=True,
@@ -401,7 +458,7 @@ def generate_force_simulations(
         Gradient table with b-values and b-vectors.
     num_simulations : int, optional
         Number of simulated voxels.
-    output_dir : str, optional
+    output_dir : str or Path, optional
         Directory for output files. If None, uses a temporary directory.
     num_cpus : int or None, optional
         Number of CPU cores for parallel processing.
@@ -411,14 +468,28 @@ def generate_force_simulations(
         (e.g. ``-2`` = all minus one). ``0`` raises ``ValueError``.
     batch_size : int, optional
         Batch size for processing.
+    seed : int or None, optional
+        Seed for reproducible simulation generation. Each batch draws from
+        an independent random stream derived from ``(seed, batch_index)``,
+        so identical seeds yield identical libraries for any ``num_cpus``.
+        Note that changing ``batch_size`` changes the batch layout and
+        therefore the library. When None, every run uses fresh entropy.
     wm_threshold : float, optional
         Minimum WM fraction to include fiber labels.
     tortuosity : bool, optional
         Use tortuosity constraint for perpendicular diffusivity.
     odi_range : tuple, optional
         (min, max) orientation dispersion index range.
-    num_odi_values : int, optional
-        Number of ODI values to sample.
+    num_odi_values : int or None, optional
+        Number of ODI values in the sampling grid. When ``None`` (default),
+        the grid is autoscaled from ``odi_range`` to keep the sampling density
+        constant (see :func:`resolve_num_odi_values`).
+    two_fiber_min_angle : float, optional
+        Minimum crossing angle for two-fiber simulations, in degrees. Crossings
+        below this angle are never simulated. Use ``0`` to allow any crossing.
+    three_fiber_min_angle : float, optional
+        Minimum pairwise crossing angle for three-fiber simulations, in
+        degrees.
     diffusivity_config : dict, optional
         Custom diffusivity ranges.
     dtype : dtype, optional
@@ -460,6 +531,14 @@ def generate_force_simulations(
 
     set_diffusivity_ranges(**diffusivity_config)
 
+    for name, angle in (
+        ("two_fiber_min_angle", two_fiber_min_angle),
+        ("three_fiber_min_angle", three_fiber_min_angle),
+    ):
+        if not 0 <= angle < 90:
+            raise ValueError(f"{name} must be in [0, 90) degrees, got {angle}")
+    min_crossing_angles = (float(two_fiber_min_angle), float(three_fiber_min_angle))
+
     # Setup sphere and ODI values
     sphere = default_sphere
     target_sphere = np.ascontiguousarray(sphere.vertices, dtype=np.float64)
@@ -474,9 +553,15 @@ def generate_force_simulations(
         [all_tensor_evecs(tuple(point)) for point in target_sphere],
         dtype=np.float64,
     )
+    num_odi_values = resolve_num_odi_values(odi_range, num_odi_values=num_odi_values)
     odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(
         np.float64
     )
+    if verbose:
+        logger.info(
+            f"ODI sampling grid: {num_odi_values} values over "
+            f"[{odi_range[0]:.3g}, {odi_range[1]:.3g}]"
+        )
     dispersion_sf = dispersion_lut(target_sphere, odi_list)
 
     label_dtype = np.uint8
@@ -484,10 +569,10 @@ def generate_force_simulations(
     # Create memmaps for large arrays
     memmap_paths = {}
 
-    def create_mm(name, dt, shape):
-        mm, path = _create_memmap(output_dir, name, dt, shape)
-        memmap_paths[name] = path
-        return mm
+    def create_mm(_name, dt, shape):
+        _mm, _path = _create_memmap(Path(output_dir), _name, dt, shape)
+        memmap_paths[_name] = _path
+        return _mm
 
     signals_mm = create_mm("signals", dtype, (num_simulations, n_bvals))
     labels_mm = create_mm("labels", label_dtype, (num_simulations, n_dirs))
@@ -538,7 +623,13 @@ def generate_force_simulations(
     current_start = 0
     for batch_idx in range(total_batches):
         bs = batch_size if batch_idx < num_batches_full else remainder
-        batch_specs.append((current_start, bs))
+        if seed is None:
+            batch_seed = None
+        else:
+            batch_seed = int(
+                np.random.SeedSequence([int(seed), batch_idx]).generate_state(1)[0]
+            )
+        batch_specs.append((current_start, bs, batch_seed))
         current_start += bs
 
     # Pack memmap info for workers
@@ -602,36 +693,50 @@ def generate_force_simulations(
     # Run simulations with progress bar
     pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
+    def run_serial():
+        """Run batches in-process without altering the caller's NumPy RNG."""
+        state = np.random.get_state()
+        try:
+            if seed is None:
+                init_worker()
+            for start_idx, bs, batch_seed in batch_specs:
+                batch_done = _generate_batch_worker(
+                    start_idx,
+                    bs,
+                    batch_seed,
+                    target_sphere,
+                    evecs,
+                    dispersion_sf,
+                    odi_list,
+                    bvals,
+                    bvecs,
+                    wm_threshold,
+                    tortuosity,
+                    memmap_info,
+                    diffusivity_config,
+                    min_crossing_angles,
+                )
+                pbar.update(batch_done)
+        finally:
+            np.random.set_state(state)
+
     if num_cpus == 1:
         # Serial in-process path — no subprocess spawned, safe on all platforms
-        init_worker()
-        for start_idx, bs in batch_specs:
-            batch_done = _generate_batch_worker(
-                start_idx,
-                bs,
-                target_sphere,
-                evecs,
-                dispersion_sf,
-                odi_list,
-                bvals,
-                bvecs,
-                wm_threshold,
-                tortuosity,
-                memmap_info,
-                diffusivity_config,
-            )
-            pbar.update(batch_done)
+        run_serial()
     elif sys.platform == "win32":
         if _main_is_guarded():
             ctx = mp.get_context("spawn")
             with ProcessPoolExecutor(
-                max_workers=num_cpus, initializer=init_worker, mp_context=ctx
+                max_workers=num_cpus,
+                initializer=init_worker if seed is None else None,
+                mp_context=ctx,
             ) as executor:
                 futures = {
                     executor.submit(
                         _generate_batch_worker,
                         start_idx,
                         bs,
+                        batch_seed,
                         target_sphere,
                         evecs,
                         dispersion_sf,
@@ -642,8 +747,9 @@ def generate_force_simulations(
                         tortuosity,
                         memmap_info,
                         diffusivity_config,
+                        min_crossing_angles,
                     ): (start_idx, bs)
-                    for start_idx, bs in batch_specs
+                    for start_idx, bs, batch_seed in batch_specs
                 }
                 for future in as_completed(futures):
                     batch_done = future.result()
@@ -654,23 +760,7 @@ def generate_force_simulations(
                 "protected with `if __name__ == '__main__':`. "
                 "Falling back to serial execution."
             )
-            init_worker()
-            for start_idx, bs in batch_specs:
-                batch_done = _generate_batch_worker(
-                    start_idx,
-                    bs,
-                    target_sphere,
-                    evecs,
-                    dispersion_sf,
-                    odi_list,
-                    bvals,
-                    bvecs,
-                    wm_threshold,
-                    tortuosity,
-                    memmap_info,
-                    diffusivity_config,
-                )
-                pbar.update(batch_done)
+            run_serial()
     else:
         # fork: workers are copies of the parent — __main__ is NOT re-run,
         # so no `if __name__ == '__main__':` guard is needed in the caller's
@@ -678,13 +768,16 @@ def generate_force_simulations(
         # (no GUI/ObjC).
         ctx = mp.get_context("fork")
         with ProcessPoolExecutor(
-            max_workers=num_cpus, initializer=init_worker, mp_context=ctx
+            max_workers=num_cpus,
+            initializer=init_worker if seed is None else None,
+            mp_context=ctx,
         ) as executor:
             futures = {
                 executor.submit(
                     _generate_batch_worker,
                     start_idx,
                     bs,
+                    batch_seed,
                     target_sphere,
                     evecs,
                     dispersion_sf,
@@ -695,8 +788,9 @@ def generate_force_simulations(
                     tortuosity,
                     memmap_info,
                     diffusivity_config,
+                    min_crossing_angles,
                 ): (start_idx, bs)
-                for start_idx, bs in batch_specs
+                for start_idx, bs, batch_seed in batch_specs
             }
 
             for future in as_completed(futures):
@@ -808,9 +902,9 @@ def generate_force_simulations(
         del mm
     gc.collect()
 
-    for _name, path in memmap_paths.items():
+    for path in memmap_paths.values():
         try:
-            if os.path.exists(path):
+            if path.exists():
                 os.remove(path)
         except OSError:
             pass

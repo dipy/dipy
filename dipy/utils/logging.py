@@ -1,6 +1,10 @@
+from contextlib import contextmanager
+from enum import IntEnum
 import logging
 import os
 import sys
+
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class CustomHandler(logging.Handler):
@@ -8,8 +12,10 @@ class CustomHandler(logging.Handler):
     otherwise formats the message as usual.
     """
 
-    def __init__(self, stream=None, filename=None):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, stream=None, filename=None):
         super().__init__()  # call with no arguments
+        self.filename = None if filename is None else str(filename)
         if filename is not None:
             self._should_close = True
             self.stream = open(filename, "a", encoding="utf-8")
@@ -42,7 +48,8 @@ class CustomHandler(logging.Handler):
         super().close()
 
 
-def get_logger(name="dipy", filename=None, force=False):
+@warning_for_keywords(from_version="1.13.0")
+def get_logger(*, name="dipy", filename=None, force=False):
     """Return a logger instance configured for DIPY.
 
     Parameters
@@ -84,7 +91,9 @@ def get_logger(name="dipy", filename=None, force=False):
     return _logger
 
 
+@warning_for_keywords(from_version="1.13.0")
 def configure_logger(
+    *,
     level=logging.INFO,
     fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -119,6 +128,126 @@ def configure_logger(
     logging.root.addHandler(handler)
     logging.root.setLevel(level)
 
+    dipy_logger = logging.getLogger("dipy")
+    if dipy_logger.hasHandlers():
+        dipy_logger.setLevel(level)
+        for h in dipy_logger.handlers:
+            h.setLevel(level)
+
+
+def add_file_handler(
+    filename,
+    *,
+    level=None,
+    fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+):
+    """Add a file handler to the DIPY logger without removing existing handlers.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the log file. The file is opened in append mode.
+    level : int, optional
+        Logging level for the file handler. If None, uses the current logger
+        level.
+    fmt : str, optional
+        Log message format.
+    datefmt : str, optional
+        Date format for log messages.
+
+    Returns
+    -------
+    handler : CustomHandler
+        The handler that was added, to be passed to
+        :func:`remove_file_handler` when the file should stop receiving
+        messages.
+    """
+    _logger = logging.getLogger("dipy")
+    if level is None:
+        level = _logger.getEffectiveLevel()
+    handler = CustomHandler(filename=str(filename))
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
+    _logger.addHandler(handler)
+    return handler
+
+
+def remove_file_handler(*, handler):
+    """Detach a handler previously added by :func:`add_file_handler`.
+
+    Parameters
+    ----------
+    handler : logging.Handler
+        The handler to remove. It is closed after removal. Removing a
+        handler that is not attached is a no-op.
+    """
+    _logger = logging.getLogger("dipy")
+    _logger.removeHandler(handler)
+    handler.close()
+
+
+def attached_log_files(*, name="dipy"):
+    """List the files a logger writes to.
+
+    Parameters
+    ----------
+    name : str, optional
+        The logger name.
+
+    Returns
+    -------
+    list of tuple
+        ``(filename, level)`` of every :class:`CustomHandler` of the logger
+        that writes to a file, such as those added by
+        :func:`add_file_handler`.
+    """
+    return [
+        (handler.filename, handler.level)
+        for handler in logging.getLogger(name).handlers
+        if getattr(handler, "filename", None)
+    ]
+
+
+@contextmanager
+def file_handler(filename, *, level=None):
+    """Send DIPY log messages to ``filename`` for the duration of the block.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the log file. The file is opened in append mode.
+    level : int, optional
+        Logging level for the file handler. If None, uses the current logger
+        level.
+
+    Yields
+    ------
+    handler : CustomHandler
+        The handler writing to ``filename``.
+    """
+    handler = add_file_handler(filename, level=level)
+    try:
+        yield handler
+    finally:
+        remove_file_handler(handler=handler)
+
 
 # Provide a default logger for convenience
 logger = get_logger()
+
+
+class VerbosityLevels(IntEnum):
+    """Verbosity levels for dipy algorithms.
+
+    NONE : do not print anything
+    STATUS : print information about the current status of the algorithm
+    DIAGNOSE : print high level information of the components involved in the
+        registration that can be used to detect a failing component
+    DEBUG : print as much information as possible to isolate the cause of a bug
+    """
+
+    NONE = 0
+    STATUS = 1
+    DIAGNOSE = 2
+    DEBUG = 3

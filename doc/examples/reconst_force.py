@@ -1,9 +1,9 @@
 """
 ==================================================================================
-Reconstruction with FORCE (FORward modeling for Complex microstructure Estimation)
+Reconstruction with FORCE (FORward matching for Complex microstructure Estimation)
 ==================================================================================
 
-FORCE :footcite:p:`Shah2025` is a forward-modeling paradigm that reframes how
+FORCE :footcite:p:`Shah2026` is a forward-modeling paradigm that reframes how
 diffusion MRI data are analyzed. Instead of inverting the measured signal,
 FORCE simulates a large library of biologically plausible intra-voxel fiber
 configurations and tissue compositions. It then identifies the best-matching
@@ -35,6 +35,8 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import save_pam
+from dipy.viz.plotting import image_mosaic
 
 ###############################################################################
 # Download (or locate in cache) the Stanford HARDI dataset.  The first call
@@ -53,7 +55,7 @@ print(f"data shape: {data.shape}")
 
 from dipy.segment.mask import median_otsu
 
-_, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3, numpass=1)
+_, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=4, numpass=4)
 
 print(f"mask shape: {mask.shape}, brain voxels: {mask.sum()}")
 
@@ -62,23 +64,35 @@ print(f"mask shape: {mask.shape}, brain voxels: {mask.sum()}")
 # parameters; the simulation library is created separately via ``generate()``.
 #
 # * ``n_neighbors`` — number of library entries to retrieve per voxel query.
+# * ``penalty`` — fiber-complexity penalty subtracted from the match score,
+#   scaled by the number of fibers. Larger values bias the match towards
+#   simpler configurations.
 # * ``use_posterior`` — when ``True``, parameters are averaged over the
 #   ``n_neighbors`` nearest entries weighted by a softmax posterior; when
 #   ``False`` (default) only the single best-match entry is used.
+# * ``posterior_beta`` — softmax temperature of that posterior. Larger values
+#   concentrate the weights on the closest matches.
+# * ``compute_odf`` — when ``True``, a posterior ODF is assembled per voxel and
+#   exposed as ``fit.odf``.
+#
+# The posterior over the ``n_neighbors`` matches is always computed, even when
+# ``use_posterior=False``. That flag only decides where the *point estimates*
+# come from: the posterior mean, or the single best match. The uncertainty and
+# ambiguity maps shown further below are derived from the posterior either way.
+# The one exception is ``fit.entropy``, the entropy of the posterior weights,
+# which is only meaningful in posterior mode and is ``NaN`` otherwise.
 
 from dipy.reconst.force import FORCEModel, force_peaks
 
 model = FORCEModel(
     gtab,
     n_neighbors=50,
-    use_posterior=False,
+    use_posterior=True,
     verbose=True,
 )
 
 ###############################################################################
-# Generate the simulation library.  For this tutorial we use a small library
-# (5 000 entries) so that the example completes quickly.  In practice,
-# 100 000–500 000 simulations are recommended for production analyses.
+# Generate the simulation library.  For this tutorial, we use 500,000 simulations.
 #
 # When ``use_cache=True`` (the default), FORCE stores the generated library in
 # ``~/.dipy/force_simulations/`` and reloads it automatically on subsequent
@@ -94,10 +108,15 @@ model.generate(
 ###############################################################################
 # Fit the model to the data.
 #
-# For serial execution (one CPU), simply call ``model.fit()``.  To exploit
-# multiple cores, pass ``engine="ray"`` and ``n_jobs=<N>``.  The
-# ``@multi_voxel_fit`` decorator handles chunking, masking, and result
-# assembly automatically.
+# ``model.fit()`` runs serially by default. The ``ray`` engine is considerably
+# faster, as it parallelises the matching and post-processing across worker
+# processes instead of a single one. To use it, pass ``engine="ray"`` (and
+# optionally ``n_jobs=<N>``)::
+#
+#     fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1)
+#
+# The ``ray`` engine requires Ray to be installed (``pip install ray``); if it
+# is not available the fit falls back to serial execution.
 
 fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
 
@@ -108,6 +127,7 @@ fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
 
 fa_map = fit.fa
 md_map = fit.md
+rd_map = fit.rd
 wm_fraction = fit.wm_fraction
 gm_fraction = fit.gm_fraction
 csf_fraction = fit.csf_fraction
@@ -119,6 +139,21 @@ ambiguity = fit.ambiguity
 
 print(f"FA  — min: {fa_map[mask].min():.3f}  max: {fa_map[mask].max():.3f}")
 print(f"MD  — min: {md_map[mask].min():.6f}  max: {md_map[mask].max():.6f}")
+
+###############################################################################
+# To save the peaks generated from the FORCE directly, we need to call the force_peaks
+# function on the fitted object.  This will return a
+# PeaksAndMetrics object containing the peak directions, values, and indices, which can
+# be saved to disk using save_pam.
+peaks = force_peaks(fit)
+
+###############################################################################
+# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
+# The affine is needed to ensure that the peaks are correctly aligned with the original
+# data.
+
+save_pam("force_peaks.pam5", peaks, affine=affine)
+
 
 ###############################################################################
 # Save selected maps to disk as NIfTI files.
@@ -134,55 +169,124 @@ save_nifti("force_uncertainty.nii.gz", uncertainty.astype(np.float32), affine)
 ###############################################################################
 # Visualize a representative axial slice.
 
-import matplotlib.pyplot as plt
-
-mid_z = (fa_map.shape[2] // 2) - 5
-
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-
-panels = [
-    (axes[0, 0], fa_map, "FA", "gray", 0, 1),
-    (axes[0, 1], md_map, "MD", "hot", None, None),
-    (axes[0, 2], wm_fraction, "WM Fraction", "gray", 0, 1),
-    (axes[1, 0], num_fibers, "Num Fibers", "viridis", 0, 3),
-    (axes[1, 1], gm_fraction, "GM Fraction", "gray", 0, 1),
-    (axes[1, 2], csf_fraction, "CSF Fraction", "Blues", 0, 1),
-]
-
-for ax, arr, title, cmap, vmin, vmax in panels:
-    kwargs = {"cmap": cmap}
-    if vmin is not None:
-        kwargs["vmin"] = vmin
-        kwargs["vmax"] = vmax
-    im = ax.imshow(np.rot90(arr[:, :, mid_z]), **kwargs)
-    ax.set_title(f"{title} (slice {mid_z})")
-    ax.axis("off")
-    plt.colorbar(im, ax=ax, fraction=0.046)
-
-plt.tight_layout()
-plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
-# plt.show()
+mid_z = (fa_map.shape[2] // 2) - 2
 
 
-# To save the peaks generated from the FORCE directly, we need to call the force_peaks
-# function on the fitted object.  This will return a
-# PeaksAndMetrics object containing the peak directions, values, and indices, which can
-# be saved to disk using save_pam.
-peaks = force_peaks(fit)
+def _slice(arr):
+    return np.rot90(arr[:, :, mid_z])
 
-# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
-# The affine is needed to ensure that the peaks are correctly aligned with the original
-# data.
-from dipy.io.peaks import save_pam
 
-save_pam("force_peaks.pam5", peaks, affine=affine)
+# Each map family gets its own figure and its own colormap: DTI -> viridis,
+# NODDI-like -> inferno, and tissue partial volume estimates -> gray.
+image_mosaic(
+    [_slice(fa_map), _slice(md_map), _slice(rd_map)],
+    ax_labels=["FA", "MD", "RD"],
+    ax_kwargs=[
+        {"cmap": "viridis", "vmin": 0, "vmax": 1},
+        {"cmap": "viridis"},
+        {"cmap": "viridis"},
+    ],
+    figsize=(15, 5),
+    filename="force_maps_dti.png",
+)
+
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# FORCE microstructure maps for an axial slice of the Stanford HARDI dataset.
-# From left to right, top to bottom: FA, MD, WM fraction, number of fibers,
-# GM fraction, CSF fraction.
+# DTI maps for an axial slice of the Stanford HARDI dataset.
+
+image_mosaic(
+    [_slice(nd), _slice(dispersion)],
+    ax_labels=["NDI", "ODI"],
+    ax_kwargs=[{"cmap": "inferno", "vmin": 0, "vmax": 1}, {"cmap": "inferno"}],
+    figsize=(10, 5),
+    filename="force_maps_noddi.png",
+)
+
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# NODDI-like maps: neurite density index and orientation dispersion index.
+
+image_mosaic(
+    [
+        _slice(wm_fraction),
+        _slice(gm_fraction),
+        _slice(csf_fraction),
+        _slice(num_fibers),
+    ],
+    ax_labels=["WM fraction", "GM fraction", "CSF fraction", "Number of fibers"],
+    ax_kwargs=[
+        {"cmap": "gray", "vmin": 0, "vmax": 1},
+        {"cmap": "gray", "vmin": 0, "vmax": 1},
+        {"cmap": "gray", "vmin": 0, "vmax": 1},
+        {"cmap": "viridis", "vmin": 0, "vmax": 3},
+    ],
+    figsize=(20, 5),
+    filename="force_maps_tissue.png",
+)
+
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Tissue partial volume estimates (WM/GM/CSF fractions, *gray*) and the number
+# of fiber populations per voxel.
+#
+# FORCE also reports, for each microstructure parameter, an **uncertainty** map
+# (spread of the posterior) and an **ambiguity** map (multi-modality of the
+# posterior), both normalised to the prior range. They are available per
+# parameter as ``fit.uncertainty_<param>`` and ``fit.ambiguity_<param>``, for
+# example ``fit.uncertainty_fa`` or ``fit.ambiguity_wm_fraction``, alongside
+# the voxel-level ``fit.uncertainty`` and ``fit.ambiguity``. As noted above,
+# these come from the posterior regardless of ``use_posterior``. Below we show
+# them for the NODDI parameters NDI and ODI.
+
+image_mosaic(
+    [
+        _slice(fit.uncertainty_nd),
+        _slice(fit.ambiguity_nd),
+        _slice(fit.uncertainty_dispersion),
+        _slice(fit.ambiguity_dispersion),
+    ],
+    ax_labels=["NDI uncertainty", "NDI ambiguity", "ODI uncertainty", "ODI ambiguity"],
+    ax_kwargs=[{"cmap": "hot"}] * 4,
+    figsize=(20, 5),
+    filename="force_uncertainty_ambiguity.png",
+)
+
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Per-microstructure uncertainty (left) and ambiguity (right) maps for NDI and
+# ODI.
+#
+# Using a different signal model
+# ------------------------------
+#
+# FORCE can also be used with different tissue models. Matching only sees the
+# library's signal matrix, so it does not depend on how those signals were
+# made. Its speed is set by the library size and the number of gradient
+# directions, and stays the same when the model changes.
+#
+# There are two ways to substitute your own model. The direct one is to edit
+# the signal generators in ``dipy/sims/_force_core.pyx`` and rebuild; the
+# library then carries your signals and everything downstream works unchanged.
+# The other avoids a rebuild: generate the library yourself and hand it to the
+# model::
+#
+#     model = FORCEModel(gtab, simulations=my_simulations)
+#
+# In both cases the per-voxel parameters are read straight off the matched
+# entry, so the dictionary has to carry a value per simulation for each
+# parameter you want back: ``signals`` and ``labels`` at minimum, plus
+# ``num_fibers``, ``dispersion``, ``nd``, ``wm_fraction``, ``gm_fraction``,
+# ``csf_fraction``, ``fa``, ``md``, ``rd`` and ``fraction_array``. Optional
+# extras (micro-FA, the DKI metrics, ``odfs``) are picked up when present.
+# Whatever you supply is what the fit reports back.
 #
 # References
 # ----------

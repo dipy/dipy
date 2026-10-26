@@ -12,6 +12,8 @@ updates:
       actions:
         patterns:
           - "*"
+    commit-message:
+      prefix: "CI:"
 
   - package-ecosystem: "pip"
     directory: "/"
@@ -22,3 +24,5 @@ updates:
       python-dependencies:
         patterns:
           - "*"
+    commit-message:
+      prefix: "MNT:"

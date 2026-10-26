@@ -1,6 +1,7 @@
 """Tools to easily make multi voxel models"""
 
 from functools import partial
+import inspect
 import multiprocessing
 
 import numpy as np
@@ -9,8 +10,49 @@ from tqdm import tqdm
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.parallel import auto_ray_chunk_size, paramap
+
+ORCHESTRATION_KWARGS = ("engine", "n_jobs", "vox_per_chunk", "verbose", "inflight_cap")
+"""
+Keyword arguments that configure parallelization/orchestration for the ``multi_voxel_fit`` decorator
+and :func:`dipy.utils.parallel.paramap`.
+"""
+
+_PARAMAP_KWARGS = tuple(
+    name
+    for name in ORCHESTRATION_KWARGS
+    if name in inspect.signature(paramap).parameters
+)
+"""
+The subset of :data:`ORCHESTRATION_KWARGS` that :func:`dipy.utils.parallel.paramap`
+actually declares, resolved once at import. Private: ``doc/tools/apigen.py``
+documents any public module-level name bound to a call as a function, and then
+Sphinx fails the build asking a tuple for its signature.
+
+``vox_per_chunk`` is *not* one of them: ``multi_voxel_fit`` consumes it itself to
+size the chunks it hands to ``paramap``. Forwarding it anyway would land it in
+``paramap``'s ``**kwargs``, which the joblib and dask engines pass verbatim to
+``joblib.Parallel`` and ``dask.compute`` -- both of which reject it.
+"""
+
+
+def _accepts_kwarg(func, name):
+    """Return True iff ``func`` declares ``name`` as an explicit parameter.
+
+    A parameter absorbed only by ``**kwargs`` does not count, so a reserved
+    orchestration key is forwarded solely to fits that name it explicitly
+    (e.g. ``MCSD.fit(self, data, *, verbose=True, **kwargs)``).
+    """
+    try:
+        param = inspect.signature(func).parameters.get(name)
+    except (TypeError, ValueError):
+        return False
+    return param is not None and param.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    )
 
 
 def _assemble_results(params_list, *, fit_class):
@@ -113,7 +155,7 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     return [fit_func(data, **kwargs) for data in vox_data]
 
 
-def multi_voxel_fit(
+def multi_voxel_fit(  # pep3102: ignore
     _func=None,
     *,
     batched=False,
@@ -164,13 +206,27 @@ def multi_voxel_fit(
     """
 
     def decorator(single_voxel_fit):
+        _drop_kwargs = tuple(
+            k for k in ORCHESTRATION_KWARGS if not _accepts_kwarg(single_voxel_fit, k)
+        )
+
         def new_fit(self, data, *, mask=None, **kwargs):
             """Fit method for every voxel in data"""
+
+            dropped = [k for k in _drop_kwargs if k in kwargs]
+            if dropped:
+                logger.debug(
+                    "multi_voxel_fit: %s consumed for parallelization/orchestration; "
+                    "not forwarded to the per-voxel fit (it does not declare these "
+                    "keyword arguments).",
+                    dropped,
+                )
+            fit_kwargs = {k: v for k, v in kwargs.items() if k not in _drop_kwargs}
 
             # If only one voxel just return a standard fit, passing through
             # the functions key-word arguments (no mask needed).
             if data.ndim == 1:
-                svf = single_voxel_fit(self, data, **kwargs)
+                svf = single_voxel_fit(self, data, **fit_kwargs)
                 # If fit method does not return extra, cannot return extra
                 if isinstance(svf, tuple):
                     svf, extra = svf
@@ -187,7 +243,7 @@ def multi_voxel_fit(
 
             # Get weights from kwargs if provided
             weights = kwargs["weights"] if "weights" in kwargs else None
-            weights_is_array = True if type(weights) is np.ndarray else False
+            weights_is_array = isinstance(weights, np.ndarray)
 
             # Fit data where mask is True
             fit_array = np.empty(data.shape[:-1], dtype=object)
@@ -244,16 +300,12 @@ def multi_voxel_fit(
                     disable=not kwargs.get("verbose", False),
                 )
                 bar.set_description("Fitting (batched serial)")
-                fit_kwargs = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k not in ("engine", "n_jobs", "vox_per_chunk", "verbose")
-                }
+                chunk_kwargs = dict(fit_kwargs)
                 if use_raw:
-                    fit_kwargs["_raw"] = True
+                    chunk_kwargs["_raw"] = True
                 for start in range(0, n_vox, vox_per_chunk):
                     chunk = data_to_fit[start : start + vox_per_chunk]
-                    chunk_result = single_voxel_fit(self, chunk, **fit_kwargs)
+                    chunk_result = single_voxel_fit(self, chunk, **chunk_kwargs)
                     all_chunk_results.append(chunk_result)
                     bar.update(len(chunk))
                 bar.close()
@@ -276,10 +328,11 @@ def multi_voxel_fit(
                 )
                 for ijk in ndindex(data.shape[:-1]):
                     if mask[ijk]:
+                        voxel_kwargs = fit_kwargs
                         if weights_is_array:
-                            kwargs["weights"] = weights[ijk]
+                            voxel_kwargs = {**fit_kwargs, "weights": weights[ijk]}
 
-                        svf = single_voxel_fit(self, data[ijk], **kwargs)
+                        svf = single_voxel_fit(self, data[ijk], **voxel_kwargs)
 
                         # Not all fit methods return extra, handle this here
                         if isinstance(svf, tuple):
@@ -320,10 +373,10 @@ def multi_voxel_fit(
                 try:
                     fit_func = partial(single_voxel_fit, self)
 
-                    # Build per-chunk kwargs
+                    # Build per-chunk kwargs (orchestration keys already stripped)
                     kwargs_chunks = []
                     for ii in range(0, data_to_fit.shape[0], vox_per_chunk):
-                        kw = kwargs.copy()
+                        kw = dict(fit_kwargs)
                         if batched:
                             kw["_batched"] = True
                         if use_raw:
@@ -332,16 +385,9 @@ def multi_voxel_fit(
                             kw["weights"] = weights_to_fit[ii : ii + vox_per_chunk]
                         kwargs_chunks.append(kw)
 
-                    parallel_kwargs = {}
-                    for kk in [
-                        "n_jobs",
-                        "vox_per_chunk",
-                        "engine",
-                        "verbose",
-                        "inflight_cap",
-                    ]:
-                        if kk in kwargs:
-                            parallel_kwargs[kk] = kwargs[kk]
+                    parallel_kwargs = {
+                        kk: kwargs[kk] for kk in _PARAMAP_KWARGS if kk in kwargs
+                    }
                     if shared_objects is not None:
                         parallel_kwargs["shared_objects"] = shared_objects
 

@@ -149,7 +149,7 @@ def test_bdg_get_direction():
 
 
 @set_random_number_generator()
-def test_bdg_residual(rng):
+def test_bdg_residual(rng=None):
     """This tests the bootstrapping residual."""
 
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(n=2)

@@ -15,19 +15,32 @@ import numpy as np
 cimport numpy as cnp
 
 
-def generate_tracking_parameters(algo_name, *,
-    int max_len=500, int min_len=2, double step_size=0.2, double[:] voxel_size,
-    double max_angle=20, bint return_all=True, double pmf_threshold=0.1,
-    double probe_length=0.5, double probe_radius=0, int probe_quality=3,
-    int probe_count=1, double data_support_exponent=1, int random_seed=0,
-    double peak_values_threshold=0.0239, double angle_threshold=60,
-    double min_total_weight=0.5):
+def generate_tracking_parameters(
+    algo_name,
+    *,
+    int max_len=500,
+    int min_len=2,
+    double step_size=0.2,
+    double[:] voxel_size,
+    double max_angle=20,
+    bint return_all=True,
+    double pmf_threshold=0.1,
+    double probe_length=0.5,
+    double probe_radius=0,
+    int probe_quality=3,
+    int probe_count=1,
+    double data_support_exponent=1,
+    int random_seed=0,
+    double peak_values_threshold=0.0239,
+    double angle_threshold=60,
+    double min_total_weight=0.5,
+):
 
     cdef TrackerParameters params
 
     algo_name = algo_name.lower()
 
-    if algo_name in ['deterministic', 'det']:
+    if algo_name in ["deterministic", "det"]:
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -38,7 +51,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(deterministic_propagator)
         return params
-    elif algo_name in ['probabilistic', 'prob']:
+    elif algo_name in ["probabilistic", "prob"]:
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -49,7 +62,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(probabilistic_propagator)
         return params
-    elif algo_name == 'ptt':
+    elif algo_name == "ptt":
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -65,7 +78,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(parallel_transport_propagator)
         return params
-    elif algo_name == 'eudx':
+    elif algo_name == "eudx":
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -116,8 +129,20 @@ cdef class TrackerParameters:
         if pmf_threshold is not None:
             self.sh = ShTrackerParameters(pmf_threshold)
 
-        if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
-            self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
+        if (
+            probe_length is not None
+            and probe_radius is not None
+            and probe_quality is not None
+            and probe_count is not None
+            and data_support_exponent is not None
+        ):
+            self.ptt = ParallelTransportTrackerParameters(
+                probe_length,
+                probe_radius,
+                probe_quality,
+                probe_count,
+                data_support_exponent,
+            )
 
         if (
             peak_values_threshold is not None
@@ -139,8 +164,14 @@ cdef class ShTrackerParameters:
 
 cdef class ParallelTransportTrackerParameters:
 
-    def __init__(self, double probe_length, double probe_radius,
-                int probe_quality, int probe_count, double data_support_exponent):
+    def __init__(
+        self,
+        double probe_length,
+        double probe_radius,
+        int probe_quality,
+        int probe_count,
+        double data_support_exponent,
+    ):
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality

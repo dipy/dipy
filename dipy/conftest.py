@@ -17,6 +17,9 @@ https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
 https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495
 https://github.com/nipy/nibabel/pull/556
 """
+
+os.environ["RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"] = "0"
+
 np.set_printoptions(legacy="1.13")
 
 warnings.simplefilter(action="default", category=FutureWarning)

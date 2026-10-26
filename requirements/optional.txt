@@ -5,9 +5,11 @@ pandas
 statsmodels>=0.14.0
 tables
 torch
-fury>=0.12.0
+fury>=2.0.0
+imgui_bundle>=1.92.600,<=1.92.801
 matplotlib
 cvxpy
 scikit-image
 boto3
 numexpr
+polyxios>=0.2.0

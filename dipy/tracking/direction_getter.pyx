@@ -16,6 +16,7 @@ cdef extern from "dpy_math.h" nogil:
     double dpy_rint(double x)
     double fabs(double)
 
+
 @cython.cdivision(True)
 cdef inline double _stepsize(double point, double increment) noexcept nogil:
     """Compute the step size to the closest boundary in units of increment."""
@@ -29,8 +30,9 @@ cdef inline double _stepsize(double point, double increment) noexcept nogil:
     else:
         return dist / increment
 
-cdef void _step_to_boundary(double * point, double * direction,
-                           double overstep) noexcept nogil:
+cdef void _step_to_boundary(
+    double * point, double * direction, double overstep
+) noexcept nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
     Parameters
@@ -62,7 +64,9 @@ cdef void _step_to_boundary(double * point, double * direction,
     for i in range(3):
         point[i] += smallest_step * direction[i]
 
-cdef void _fixed_step(double * point, double * direction, double step_size) noexcept nogil:
+cdef void _fixed_step(
+    double * point, double * direction, double step_size
+) noexcept nogil:
     """Updates point by stepping in direction.
 
     Parameters
@@ -79,13 +83,11 @@ cdef void _fixed_step(double * point, double * direction, double step_size) noex
         point[i] += direction[i] * step_size
 
 
-
 cdef class DirectionGetter:
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
             self, double[::1] point):
         pass
-
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -100,40 +102,42 @@ cdef class DirectionGetter:
                                     StreamlineStatus stream_status,
                                     int fixedstep
                                     ):
-       cdef:
-           cnp.npy_intp i
-           cnp.npy_intp len_streamlines = streamline.shape[0]
-           double point[3]
-           double voxdir[3]
-           void (*step)(double*, double*, double) noexcept nogil
+        cdef:
+            cnp.npy_intp i
+            cnp.npy_intp len_streamlines = streamline.shape[0]
+            double point[3]
+            double voxdir[3]
+            void (*step)(double*, double*, double) noexcept nogil
 
-       if fixedstep > 0:
-           step = _fixed_step
-       else:
-           step = _step_to_boundary
+        if fixedstep > 0:
+            step = _fixed_step
+        else:
+            step = _step_to_boundary
 
-       copy_point(&seed[0], point)
-       copy_point(&seed[0], &streamline[0,0])
+        copy_point(&seed[0], point)
+        copy_point(&seed[0], &streamline[0, 0])
 
-       stream_status = TRACKPOINT
-       for i in range(1, len_streamlines):
-           if self.get_direction_c(point, direction):
-               break
-           for j in range(3):
-               voxdir[j] = direction[j] / voxel_size[j]
-           step(point, voxdir, step_size)
-           copy_point(point, &streamline[i, 0])
-           stream_status = stopping_criterion.check_point_c(point)
-           if stream_status == TRACKPOINT:
-               continue
-           elif (stream_status == ENDPOINT or
-                 stream_status == INVALIDPOINT or
-                 stream_status == OUTSIDEIMAGE):
-               break
-       else:
-           # maximum length of streamline has been reached, return everything
-           i = streamline.shape[0]
-       return i, stream_status
+        stream_status = TRACKPOINT
+        for i in range(1, len_streamlines):
+            if self.get_direction_c(point, direction):
+                break
+            for j in range(3):
+                voxdir[j] = direction[j] / voxel_size[j]
+            step(point, voxdir, step_size)
+            copy_point(point, &streamline[i, 0])
+            stream_status = stopping_criterion.check_point_c(point)
+            if stream_status == TRACKPOINT:
+                continue
+            elif (
+                stream_status == ENDPOINT
+                or stream_status == INVALIDPOINT
+                or stream_status == OUTSIDEIMAGE
+            ):
+                break
+        else:
+            # maximum length of streamline has been reached, return everything
+            i = streamline.shape[0]
+        return i, stream_status
 
     def get_direction(self, double[::1] point, double[::1] direction):
         return self.get_direction_c(point, direction)

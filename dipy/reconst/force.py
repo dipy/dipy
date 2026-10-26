@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -6,9 +7,31 @@ import warnings
 
 import numpy as np
 
+from dipy.core.gradients import unique_bvals_tolerance
+from dipy.direction.peaks import PeaksAndMetrics, _pam_from_attrs
 from dipy.reconst._force_search import search_inner_product as _cython_search
 from dipy.reconst.base import ReconstFit, ReconstModel
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import MultiVoxelFit, multi_voxel_fit
+from dipy.reconst.shm import sf_to_sh, sh_to_sf_matrix
+from dipy.sims._force_core import (
+    DEFAULT_THREE_FIBER_MIN_ANGLE,
+    DEFAULT_TWO_FIBER_MIN_ANGLE,
+)
+from dipy.sims.force import (
+    DEFAULT_FORCE_SEED,
+    DEFAULT_NUM_ODI_VALUES,
+    DEFAULT_ODI_RANGE,
+    generate_force_simulations,
+    get_default_diffusivity_config,
+    load_force_simulations,
+    resolve_num_odi_values,
+    save_force_simulations,
+)
+from dipy.utils.logging import logger
+from dipy.utils.multiproc import get_usable_cpu_affinity
+from dipy.utils.optpkg import optional_package
+
+ray, has_ray, _ = optional_package("ray")
 
 # Named constants
 EPSILON = 1e-12
@@ -111,7 +134,7 @@ def _load_cache_registry(cache_dir):
     """
     registry_path = cache_dir / "cache_registry.json"
     if registry_path.exists():
-        with open(registry_path, "r") as f:
+        with open(registry_path) as f:
             return json.load(f)
     return []
 
@@ -159,7 +182,64 @@ def _locked_registry_update(cache_dir, update_fn):
                 fcntl.flock(lock_fh, fcntl.LOCK_UN)
 
 
-def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations):
+def _odi_grid_matches(entry, odi_range, num_odi_values):
+    """Check whether a registry *entry*'s ODI grid matches the request.
+
+    Legacy entries written before the ODI grid was part of the cache key are
+    treated as having been generated with the historical defaults
+    (``DEFAULT_ODI_RANGE`` / ``DEFAULT_NUM_ODI_VALUES``), so existing caches
+    keep matching default-grid requests.
+    """
+    entry_range = entry.get("odi_range", list(DEFAULT_ODI_RANGE))
+    entry_num = entry.get("num_odi_values", DEFAULT_NUM_ODI_VALUES)
+    if len(entry_range) != 2:
+        return False
+    if not (
+        np.isclose(entry_range[0], odi_range[0])
+        and np.isclose(entry_range[1], odi_range[1])
+    ):
+        return False
+    return int(entry_num) == int(num_odi_values)
+
+
+def _min_angles_match(entry, min_crossing_angles):
+    """Check whether a registry *entry*'s crossing angles match the request.
+
+    Entries written before this became part of the cache key are read as
+    using the defaults.
+    """
+    entry_angles = (
+        entry.get("two_fiber_min_angle", DEFAULT_TWO_FIBER_MIN_ANGLE),
+        entry.get("three_fiber_min_angle", DEFAULT_THREE_FIBER_MIN_ANGLE),
+    )
+    return all(
+        np.isclose(a, b) for a, b in zip(entry_angles, min_crossing_angles, strict=True)
+    )
+
+
+def _seed_matches(entry, seed):
+    """Check whether a registry *entry*'s generation seed matches the request.
+
+    Entries written before the seed became part of the cache key carry no
+    ``seed`` field; like entries generated with ``seed=None``, they only
+    match requests with ``seed=None``.
+    """
+    entry_seed = entry.get("seed")
+    if entry_seed is None or seed is None:
+        return entry_seed is None and seed is None
+    return int(entry_seed) == int(seed)
+
+
+def _find_cached_simulation(
+    cache_dir,
+    gtab,
+    diffusivity_config,
+    num_simulations,
+    odi_range,
+    num_odi_values,
+    min_crossing_angles,
+    seed,
+):
     """Search the registry for a simulation matching the given parameters.
 
     Parameters
@@ -172,6 +252,14 @@ def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations
         Diffusivity ranges used for generation.
     num_simulations : int
         Number of simulations requested.
+    odi_range : tuple
+        ``(min, max)`` orientation-dispersion-index range.
+    num_odi_values : int
+        Resolved number of ODI grid points.
+    min_crossing_angles : tuple
+        ``(two_fiber_min_angle, three_fiber_min_angle)`` in degrees.
+    seed : int or None
+        Generation seed requested for the library.
 
     Returns
     -------
@@ -179,12 +267,28 @@ def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations
         Path to the cached ``.npz`` file, or None if no match found.
     """
     registry = _load_cache_registry(cache_dir)
+    legacy_seed_cache_reported = False
     for entry in registry:
         if entry["num_simulations"] != num_simulations:
             continue
         if not _gtab_matches(entry["bvals"], entry["bvecs"], gtab):
             continue
         if not _diffusivity_matches(entry["diffusivity_config"], diffusivity_config):
+            continue
+        if not _odi_grid_matches(entry, odi_range, num_odi_values):
+            continue
+        if not _min_angles_match(entry, min_crossing_angles):
+            continue
+        if "seed" not in entry and seed is not None:
+            candidate = cache_dir / entry["filename"]
+            if candidate.exists() and not legacy_seed_cache_reported:
+                logger.info(
+                    f"Cached FORCE simulations at {candidate} predate seed "
+                    "tracking and cannot guarantee reproducibility. A new "
+                    "seeded library will be generated."
+                )
+                legacy_seed_cache_reported = True
+        if not _seed_matches(entry, seed):
             continue
         candidate = cache_dir / entry["filename"]
         if candidate.exists():
@@ -193,7 +297,15 @@ def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations
 
 
 def _register_cached_simulation(
-    cache_dir, gtab, diffusivity_config, num_simulations, filename
+    cache_dir,
+    gtab,
+    diffusivity_config,
+    num_simulations,
+    filename,
+    odi_range,
+    num_odi_values,
+    min_crossing_angles,
+    seed,
 ):
     """Add a new entry to the cache registry.
 
@@ -209,6 +321,14 @@ def _register_cached_simulation(
         Number of simulations.
     filename : str
         Filename of the saved ``.npz`` inside *cache_dir*.
+    odi_range : tuple
+        ``(min, max)`` orientation-dispersion-index range.
+    num_odi_values : int
+        Resolved number of ODI grid points.
+    min_crossing_angles : tuple
+        ``(two_fiber_min_angle, three_fiber_min_angle)`` in degrees.
+    seed : int or None
+        Generation seed used for the library.
     """
 
     # Convert numpy types to plain Python for JSON serialisation
@@ -230,6 +350,11 @@ def _register_cached_simulation(
         "bvecs": np.asarray(gtab.bvecs, dtype=np.float64).tolist(),
         "diffusivity_config": config_json,
         "num_simulations": int(num_simulations),
+        "odi_range": [float(odi_range[0]), float(odi_range[1])],
+        "num_odi_values": int(num_odi_values),
+        "two_fiber_min_angle": float(min_crossing_angles[0]),
+        "three_fiber_min_angle": float(min_crossing_angles[1]),
+        "seed": None if seed is None else int(seed),
         "filename": filename,
     }
 
@@ -339,8 +464,7 @@ class SignalIndex:
 
         if k > self.ntotal:
             warnings.warn(
-                f"k={k} exceeds index size ({self.ntotal}); "
-                f"clamping to {self.ntotal}.",
+                f"k={k} exceeds index size ({self.ntotal}); clamping to {self.ntotal}.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -446,6 +570,147 @@ def compute_uncertainty_ambiguity(scores):
     return uncertainty, ambiguity
 
 
+MICRO_PARAMS = (
+    "fa",
+    "md",
+    "rd",
+    "wm_fraction",
+    "gm_fraction",
+    "csf_fraction",
+    "num_fibers",
+    "dispersion",
+    "nd",
+    "ufa_voxel",
+    "ak",
+    "rk",
+    "mk",
+    "kfa",
+)
+
+
+def _weighted_percentile(vals, weights, q):
+    """Batch weighted percentile.
+
+    Parameters
+    ----------
+    vals : ndarray (N, K)
+        Parameter values across K neighbors per voxel.
+    weights : ndarray (N, K)
+        Posterior weights.
+    q : float
+        Quantile in [0, 1].
+
+    Returns
+    -------
+    result : ndarray (N,)
+        Weighted percentile for each voxel.
+    """
+    idx = np.argsort(vals, axis=1)
+    sv = np.take_along_axis(vals, idx, axis=1)
+    sw = np.take_along_axis(weights, idx, axis=1)
+    cw = np.cumsum(sw, axis=1)
+    cw = cw / (cw[:, -1:] + EPSILON)
+    j = np.argmax(cw >= q, axis=1)
+    return sv[np.arange(sv.shape[0]), j]
+
+
+def _fwhm_kde_batch(vals, weights, *, n_grid=100, batch_size=2000):
+    """Batch FWHM via weighted KDE.
+
+    Estimates the full width at half maximum of the weighted posterior
+    density for each voxel using a Gaussian kernel density estimate.
+
+    Parameters
+    ----------
+    vals : ndarray (N, K)
+        Parameter values across K neighbors.
+    weights : ndarray (N, K)
+        Posterior weights.
+    n_grid : int, optional
+        Number of grid points for KDE evaluation.
+    batch_size : int, optional
+        Internal batch size to limit memory usage.
+
+    Returns
+    -------
+    fwhm : ndarray (N,)
+        FWHM in parameter units.
+    """
+    N, K = vals.shape
+    fwhm = np.empty(N, dtype=np.float32)
+
+    for start in range(0, N, batch_size):
+        end = min(start + batch_size, N)
+        vals_batch = vals[start:end].astype(np.float32)
+        weights_batch = weights[start:end].astype(np.float32)
+        n = end - start
+
+        lo = vals_batch.min(axis=1)
+        hi = vals_batch.max(axis=1)
+        span = hi - lo
+        pad = 0.15 * (span + EPSILON)
+        lo_p, hi_p = lo - pad, hi + pad
+        span_p = hi_p - lo_p
+
+        t = np.linspace(0, 1, n_grid, dtype=np.float32)
+        grid = lo_p[:, None] + t[None, :] * span_p[:, None]
+
+        bw = span_p / max(K**0.5, 4.0)
+        bw = np.maximum(bw, EPSILON)
+
+        diff = (grid[:, :, None] - vals_batch[:, None, :]) / bw[:, None, None]
+        density = np.sum(np.exp(-0.5 * diff**2) * weights_batch[:, None, :], axis=2)
+
+        peak = density.max(axis=1)
+        half_peak = 0.5 * peak
+        above = density >= half_peak[:, None]
+
+        any_above = np.any(above, axis=1)
+        first = np.argmax(above, axis=1)
+        last = n_grid - 1 - np.argmax(above[:, ::-1], axis=1)
+
+        f = grid[np.arange(n), last] - grid[np.arange(n), first]
+        f[~any_above] = 0.0
+        fwhm[start:end] = f
+
+    return fwhm
+
+
+def compute_microstructure_uncertainty_ambiguity(vals, weights, prior_range):
+    """Compute per-microstructure uncertainty and ambiguity.
+
+    Uncertainty is the weighted interquartile range of the posterior density,
+    normalized by the prior range. Ambiguity is the full width at half
+    maximum (FWHM) of the weighted posterior density, similarly normalized.
+    Both are in [0, 1] where 0 means no spread and 1 means the posterior
+    spans the entire prior range.
+
+    Parameters
+    ----------
+    vals : ndarray (N, K)
+        Parameter values for K neighbors per voxel.
+    weights : ndarray (N, K)
+        Posterior weights (softmax).
+    prior_range : float
+        Max minus min of this parameter across the simulation library.
+
+    Returns
+    -------
+    uncertainty : ndarray (N,)
+        Weighted IQR / prior_range (fraction in [0, 1]).
+    ambiguity : ndarray (N,)
+        FWHM / prior_range (fraction in [0, 1]).
+    """
+    q75 = _weighted_percentile(vals, weights, 0.75)
+    q25 = _weighted_percentile(vals, weights, 0.25)
+    uncertainty = ((q75 - q25) / (prior_range + EPSILON)).astype(np.float32)
+
+    fwhm = _fwhm_kde_batch(vals, weights)
+    ambiguity = (fwhm / (prior_range + EPSILON)).astype(np.float32)
+
+    return uncertainty, ambiguity
+
+
 def postprocess_peaks(preds, target_sphere, fracs):
     original_shape = preds.shape[:-1]
     preds_flat = preds.reshape(-1, preds.shape[-1])
@@ -495,8 +760,8 @@ class FORCEModel(ReconstModel):
         verbose=False,
     ):
         r"""
-        FORCE (FORward modeling for Complex microstructure Estimation) model
-        :footcite:p:`Shah2025`.
+        FORCE (FORward matching for Complex microstructure Estimation) model
+        :footcite:p:`Shah2026`.
 
         FORCE is a forward modeling paradigm that reframes how diffusion data
         is analyzed. Instead of inverting the measured signal, FORCE simulates
@@ -556,9 +821,13 @@ class FORCEModel(ReconstModel):
         num_simulations=500000,
         output_path=None,
         num_cpus=1,
+        seed=DEFAULT_FORCE_SEED,
         wm_threshold=0.5,
         tortuosity=False,
-        odi_range=(0.01, 0.3),
+        odi_range=DEFAULT_ODI_RANGE,
+        num_odi_values=None,
+        two_fiber_min_angle=DEFAULT_TWO_FIBER_MIN_ANGLE,
+        three_fiber_min_angle=DEFAULT_THREE_FIBER_MIN_ANGLE,
         diffusivity_config=None,
         compute_dti=True,
         compute_dki=False,
@@ -570,8 +839,9 @@ class FORCEModel(ReconstModel):
         When ``output_path`` is ``None`` and ``use_cache`` is ``True``,
         simulations are cached in ``~/.dipy/force_simulations/`` (or
         ``$DIPY_HOME``). A registry file (``cache_registry.json``) keeps
-        track of the bvals, bvecs, diffusivity configuration and number of
-        simulations for each cached file. If a cached simulation that matches
+        track of the bvals, bvecs, diffusivity configuration, ODI grid,
+        minimum crossing angles, seed and number of simulations for each
+        cached file. If a cached simulation that matches
         the current gradient table (within tolerance) and diffusivity
         configuration already exists, it is loaded from disk and generation
         is skipped.
@@ -588,12 +858,29 @@ class FORCEModel(ReconstModel):
             ``~/.dipy/force_simulations/`` and uses caching.
         num_cpus : int, optional
             Number of CPU cores for parallel processing.
+        seed : int or None, optional
+            Seed for reproducible library generation (see
+            :func:`~dipy.sims.force.generate_force_simulations`). Identical
+            seeds yield identical libraries for any ``num_cpus``. The seed
+            is part of the cache key. When None, each newly generated library
+            uses fresh entropy; a matching cached library may still be reused.
         wm_threshold : float, optional
             Minimum WM fraction to include fiber labels.
         tortuosity : bool, optional
             Use tortuosity constraint for perpendicular diffusivity.
         odi_range : tuple, optional
             (min, max) orientation dispersion index range.
+        num_odi_values : int or None, optional
+            Number of points in the ODI sampling grid. When ``None`` (default),
+            the grid is autoscaled from ``odi_range`` so its sampling density
+            matches the default grid.
+        two_fiber_min_angle : float, optional
+            Minimum crossing angle for two-fiber simulations, in degrees. The
+            library never contains crossings below this angle, so the fit
+            cannot report them either. Use ``0`` to allow any crossing.
+        three_fiber_min_angle : float, optional
+            Minimum pairwise crossing angle for three-fiber simulations, in
+            degrees.
         diffusivity_config : dict, optional
             Custom diffusivity ranges.
         compute_dti : bool, optional
@@ -611,12 +898,26 @@ class FORCEModel(ReconstModel):
         self : FORCEModel
             Model with simulations loaded.
         """
-        from dipy.sims.force import (
-            generate_force_simulations,
-            get_default_diffusivity_config,
-            load_force_simulations,
-            save_force_simulations,
-        )
+
+        b0_thr = getattr(self.gtab, "b0_threshold", 50)
+        unique_bvals = unique_bvals_tolerance(self.gtab.bvals, tol=50)
+        n_nonzero_shells = int(np.sum(unique_bvals > b0_thr))
+
+        if compute_dki and n_nonzero_shells < 2:
+            warnings.warn(
+                f"compute_dki=True but only {n_nonzero_shells} non-zero "
+                "b-value shell found (need at least 2). "
+                "Disabling DKI computation.",
+                UserWarning,
+                stacklevel=2,
+            )
+            compute_dki = False
+        elif not compute_dki and n_nonzero_shells >= 2:
+            logger.info(
+                f"Found {n_nonzero_shells} non-zero b-value shells. "
+                "You can compute DKI metrics (AK, RK, MK, KFA) by "
+                "setting compute_dki=True."
+            )
 
         # Resolve the diffusivity config that will actually be used
         resolved_config = (
@@ -624,6 +925,15 @@ class FORCEModel(ReconstModel):
             if diffusivity_config is not None
             else get_default_diffusivity_config()
         )
+
+        # Resolve the ODI grid that will actually be used, so both the cache
+        # key and the generated library agree on it.
+        resolved_odi_range = (float(odi_range[0]), float(odi_range[1]))
+        resolved_num_odi = resolve_num_odi_values(
+            resolved_odi_range, num_odi_values=num_odi_values
+        )
+        min_crossing_angles = (float(two_fiber_min_angle), float(three_fiber_min_angle))
+        resolved_seed = None if seed is None else int(seed)
 
         # --- Cache logic when no explicit output_path is given ----------
         if output_path is None and use_cache:
@@ -633,6 +943,10 @@ class FORCEModel(ReconstModel):
                 self.gtab,
                 resolved_config,
                 num_simulations,
+                resolved_odi_range,
+                resolved_num_odi,
+                min_crossing_angles,
+                resolved_seed,
             )
             if cached is not None:
                 if verbose:
@@ -646,9 +960,13 @@ class FORCEModel(ReconstModel):
             self.gtab,
             num_simulations=num_simulations,
             num_cpus=num_cpus,
+            seed=resolved_seed,
             wm_threshold=wm_threshold,
             tortuosity=tortuosity,
-            odi_range=odi_range,
+            odi_range=resolved_odi_range,
+            num_odi_values=resolved_num_odi,
+            two_fiber_min_angle=two_fiber_min_angle,
+            three_fiber_min_angle=three_fiber_min_angle,
             diffusivity_config=diffusivity_config,
             compute_dti=compute_dti,
             compute_dki=compute_dki,
@@ -679,6 +997,10 @@ class FORCEModel(ReconstModel):
                 resolved_config,
                 num_simulations,
                 filename,
+                resolved_odi_range,
+                resolved_num_odi,
+                min_crossing_angles,
+                resolved_seed,
             )
             if verbose:
                 print(f"[FORCE] Cached simulations to {cache_dir / filename}")
@@ -700,8 +1022,6 @@ class FORCEModel(ReconstModel):
             Model with simulations loaded.
 
         """
-        from dipy.sims.force import load_force_simulations
-
         self.simulations = load_force_simulations(input_path)
         self._prepare_library()
         return self
@@ -723,6 +1043,14 @@ class FORCEModel(ReconstModel):
             "num_fibers", np.zeros(len(signals), dtype=np.float32)
         )
         self._penalty_array = (self.penalty * num_fibers).astype(np.float32)
+
+        # Prior ranges for microstructure uncertainty normalization
+        d = self.simulations
+        self._prior_ranges = {}
+        for param in MICRO_PARAMS:
+            if param in d:
+                arr = d[param]
+                self._prior_ranges[param] = float(arr.max() - arr.min())
 
     @staticmethod
     def _fetch_params_batched(lib_idx, d):
@@ -902,8 +1230,9 @@ class FORCEModel(ReconstModel):
         best = np.argmax(S, axis=1)
         lib_idx = neighbors[np.arange(n_vox), best]
 
+        W = softmax_stable(self.posterior_beta * S, axis=1)
+
         if self.use_posterior:
-            W = softmax_stable(self.posterior_beta * S, axis=1)
             entropy = -np.sum(W * np.log(W + EPSILON), axis=1)
 
             params_arrays = self._posterior_params_batched(neighbors, W, d, lib_idx)
@@ -915,6 +1244,34 @@ class FORCEModel(ReconstModel):
             params_arrays["uncertainty"] = U
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = np.full(n_vox, np.nan, dtype=np.float32)
+
+        # Per-microstructure uncertainty and ambiguity from posterior density.
+        # The FWHM-KDE ambiguity is the dominant serial cost; numpy releases the
+        # GIL on its large reductions, so fan the per-parameter loop over threads.
+        prior_ranges = getattr(self, "_prior_ranges", {})
+        todo = [p for p in MICRO_PARAMS if p in d and p in prior_ranges]
+
+        def _micro(param):
+            vals = d[param][neighbors].astype(np.float32)
+            return param, compute_microstructure_uncertainty_ambiguity(
+                vals, W, prior_ranges[param]
+            )
+
+        # One thread inside a Ray worker: process-level parallelism already
+        # uses the cores, so threading here would oversubscribe.
+        if has_ray and ray.is_initialized():
+            n_threads = 1
+        else:
+            n_threads = min(len(MICRO_PARAMS), len(get_usable_cpu_affinity()))
+        if n_threads > 1 and len(todo) > 1:
+            with ThreadPoolExecutor(max_workers=min(n_threads, len(todo))) as ex:
+                micro_results = list(ex.map(_micro, todo))
+        else:
+            micro_results = [_micro(p) for p in todo]
+
+        for param, (u, a) in micro_results:
+            params_arrays[f"uncertainty_{param}"] = u
+            params_arrays[f"ambiguity_{param}"] = a
 
         if kwargs.pop("_raw", False):
             return params_arrays
@@ -1067,6 +1424,146 @@ class FORCEFit(ReconstFit):
         """Fiber fractions."""
         return self._params.get("fracs", None)
 
+    @property
+    def uncertainty_fa(self):
+        """Per-microstructure uncertainty for FA (fraction of prior range)."""
+        return self._params.get("uncertainty_fa", None)
+
+    @property
+    def ambiguity_fa(self):
+        """Per-microstructure ambiguity for FA (fraction of prior range)."""
+        return self._params.get("ambiguity_fa", None)
+
+    @property
+    def uncertainty_md(self):
+        """Per-microstructure uncertainty for MD (fraction of prior range)."""
+        return self._params.get("uncertainty_md", None)
+
+    @property
+    def ambiguity_md(self):
+        """Per-microstructure ambiguity for MD (fraction of prior range)."""
+        return self._params.get("ambiguity_md", None)
+
+    @property
+    def uncertainty_rd(self):
+        """Per-microstructure uncertainty for RD (fraction of prior range)."""
+        return self._params.get("uncertainty_rd", None)
+
+    @property
+    def ambiguity_rd(self):
+        """Per-microstructure ambiguity for RD (fraction of prior range)."""
+        return self._params.get("ambiguity_rd", None)
+
+    @property
+    def uncertainty_wm_fraction(self):
+        """Per-microstructure uncertainty for WM fraction (fraction of prior range)."""
+        return self._params.get("uncertainty_wm_fraction", None)
+
+    @property
+    def ambiguity_wm_fraction(self):
+        """Per-microstructure ambiguity for WM fraction (fraction of prior range)."""
+        return self._params.get("ambiguity_wm_fraction", None)
+
+    @property
+    def uncertainty_gm_fraction(self):
+        """Per-microstructure uncertainty for GM fraction (fraction of prior range)."""
+        return self._params.get("uncertainty_gm_fraction", None)
+
+    @property
+    def ambiguity_gm_fraction(self):
+        """Per-microstructure ambiguity for GM fraction (fraction of prior range)."""
+        return self._params.get("ambiguity_gm_fraction", None)
+
+    @property
+    def uncertainty_csf_fraction(self):
+        """Per-microstructure uncertainty for CSF fraction (fraction of prior range)."""
+        return self._params.get("uncertainty_csf_fraction", None)
+
+    @property
+    def ambiguity_csf_fraction(self):
+        """Per-microstructure ambiguity for CSF fraction (fraction of prior range)."""
+        return self._params.get("ambiguity_csf_fraction", None)
+
+    @property
+    def uncertainty_num_fibers(self):
+        """Per-microstructure uncertainty for num_fibers (fraction of prior range)."""
+        return self._params.get("uncertainty_num_fibers", None)
+
+    @property
+    def ambiguity_num_fibers(self):
+        """Per-microstructure ambiguity for num_fibers (fraction of prior range)."""
+        return self._params.get("ambiguity_num_fibers", None)
+
+    @property
+    def uncertainty_dispersion(self):
+        """Per-microstructure uncertainty for dispersion (fraction of prior range)."""
+        return self._params.get("uncertainty_dispersion", None)
+
+    @property
+    def ambiguity_dispersion(self):
+        """Per-microstructure ambiguity for dispersion (fraction of prior range)."""
+        return self._params.get("ambiguity_dispersion", None)
+
+    @property
+    def uncertainty_nd(self):
+        """Per-microstructure uncertainty for ND (fraction of prior range)."""
+        return self._params.get("uncertainty_nd", None)
+
+    @property
+    def ambiguity_nd(self):
+        """Per-microstructure ambiguity for ND (fraction of prior range)."""
+        return self._params.get("ambiguity_nd", None)
+
+    @property
+    def uncertainty_ufa_voxel(self):
+        """Uncertainty for microFA voxel (fraction of prior range)."""
+        return self._params.get("uncertainty_ufa_voxel", None)
+
+    @property
+    def ambiguity_ufa_voxel(self):
+        """Per-microstructure ambiguity for microFA voxel (fraction of prior range)."""
+        return self._params.get("ambiguity_ufa_voxel", None)
+
+    @property
+    def uncertainty_ak(self):
+        """Per-microstructure uncertainty for AK (fraction of prior range)."""
+        return self._params.get("uncertainty_ak", None)
+
+    @property
+    def ambiguity_ak(self):
+        """Per-microstructure ambiguity for AK (fraction of prior range)."""
+        return self._params.get("ambiguity_ak", None)
+
+    @property
+    def uncertainty_rk(self):
+        """Per-microstructure uncertainty for RK (fraction of prior range)."""
+        return self._params.get("uncertainty_rk", None)
+
+    @property
+    def ambiguity_rk(self):
+        """Per-microstructure ambiguity for RK (fraction of prior range)."""
+        return self._params.get("ambiguity_rk", None)
+
+    @property
+    def uncertainty_mk(self):
+        """Per-microstructure uncertainty for MK (fraction of prior range)."""
+        return self._params.get("uncertainty_mk", None)
+
+    @property
+    def ambiguity_mk(self):
+        """Per-microstructure ambiguity for MK (fraction of prior range)."""
+        return self._params.get("ambiguity_mk", None)
+
+    @property
+    def uncertainty_kfa(self):
+        """Per-microstructure uncertainty for KFA (fraction of prior range)."""
+        return self._params.get("uncertainty_kfa", None)
+
+    @property
+    def ambiguity_kfa(self):
+        """Per-microstructure ambiguity for KFA (fraction of prior range)."""
+        return self._params.get("ambiguity_kfa", None)
+
 
 # Resolve forward reference: FORCEModel is defined before FORCEFit.
 FORCEModel._fit_class = FORCEFit
@@ -1159,72 +1656,78 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         Optional brain mask.
     sh_order : int, optional
         Spherical harmonics order for the coefficients.
+
+    Notes
+    -----
+    Multi-voxel conversion uses 10,000-voxel blocks to bound temporary memory.
     """
-    from dipy.direction.peaks import PeaksAndMetrics
-    from dipy.reconst.shm import sf_to_sh
     from dipy.sims.force import default_sphere
 
-    labels = fitted_object.label
-    fracs = fitted_object.fracs
-    odf = fitted_object.odf
-
-    is_multi_voxel = labels.ndim > 1
-
-    if not is_multi_voxel:
+    if not isinstance(fitted_object, MultiVoxelFit):
         # Single Voxel Case
+        labels = fitted_object.label
+        fracs = fitted_object.fracs
+        odf = fitted_object.odf
         p_out, p_ind, p_val = postprocess_peaks(
             labels[None, :], default_sphere, fracs[None, :]
         )
         res_dirs, res_inds, res_vals = p_out[0], p_ind[0], p_val[0]
         res_sh = (
-            sf_to_sh(odf, default_sphere, sh_order=sh_order)
+            sf_to_sh(odf, default_sphere, sh_order_max=sh_order)
             if odf is not None
             else None
         )
     else:
-        # Multi-Voxel / CLI Case
-        original_shape = labels.shape[:-1]  # (X, Y, Z)
+        # Bound conversion temporaries; retain only the final peaks and SH.
+        original_shape = fitted_object.shape
+        fits = fitted_object.fit_array.reshape(-1)
+        fit_mask = fitted_object.mask.reshape(-1)
+        peak_mask = None if mask is None else mask.reshape(-1)
+        res_dirs = np.zeros((fits.size, 5, 3), dtype=np.float32)
+        res_inds = np.full((fits.size, 5), -1, dtype=np.int32)
+        res_vals = np.zeros((fits.size, 5), dtype=np.float32)
+        res_sh = invB = None
 
-        if mask is not None:
-            labels_to_proc = labels[mask]
-            fracs_to_proc = fracs[mask]
-        else:
-            labels_to_proc = labels.reshape(-1, labels.shape[-1])
-            fracs_to_proc = fracs.reshape(-1, fracs.shape[-1])
+        for start in range(0, fits.size, 10_000):
+            chunk = slice(start, start + 10_000)
+            if not fit_mask[chunk].any():
+                continue
+            block = MultiVoxelFit(fitted_object.model, fits[chunk], fit_mask[chunk])
+            labels, fracs = block.label, block.fracs
+            output = chunk
+            if peak_mask is not None:
+                labels, fracs = labels[peak_mask[chunk]], fracs[peak_mask[chunk]]
+                output = start + np.flatnonzero(peak_mask[chunk])
+            p_out, p_ind, p_val = postprocess_peaks(labels, default_sphere, fracs)
+            res_dirs[output], res_inds[output], res_vals[output] = p_out, p_ind, p_val
 
-        p_out, p_ind, p_val = postprocess_peaks(
-            labels_to_proc, default_sphere, fracs_to_proc
-        )
+            odf = block.odf
+            if np.issubdtype(odf.dtype, np.floating):
+                if invB is None:
+                    _, invB = sh_to_sf_matrix(default_sphere, sh_order_max=sh_order)
+                    res_sh = np.zeros((fits.size, invB.shape[1]), dtype=invB.dtype)
+                v_max = np.max(odf, axis=-1, keepdims=True)
+                v_min = np.min(odf, axis=-1, keepdims=True)
+                odf = np.where(
+                    v_max > 1.0, (odf - v_min) / (v_max - v_min + 1e-12), odf
+                )
+                res_sh[chunk] = np.dot(odf, invB)
+            del block, labels, fracs, odf, p_out, p_ind, p_val
 
-        res_dirs = np.zeros((*original_shape, 5, 3), dtype=np.float32)
-        res_inds = np.full((*original_shape, 5), -1, dtype=np.int32)
-        res_vals = np.zeros((*original_shape, 5), dtype=np.float32)
-
-        if mask is not None:
-            res_dirs[mask] = p_out
-            res_inds[mask] = p_ind
-            res_vals[mask] = p_val
-        else:
-            res_dirs = p_out.reshape((*original_shape, 5, 3))
-            res_inds = p_ind.reshape((*original_shape, 5))
-            res_vals = p_val.reshape((*original_shape, 5))
-
-        res_sh = None
-        if odf is not None and np.issubdtype(
-            getattr(odf, "dtype", type(None)), np.floating
-        ):
-            v_max = np.max(odf, axis=-1, keepdims=True)
-            v_min = np.min(odf, axis=-1, keepdims=True)
-            mask = v_max > 1.0
-            denom = (v_max - v_min) + 1e-12
-            normalized_odf = (odf - v_min) / denom
-            odf = np.where(mask, normalized_odf, odf)
-            res_sh = sf_to_sh(odf, default_sphere, sh_order=sh_order)
-    peaks = PeaksAndMetrics()
-    peaks.peak_dirs = res_dirs
-    peaks.peak_values = res_vals
-    peaks.peak_indices = res_inds
-    peaks.shm_coeff = res_sh
-    peaks.sphere = default_sphere
-
-    return peaks
+        res_dirs = res_dirs.reshape((*original_shape, 5, 3))
+        res_inds = res_inds.reshape((*original_shape, 5))
+        res_vals = res_vals.reshape((*original_shape, 5))
+        if res_sh is not None:
+            res_sh = res_sh.reshape((*original_shape, res_sh.shape[-1]))
+    return _pam_from_attrs(
+        PeaksAndMetrics,
+        default_sphere,
+        res_inds,
+        res_vals,
+        res_dirs,
+        None,
+        None,
+        res_sh,
+        None,
+        None,
+    )

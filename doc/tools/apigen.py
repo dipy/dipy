@@ -355,7 +355,14 @@ class ApiDocWriter:
         # get the names of all classes and functions
         functions, classes, constants = self._parse_module_with_import(uri)
         if not len(functions) and not len(classes) and DEBUG:
-            print("WARNING: Empty -", uri)  # dbg
+            # Only warn if module has no docstring either
+            try:
+                from importlib import import_module
+                mod = import_module(uri)
+                if not getattr(mod, "__doc__", None) or not mod.__doc__.strip():
+                    print("WARNING: Empty -", uri)  # dbg
+            except Exception:
+                print("WARNING: Empty -", uri)  # dbg
 
         # Make a shorter version of the uri that omits the package name for
         # titles

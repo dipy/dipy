@@ -13,8 +13,12 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.logging import logger
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
@@ -95,7 +99,7 @@ class MoveDimLayer(Module):
     """
 
     def __init__(self, source_dim, dest_dim):
-        super(MoveDimLayer, self).__init__()
+        super().__init__()
         self.source_dim = source_dim
         self.dest_dim = dest_dim
 
@@ -119,7 +123,7 @@ class ChannelSum(Module):
     """Layer to sum over the channel dimension."""
 
     def __init__(self):
-        super(ChannelSum, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """Forward pass of the ChannelSum layer.
@@ -141,7 +145,7 @@ class Add(Module):
     """Layer to add two tensors."""
 
     def __init__(self):
-        super(Add, self).__init__()
+        super().__init__()
 
     def forward(self, x, passed):
         """Forward pass of the Add layer.
@@ -199,7 +203,7 @@ class Block(Module):
         passed_channel=1,
         layer_type="down",
     ):
-        super(Block, self).__init__()
+        super().__init__()
         self.n_layers = n_layers
         self.layer_list = ModuleList()
         self.layer_list2 = ModuleList()
@@ -274,8 +278,9 @@ class Model(Module):
         The scale of the model.
     """
 
-    def __init__(self, model_scale=16):
-        super(Model, self).__init__()
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, model_scale=16):
+        super().__init__()
 
         # Block structure
         self.block1 = Block(
@@ -470,7 +475,8 @@ class EVACPlus:
         self.model = self.model.to(self.device)
         self.fetch_default_weights()
 
-    def init_model(self, model_scale=16):
+    @warning_for_keywords(from_version="1.13.0")
+    def init_model(self, *, model_scale=16):
         """Initialize the EVAC+ model.
 
         Parameters
@@ -483,7 +489,7 @@ class EVACPlus:
         Model
             Initialized EVAC+ model.
         """
-        return Model(model_scale)
+        return Model(model_scale=model_scale)
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting.
@@ -529,7 +535,9 @@ class EVACPlus:
         np.ndarray (batch, ...)
             Predicted brain mask
         """
-        return self.model(*x_test)[:, 0].detach().numpy()
+        # Move input tensors to correct device (no-op when device=cpu)
+        x_test = [t.to(self.device) for t in x_test]
+        return self.model(*x_test)[:, 0].detach().cpu().numpy()
 
     def predict(
         self,
@@ -583,9 +591,8 @@ class EVACPlus:
             dim = 3
             if batch_size is not None:
                 logger.warning(
-                    "Batch size specified, but not used",
-                    "due to the input not having \
-                                a batch dimension",
+                    "Batch size specified, but not used due to the input not having "
+                    "a batch dimension"
                 )
 
             T1 = np.expand_dims(T1, 0)

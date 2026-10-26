@@ -7,11 +7,13 @@ import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
+    """Generalized Q-Sampling Imaging (GQI) model."""
+
     @warning_for_keywords()
     def __init__(
         self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
@@ -88,6 +90,8 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
 
 class GeneralizedQSamplingFit(OdfFit):
+    """Fit object for Generalized Q-Sampling Imaging (GQI)."""
+
     def __init__(self, model, data):
         """Calculates PDF and ODF for a single voxel
 
@@ -265,7 +269,7 @@ def patch_maximum(vertices, odf, pole, width):
         logger.info(
             f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
         )
-        return np.Null, np.Null
+        return None, None
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
     eqvertmax = eqvert[eqargmax]
@@ -284,7 +288,7 @@ def patch_sum(vertices, odf, pole, width):
         logger.info(
             f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
         )
-        return np.Null
+        return None
     return np.sum([odf[i] for i in eqvert])
 
 

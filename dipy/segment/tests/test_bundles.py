@@ -1,7 +1,7 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_almost_equal, assert_equal, assert_raises
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
@@ -98,7 +98,7 @@ def test_rb_disable_slr():
 
 
 @set_random_number_generator(42)
-def test_rb_slr_threads(rng):
+def test_rb_slr_threads(rng=None):
     rb_multi = RecoBundles(f, greater_than=0, clust_thr=10, rng=rng)
     rec_trans_multi_threads, _ = rb_multi.recognize(
         model_bundle=f2,
@@ -121,6 +121,41 @@ def test_rb_slr_threads(rng):
         D = bundles_distances_mam(rec_trans_multi_threads, rec_trans_single_thread)
 
     # check if the bundle is recognized correctly
+    # multi-threading prevent an exact match
+    for row in D:
+        assert_almost_equal(row.min(), 0, decimal=4)
+
+
+def test_rb_refine_slr_threads():
+    def refine(*, num_threads):
+        rb = RecoBundles(f, greater_than=0, clust_thr=10, rng=np.random.default_rng(42))
+        rec_trans, _ = rb.recognize(
+            model_bundle=f2, model_clust_thr=5.0, reduction_thr=10, slr=False
+        )
+        refine_trans, _ = rb.refine(
+            model_bundle=f2,
+            pruned_streamlines=rec_trans,
+            model_clust_thr=5.0,
+            reduction_thr=10,
+            slr=True,
+            num_threads=num_threads,
+        )
+        return refine_trans
+
+    # 0 is rejected by determine_num_threads, so the error only surfaces if
+    # refine really forwards num_threads to the SLR metric.
+    assert_raises(ValueError, refine, num_threads=0)
+
+    refine_trans_multi_threads = refine(num_threads=None)
+    refine_trans_single_thread = refine(num_threads=1)
+
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(
+            refine_trans_multi_threads, refine_trans_single_thread
+        )
+
     # multi-threading prevent an exact match
     for row in D:
         assert_almost_equal(row.min(), 0, decimal=4)

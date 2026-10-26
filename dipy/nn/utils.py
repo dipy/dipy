@@ -1,7 +1,9 @@
+import math
+
 import numpy as np
 from scipy.ndimage import affine_transform, map_coordinates
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -275,6 +277,29 @@ def recover_img(image, params, *, order=3):
     recovered = map_coordinates(new_image, coords_for_map, order=order)
 
     return recovered
+
+
+def get_padded_shape(shape, multiple):
+    """Return the smallest shape greater than or equal to ``shape`` whose
+    dimensions are divisible by ``multiple``.
+
+    Parameters
+    ----------
+    shape : sequence of int
+        Input shape.
+    multiple : int
+        Value that every output dimension must be divisible by.
+
+    Returns
+    -------
+    tuple of int
+        Smallest shape greater than or equal to ``shape`` for which every
+        dimension is divisible by ``multiple``.
+    """
+    if multiple <= 0:
+        raise ValueError("multiple must be greater than zero")
+
+    return tuple(math.ceil(int(dim) / multiple) * multiple for dim in shape)
 
 
 def pad_crop(image, target_shape):

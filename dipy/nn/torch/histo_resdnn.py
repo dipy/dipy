@@ -9,8 +9,11 @@ from dipy.data import get_fnames, get_sphere
 from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.logging import logger
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
@@ -39,7 +42,7 @@ class DenseModel(Module):
     """
 
     def __init__(self, sh_size, num_hidden):
-        super(DenseModel, self).__init__()
+        super().__init__()
         self.fc1 = Linear(sh_size, 400)
         self.fc2 = Linear(400, num_hidden)
         self.fc3 = Linear(num_hidden, 200)
@@ -126,7 +129,7 @@ class HistoResDNN:
         References
         ----------
         .. footbibliography::
-        """  # noqa: E501
+        """
         if not have_torch:
             raise torch()
 
@@ -210,7 +213,10 @@ class HistoResDNN:
                 f"declared model ({self.sh_size})"
             )
 
-        return self.model(torch.from_numpy(x_test)).detach().numpy()
+        # Move to correct device (no-op when device=cpu)
+        return (
+            self.model(torch.from_numpy(x_test).to(self.device)).detach().cpu().numpy()
+        )
 
     def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.

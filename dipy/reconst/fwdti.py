@@ -21,7 +21,7 @@ from dipy.reconst.dti import (
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -89,6 +89,7 @@ def fwdti_prediction(params, gtab, *, S0=1, Diso=3.0e-3):
 class FreeWaterTensorModel(ReconstModel):
     """Class for the Free Water Elimination Diffusion Tensor Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="NLS", **kwargs):
         """Free Water Diffusion Tensor Model.
 

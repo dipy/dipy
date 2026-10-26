@@ -1,3 +1,8 @@
+"""Input/Output utilities.
+
+Reading and writing of diffusion MRI data, bvals/bvecs, gradients,
+and related file formats.
+"""
 # init for io routines
 
 from . import utils

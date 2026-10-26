@@ -19,7 +19,7 @@ from dipy.reconst.weights_method import (
     weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.parallel import paramap
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -377,7 +377,7 @@ def isotropic(q_form):
     :footcite:p:`Ennis2006`):
 
     .. math::
-        \bar{A} = \frac{1}{2} tr(A) I
+        \bar{A} = \frac{1}{3} tr(A) I
 
     References
     ----------
@@ -415,7 +415,7 @@ def deviatoric(q_form):
     .. math::
         \widetilde{A} = A - \bar{A}
 
-    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the isotropic
     part of the tensor.
 
     References
@@ -479,8 +479,11 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing isotropy. Mode is calculated with the following
-    equation (equation 9 in :footcite:p:`Ennis2006`):
+    with 0 representing orthotropy. Mode is undefined for isotropic tensors:
+    0 is returned when the deviatoric part is exactly zero, but nearly
+    isotropic tensors can give unstable values anywhere in [-1, 1]. Mode is
+    calculated with the following equation (equation 9 in
+    :footcite:p:`Ennis2006`):
 
     .. math::
 
@@ -561,8 +564,8 @@ def planarity(evals, *, axis=-1):
 
     Returns
     -------
-    linearity : array
-        Calculated linearity of the diffusion tensor.
+    planarity : array
+        Calculated planarity of the diffusion tensor.
 
     Notes
     -----
@@ -608,7 +611,7 @@ def sphericity(evals, *, axis=-1):
 
     .. math::
 
-        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
     References
     ----------
@@ -698,6 +701,7 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """A Diffusion Tensor Model.
 
@@ -869,6 +873,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
+    """Stores the fit result of the Diffusion Tensor model."""
+
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
@@ -949,7 +955,7 @@ class TensorFit:
     @auto_attr
     def mode(self):
         """
-        Tensor mode calculated from cached eigenvalues.
+        Tensor mode calculated from the tensor quadratic form.
         """
         return mode(self.quadratic_form)
 
@@ -1043,17 +1049,17 @@ class TensorFit:
         r"""
         Returns
         -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor
+        planarity : array
+            Calculated planarity of the diffusion tensor
             :footcite:p:`Westin1997`.
 
         Notes
         -----
-        Sphericity is calculated with the following equation:
+        Planarity is calculated with the following equation:
 
         .. math::
 
-            Sphericity =
+            Planarity =
             \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         References
@@ -1139,7 +1145,7 @@ class TensorFit:
         .. footbibliography::
 
         """
-        odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
+        odf = np.zeros(self.evals.shape[:-1] + (sphere.vertices.shape[0],))
         if len(self.evals.shape) > 1:
             mask = np.where(
                 (self.evals[..., 0] > 0)
@@ -1295,6 +1301,9 @@ def iter_fit_tensor(*, step=1e4):
         """
 
         @functools.wraps(fit_tensor)
+        # Innermost: functools.wraps swaps in fit_tensor's signature, which has
+        # no keyword-only parameter, making the decorator above it a no-op.
+        @warning_for_keywords(from_version="1.12.0")
         def wrapped_fit_tensor(
             design_matrix, data, *args, return_S0_hat=False, step=step, **kwargs
         ):
@@ -1626,7 +1635,8 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def err_func(self, tensor, design_matrix, data, weights=None):  # pep3102: ignore
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1669,7 +1679,10 @@ class _NllsHelper:
                     self.sqrt_w = self.sqrt_w[:, None]
                 return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def jacobian_func(
+        self, tensor, design_matrix, data, weights=None
+    ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
         Parameters
@@ -1807,6 +1820,13 @@ def nlls_fit_tensor(
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
         voxel.
+
+    Notes
+    -----
+    For DKI and CTI fits, if the squared mean diffusivity is zero, the
+    normalized kurtosis tensor elements are set to zero without a division
+    warning. This is a numerical convention, not a physically defined
+    kurtosis at zero diffusivity. The CTI covariance elements are retained.
     """
     tol = 1e-6
 
@@ -1908,7 +1928,18 @@ def nlls_fit_tensor(
             model_S0[vox] = np.exp(-this_param[-1])
         if not dti:
             md2 = evals.mean(0) ** 2
-            params[vox, 12:] = this_param[6:-1] / md2
+            if md2 > 0:
+                if npa == 27:  # DKI (12 DTI + 15 DKI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                elif npa == 48:  # CTI (12 DTI + 15 DKI + 21 CTI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                    params[vox, 27:48] = this_param[21:42]
+            else:
+                if npa == 27:
+                    params[vox, 12:27] = 0.0
+                elif npa == 48:
+                    params[vox, 12:27] = 0.0
+                    params[vox, 27:48] = this_param[21:42]
 
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
@@ -2239,7 +2270,7 @@ def iterative_fit_tensor(
     evals, evecs = decompose_tensor(
         from_lower_triangular(D[:, :6]), min_diffusivity=tol / -design_matrix.min()
     )
-    params = np.empty((data.shape[0:-1] + (npa,)))
+    params = np.empty(data.shape[0:-1] + (npa,))
     params[:, :3] = evals
     params[:, 3:12] = evecs.reshape(params.shape[0:-1] + (-1,))
 

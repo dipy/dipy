@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.denoise import denspeed
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 """
  Functions for Wavelet Transforms in 3D domain
@@ -70,7 +70,7 @@ def afb3D_A(x, af, d):
     Parameters
     ----------
     x : 3D ndarray
-        N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
+        N1xN2xN3 matrix, where min(N1,N2,N3) > 2*length(filter)
            (Ni are even)
     af : 2D ndarray
         analysis filter for the columns

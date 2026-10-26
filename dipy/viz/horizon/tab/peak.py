@@ -3,7 +3,8 @@ from pathlib import Path
 
 import numpy as np
 
-from dipy.testing.decorators import is_macOS, warning_for_keywords
+from dipy.testing.decorators import is_macOS
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.viz.horizon.tab import (
     HorizonTab,
     build_checkbox,
@@ -14,6 +15,12 @@ from dipy.viz.horizon.tab import (
 
 
 class PeaksTab(HorizonTab):
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, peak_actor, title, fname):
         """Initialize Interaction tab for peaks visualization.
 
@@ -332,11 +339,23 @@ class PeaksTab(HorizonTab):
             )
             self._show_range()
 
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.on_tab_selected is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def on_tab_selected(self):
         """Trigger when tab becomes active."""
         super().on_tab_selected()
         self._toggle_view_mode(self._view_mode_toggler.obj)
 
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.update_slices is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def update_slices(self, x_slice, y_slice, z_slice):
         """Updates slicer positions.
 
@@ -373,6 +392,12 @@ class PeaksTab(HorizonTab):
 
         super()._toggle_actors(checkbox)
 
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Build all the elements under the tab.
 
@@ -428,6 +453,12 @@ class PeaksTab(HorizonTab):
         )
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Name of the tab.
 
@@ -438,6 +469,12 @@ class PeaksTab(HorizonTab):
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """actors controlled by tab.
 

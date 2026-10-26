@@ -15,7 +15,11 @@ from dipy.core.gradients import (
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.peaks import peak_directions, peaks_from_model
+from dipy.direction.peaks import (
+    peak_directions,
+    peaks_from_model,
+    reshape_peaks_for_visualization,
+)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import (
@@ -54,6 +58,7 @@ from dipy.reconst.mcsd import (
     multi_shell_fiber_response,
     response_from_mask_msmt,
 )
+from dipy.reconst.odffp import OdffpDictionary, OdffpModel, odffp_peaks
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
 from dipy.reconst.shm import (
@@ -62,12 +67,13 @@ from dipy.reconst.shm import (
     QballModel,
     anisotropic_power,
     normalize_data,
+    order_from_ncoef,
     smooth_pinv,
     sph_harm_lookup,
 )
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.sims.force import DEFAULT_FORCE_SEED
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
@@ -294,8 +300,8 @@ class ReconstMAPMRIFlow(Workflow):
                 sphere = get_sphere(sphere_name)
 
             shape = data.shape[:-1]
-            peak_dirs = np.zeros((shape + (npeaks, 3)))
-            peak_values = np.zeros((shape + (npeaks,)))
+            peak_dirs = np.zeros(shape + (npeaks, 3))
+            peak_values = np.zeros(shape + (npeaks,))
             peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
             peak_indices.fill(-1)
 
@@ -722,7 +728,7 @@ class ReconstDtiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
@@ -1206,11 +1212,29 @@ class ReconstCSDFlow(Workflow):
 
             n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
             if data.shape[-1] < n_params:
-                raise ValueError(
-                    f"You need at least {n_params} unique DWI volumes to "
-                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
-                    " DWI volumes."
+                logger.warning(
+                    f"sh_order_max={sh_order_max} requires at least "
+                    f"{int(n_params)} DWI volumes, but only "
+                    f"{data.shape[-1]} are available. Searching for the best "
+                    "sh_order_max that can be used with the current data..."
                 )
+                best_order = order_from_ncoef(data.shape[-1])
+                if best_order % 2 != 0:
+                    best_order -= 1
+                while (
+                    best_order >= 2
+                    and ((best_order + 1) * (best_order + 2)) / 2 > data.shape[-1]
+                ):
+                    best_order -= 2
+                if best_order < 2:
+                    logger.error(
+                        f"Not enough DWI volumes ({data.shape[-1]}) to compute "
+                        "fiber ODFs. A minimum of 6 unique DWI volumes "
+                        "(sh_order_max=2) is required."
+                    )
+                    return sys.exit(1)
+                sh_order_max = best_order
+                logger.warning(f"sh_order_max automatically set to {sh_order_max}.")
 
             model_args = {"gtab": gtab, "sh_order_max": sh_order_max}
             if not use_msmt:
@@ -1689,9 +1713,7 @@ class ReconstDkiFlow(Workflow):
         out_dir : string or Path, optional
             Output directory.
         out_dt_tensor : string, optional
-            Name of the tensors volume to be saved.
-        out_dk_tensor : string, optional
-            Name of the tensors volume to be saved.
+            Name of the diffusion tensor volume to be saved.
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved.
         out_ga : string, optional
@@ -1710,6 +1732,8 @@ class ReconstDkiFlow(Workflow):
             Name of the eigenvectors volume to be saved.
         out_eval : string, optional
             Name of the eigenvalues to be saved.
+        out_dk_tensor : string, optional
+            Name of the kurtosis tensor volume to be saved.
         out_mk : string, optional
             Name of the mean kurtosis to be saved.
         out_ak : string, optional
@@ -1822,7 +1846,7 @@ class ReconstDkiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, dkfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(dkfit.evals)
@@ -2124,7 +2148,7 @@ class ReconstRUMBAFlow(Workflow):
             FA threshold to compute the WM response function.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        sh_order : int, optional
+        sh_order_max : int, optional
             Spherical harmonics order (l) used in the RUMBA fit.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
@@ -3388,7 +3412,7 @@ class ReconstFwdtiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, fwdti_fit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(fwdti_fit.evals)
@@ -3460,7 +3484,16 @@ class ReconstForceFlow(Workflow):
         posterior_beta=2000.0,
         compute_odf=False,
         num_simulations=500000,
+        wm_threshold=0.5,
+        tortuosity=False,
+        odi_range=None,
+        num_odi_values=None,
+        wm_d_par_range=None,
+        wm_d_perp_range=None,
+        gm_d_iso_range=None,
+        csf_d=None,
         num_cpus=-1,
+        seed=DEFAULT_FORCE_SEED,
         use_cache=True,
         compute_kurtosis=False,
         engine="serial",
@@ -3485,12 +3518,14 @@ class ReconstForceFlow(Workflow):
         out_kfa="kfa.nii.gz",
         out_entropy="entropy.nii.gz",
         out_predicted_signal="predicted_signal.nii.gz",
-        out_peaks="peaks.pam5",
+        out_pam="peaks.pam5",
+        out_micro_uncertainty_dir="microstructure_uncertainty",
+        out_micro_ambiguity_dir="microstructure_ambiguity",
     ):
         """Workflow for FORCE microstructure reconstruction.
 
-        Performs FORCE (FORward modeling for Complex microstructure Estimation)
-        reconstruction :footcite:p:`Shah2025` on the files by 'globing'
+        Performs FORCE (FORward matching for Complex microstructure Estimation)
+        reconstruction :footcite:p:`Shah2026` on the files by 'globing'
         ``input_files`` and saves the FORCE metrics in a directory specified
         by ``out_dir``.
 
@@ -3524,9 +3559,41 @@ class ReconstForceFlow(Workflow):
             Compute posterior ODF maps.
         num_simulations : int, optional
             Number of simulated voxels for the simulation library.
+        wm_threshold : float, optional
+            Minimum white-matter signal fraction for a simulated voxel to be
+            assigned fiber-orientation labels when building the library.
+        tortuosity : bool, optional
+            Constrain the white-matter perpendicular diffusivity through the
+            tortuosity model instead of sampling ``wm_d_perp_range``
+            independently.
+        odi_range : variable float, optional
+            Two values ``min max`` giving the orientation-dispersion-index
+            prior range sampled when building the simulation library. If not
+            set, the FORCE default ``0.01 0.3`` is used.
+        num_odi_values : int, optional
+            Number of points in the ODI sampling grid. If not set, the grid is
+            autoscaled from ``odi_range`` so its sampling density matches the
+            default grid (10 points across ``0.01 0.3``).
+        wm_d_par_range : variable float, optional
+            Two values ``min max`` (in mm^2/s) for the white-matter parallel
+            (axial) diffusivity prior. If not set, defaults to
+            ``0.002 0.003``.
+        wm_d_perp_range : variable float, optional
+            Two values ``min max`` (in mm^2/s) for the white-matter
+            perpendicular (radial) diffusivity prior. Ignored when
+            ``tortuosity`` is set. If not set, defaults to ``0.0003 0.0015``.
+        gm_d_iso_range : variable float, optional
+            Two values ``min max`` (in mm^2/s) for the gray-matter isotropic
+            diffusivity prior. If not set, defaults to ``0.0007 0.0012``.
+        csf_d : float, optional
+            Fixed CSF isotropic diffusivity in mm^2/s. If not set, defaults to
+            ``0.003``.
         num_cpus : int, optional
             Number of CPU cores for simulation generation. Use -1 to use
             all available cores.
+        seed : int, optional
+            Random seed for reproducible simulation-library generation.
+            Identical seeds yield identical libraries for any ``num_cpus``.
         use_cache : bool, optional
             Load cached simulations if available.
         compute_kurtosis : bool, optional
@@ -3579,19 +3646,68 @@ class ReconstForceFlow(Workflow):
             Name of the entropy volume to be saved (requires use_posterior).
         out_predicted_signal : string, optional
             Name of the predicted signal volume to be saved.
-        out_peaks : string, optional
+        out_pam : string, optional
             Name of the peaks file to be saved (in .pam5 format).
+        out_micro_uncertainty_dir : string, optional
+            Name of the subdirectory for per-microstructure uncertainty maps
+            (weighted IQR of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
+        out_micro_ambiguity_dir : string, optional
+            Name of the subdirectory for per-microstructure ambiguity maps
+            (FWHM of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
 
         References
         ----------
         .. footbibliography::
 
         """
-        from dipy.reconst.force import FORCEModel
+        from dipy.reconst.force import MICRO_PARAMS, FORCEModel
+        from dipy.sims.force import get_default_diffusivity_config
         from dipy.utils.optpkg import optional_package
 
         use_posterior = not use_exact
         save_metrics = save_metrics or []
+
+        # Assemble the simulation-library prior overrides. Any range left
+        # unset falls back to the FORCE defaults (see
+        # ``get_default_diffusivity_config``), so the defaults are unchanged
+        # unless the user explicitly passes one of these options.
+        def _as_range(name, value):
+            values = tuple(float(v) for v in value)
+            if len(values) != 2:
+                raise ValueError(
+                    f"'{name}' expects exactly two values (min max); "
+                    f"got {len(values)}: {value}."
+                )
+            if values[0] > values[1]:
+                raise ValueError(
+                    f"'{name}' min ({values[0]}) must not exceed max ({values[1]})."
+                )
+            return values
+
+        diffusivity_overrides = {
+            "wm_d_par_range": wm_d_par_range,
+            "wm_d_perp_range": wm_d_perp_range,
+            "gm_d_iso_range": gm_d_iso_range,
+            "csf_d": csf_d,
+        }
+        if any(v is not None for v in diffusivity_overrides.values()):
+            diffusivity_config = get_default_diffusivity_config()
+            for key, value in diffusivity_overrides.items():
+                if value is None:
+                    continue
+                diffusivity_config[key] = (
+                    float(value) if key == "csf_d" else _as_range(key, value)
+                )
+        else:
+            diffusivity_config = None
+
+        gen_range_kwargs = {}
+        if odi_range is not None:
+            gen_range_kwargs["odi_range"] = _as_range("odi_range", odi_range)
 
         if engine == "ray":
             _, has_ray, _ = optional_package("ray")
@@ -3628,6 +3744,8 @@ class ReconstForceFlow(Workflow):
             oentropy,
             opredicted_signal,
             opeaks,
+            omicro_unc_dir,
+            omicro_amb_dir,
         ) in io_it:
             logger.info(f"Computing FORCE metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -3657,9 +3775,15 @@ class ReconstForceFlow(Workflow):
             model.generate(
                 num_simulations=num_simulations,
                 num_cpus=num_cpus,
+                seed=seed,
                 use_cache=use_cache,
                 compute_dki=compute_kurtosis,
+                wm_threshold=wm_threshold,
+                tortuosity=tortuosity,
+                num_odi_values=num_odi_values,
+                diffusivity_config=diffusivity_config,
                 verbose=verbose,
+                **gen_range_kwargs,
             )
 
             logger.info("Fitting FORCE model...")
@@ -3735,4 +3859,401 @@ class ReconstForceFlow(Workflow):
                     continue
                 save_nifti(out_path, data_arr.astype(np.float32), affine)
 
+            micro_unc_map = {
+                p: getattr(force_fit, f"uncertainty_{p}", None) for p in MICRO_PARAMS
+            }
+            micro_amb_map = {
+                p: getattr(force_fit, f"ambiguity_{p}", None) for p in MICRO_PARAMS
+            }
+
+            unc_dir = Path(omicro_unc_dir)
+            amb_dir = Path(omicro_amb_dir)
+            unc_dir.mkdir(parents=True, exist_ok=True)
+            amb_dir.mkdir(parents=True, exist_ok=True)
+
+            for param in MICRO_PARAMS:
+                u_data = micro_unc_map.get(param)
+                if u_data is not None and np.issubdtype(
+                    getattr(u_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(unc_dir / f"{param}.nii.gz"),
+                        u_data.astype(np.float32),
+                        affine,
+                    )
+                a_data = micro_amb_map.get(param)
+                if a_data is not None and np.issubdtype(
+                    getattr(a_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(amb_dir / f"{param}.nii.gz"),
+                        a_data.astype(np.float32),
+                        affine,
+                    )
+
+            logger.info(
+                f"Per-microstructure uncertainty maps saved to {unc_dir.resolve()}"
+            )
+            logger.info(
+                f"Per-microstructure ambiguity maps saved to {amb_dir.resolve()}"
+            )
+
             logger.info(f"FORCE metrics saved to {Path(out_dir).resolve()}")
+
+
+class ReconstOdffpFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "odffp"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        dict_file=None,
+        dict_size=1000000,
+        max_peaks_num=3,
+        equal_fibers=False,
+        p_iso=None,
+        p_fib=None,
+        f_in=None,
+        d_iso=None,
+        d_a=None,
+        d_e=None,
+        d_r=None,
+        max_chunk_size=10000,
+        assert_faster_d_a=False,
+        tortuosity_approximation=False,
+        seed=42,
+        sphere_name=None,
+        sampling_length=1.2,
+        penalty=1e-5,
+        sh_order_max=8,
+        keep_negative_odf=False,
+        zero_baseline_odf=False,
+        output_measured_odf=False,
+        matching_precision="float32",
+        num_threads=None,
+        engine="serial",
+        n_jobs=-1,
+        vox_per_chunk=None,
+        save_dict=False,
+        normalize_peaks=False,
+        extract_pam_values=False,
+        verbose=False,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_dict="odf_dict.npz",
+        out_num_fibers="num_fibers.nii.gz",
+        out_free_water="free_water.nii.gz",
+        out_predicted_signal="predicted_signal.nii.gz",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Workflow for ODF-Fingerprinting (ODF-FP) reconstruction.
+
+        Performs ODF-FP :footcite:p:`Baete2019,Filipiak2022` on the files by
+        'globing' ``input_files`` and saves the peaks and the microstructure
+        maps in a directory specified by ``out_dir``.
+
+        The ODF of every voxel is reconstructed with GQI and matched against a
+        dictionary of ODF fingerprints simulated from a multi-compartment
+        model. The dictionary is generated for the gradient table of the input
+        data, or loaded from ``dict_file`` when it was saved by a previous run
+        with ``save_dict``.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string or Path
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string or Path
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string or Path
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol.
+        dict_file : string, optional
+            Path to a dictionary archive (``.npz``) saved by a previous run
+            with ``save_dict``. If set, the dictionary is loaded instead of
+            generated. It must have been generated with the same gradient
+            table and sphere as the current run.
+        dict_size : int, optional
+            Number of fingerprints in the generated dictionary.
+        max_peaks_num : int, optional
+            Maximum number of fiber compartments in a fingerprint.
+        equal_fibers : bool, optional
+            Use identical microstructure parameters for all fibers of a
+            fingerprint.
+        p_iso : variable float, optional
+            Two values ``min max`` for the free-water volume fraction. If not
+            set, defaults to ``0 1``.
+        p_fib : variable float, optional
+            Two values ``min max`` for each fiber-compartment volume fraction.
+            If not set, defaults to ``0 1``.
+        f_in : variable float, optional
+            Two values ``min max`` for the intra-axonal signal fraction. If
+            not set, defaults to ``0 1``.
+        d_iso : variable float, optional
+            Two values ``min max`` (in um^2/ms) for the free-water isotropic
+            diffusivity. If not set, defaults to ``2 3``.
+        d_a : variable float, optional
+            Two values ``min max`` (in um^2/ms) for the intra-axonal
+            diffusivity. If not set, defaults to ``1.5 2.5``.
+        d_e : variable float, optional
+            Two values ``min max`` (in um^2/ms) for the extra-axonal axial
+            diffusivity. If not set, defaults to ``1.5 2.5``.
+        d_r : variable float, optional
+            Two values ``min max`` (in um^2/ms) for the extra-axonal radial
+            diffusivity. If not set, defaults to ``0.5 1.5``.
+        max_chunk_size : int, optional
+            Maximum number of fingerprints simulated at once.
+        assert_faster_d_a : bool, optional
+            Reject fingerprints whose intra-axonal diffusivity is smaller than
+            their extra-axonal axial diffusivity.
+        tortuosity_approximation : bool, optional
+            Derive the extra-axonal radial diffusivity from the intra-axonal
+            fraction and diffusivity with the tortuosity approximation.
+        seed : int, optional
+            Random seed used to generate the dictionary. The same seed always
+            yields the same dictionary.
+        sphere_name : string, optional
+            Name of the full symmetric sphere on which the dictionary and the
+            measured ODFs are sampled. If not set, ``repulsion724`` is used.
+        sampling_length : float, optional
+            Sampling length of the GQI model used to reconstruct the ODFs.
+        penalty : float, optional
+            Model-complexity penalty applied to fingerprints with more fibers
+            during matching, in the interval [0, 0.1].
+        sh_order_max : int, optional
+            Maximum spherical harmonics order (l) used for alignment,
+            matching and to store the matched ODFs.
+        keep_negative_odf : bool, optional
+            Keep negative ODF samples instead of setting them to zero before
+            normalization.
+        zero_baseline_odf : bool, optional
+            Subtract the minimum of each ODF before normalization.
+        output_measured_odf : bool, optional
+            Store the measured (GQI) ODF of each voxel instead of the matched
+            dictionary ODF.
+        matching_precision : string, optional
+            Floating-point precision used for fingerprint matching:
+            ``float32`` or ``float64``.
+        num_threads : int, optional
+            Number of threads used by the matching kernels. If not set, the
+            default number of OpenMP threads is used.
+        engine : string, optional
+            Parallel engine for fitting: "ray" or "serial". If "ray" is
+            requested but not installed, falls back to "serial" with a warning.
+        n_jobs : int, optional
+            Number of processes used by the "ray" engine. Use -1 to use all
+            available cores.
+        vox_per_chunk : int, optional
+            Number of voxels matched per batch. If not set, an engine-specific
+            default is used.
+        save_dict : bool, optional
+            Save the generated dictionary to ``out_dict`` so it can be reused
+            with ``dict_file``.
+        normalize_peaks : bool, optional
+            Divide the peak values of each voxel by its main-peak value. By
+            default the peak values are the quantitative anisotropy: the ODF
+            amplitude above its isotropic floor, scaled so that the largest
+            peak in the volume is 1.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        verbose : bool, optional
+            Whether to print verbose messages during processing.
+        out_dir : string or Path, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_dict : string, optional
+            Name of the dictionary archive to be saved (requires save_dict).
+        out_num_fibers : string, optional
+            Name of the number of fibers volume to be saved.
+        out_free_water : string, optional
+            Name of the free-water fraction volume to be saved.
+        out_predicted_signal : string, optional
+            Name of the predicted signal volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_qa : string, optional
+            Name of the quantitative anisotropy volume to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        from dipy.utils.optpkg import optional_package
+
+        def _as_interval(name, value):
+            values = tuple(float(v) for v in value)
+            if len(values) != 2:
+                raise ValueError(
+                    f"'{name}' expects exactly two values (min max); "
+                    f"got {len(values)}: {value}."
+                )
+            if values[0] > values[1]:
+                raise ValueError(
+                    f"'{name}' min ({values[0]}) must not exceed max ({values[1]})."
+                )
+            return values
+
+        # Any interval left unset falls back to the OdffpDictionary default.
+        generate_kwargs = {
+            "dict_size": dict_size,
+            "max_peaks_num": max_peaks_num,
+            "equal_fibers": equal_fibers,
+            "max_chunk_size": max_chunk_size,
+            "assert_faster_D_a": assert_faster_d_a,
+            "tortuosity_approximation": tortuosity_approximation,
+        }
+        intervals = {
+            "p_iso": p_iso,
+            "p_fib": p_fib,
+            "f_in": f_in,
+            "D_iso": d_iso,
+            "D_a": d_a,
+            "D_e": d_e,
+            "D_r": d_r,
+        }
+        for key, value in intervals.items():
+            if value is not None:
+                generate_kwargs[key] = _as_interval(key, value)
+
+        if engine == "ray":
+            _, has_ray, _ = optional_package("ray")
+            if not has_ray:
+                logger.warning(
+                    "Ray is not installed. Falling back to serial engine. "
+                    "Install ray with: pip install ray"
+                )
+                engine = "serial"
+
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            odict,
+            onum_fibers,
+            ofree_water,
+            opredicted_signal,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            oqa,
+        ) in io_it:
+            logger.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask = load_nifti_data(maskfile).astype(bool)
+
+            sphere = get_sphere(
+                name="repulsion724" if sphere_name is None else sphere_name
+            )
+            odf_recon_model = GeneralizedQSamplingModel(
+                gtab, sampling_length=sampling_length
+            )
+
+            if dict_file is not None:
+                logger.info(f"Loading ODF-FP dictionary from {dict_file}")
+                odf_dict = OdffpDictionary(gtab, sphere=sphere, dict_file=dict_file)
+            else:
+                logger.info(
+                    f"Generating ODF-FP dictionary with {dict_size} fingerprints..."
+                )
+                odf_dict = OdffpDictionary(gtab, sphere=sphere)
+                odf_dict.generate(
+                    odf_recon_model=odf_recon_model,
+                    rng=np.random.default_rng(seed),
+                    **generate_kwargs,
+                )
+                if save_dict:
+                    odf_dict.save(dict_file=odict)
+                    logger.info(f"ODF-FP dictionary saved to {odict}")
+
+            logger.info("ODF-FP matching started.")
+            model = OdffpModel(
+                gtab,
+                odf_dict,
+                penalty=penalty,
+                sh_order_max=sh_order_max,
+                drop_negative_odf=not keep_negative_odf,
+                zero_baseline_odf=zero_baseline_odf,
+                output_dict_odf=not output_measured_odf,
+                matching_precision=matching_precision,
+                num_threads=num_threads,
+                odf_recon_model=odf_recon_model,
+            )
+            fit_kwargs = {"engine": engine, "n_jobs": n_jobs, "verbose": verbose}
+            if vox_per_chunk is not None:
+                fit_kwargs["vox_per_chunk"] = vox_per_chunk
+            odffp_fit = model.fit(data, mask=mask, **fit_kwargs)
+
+            peaks = odffp_peaks(
+                odffp_fit, sh_order_max=sh_order_max, normalize_peaks=normalize_peaks
+            )
+            peaks.affine = affine
+            save_pam(opam, peaks, affine=affine)
+            logger.info("ODF-FP matching completed.")
+
+            # Microstructure of the matched fingerprints.
+            dict_idx = np.asarray(odffp_fit.dict_idx).astype(int)
+            num_fibers = np.where(mask, odf_dict.peaks_per_voxel[dict_idx], 0)
+            save_nifti(onum_fibers, num_fibers.astype(np.int32), affine)
+
+            free_water = np.zeros(mask.shape, dtype=np.float32)
+            free_water[mask] = np.asarray(odffp_fit.compartment_volume)[mask][:, 0]
+            save_nifti(ofree_water, free_water, affine)
+
+            # Signal of the matched fingerprints, scaled by the measured b0.
+            if np.any(gtab.b0s_mask):
+                s0 = data[..., gtab.b0s_mask].mean(axis=-1)
+            else:
+                s0 = np.ones(mask.shape)
+            predicted = model.predict(odffp_fit, S0=np.where(mask, s0, 0.0))
+            save_nifti(opredicted_signal, predicted.astype(np.float32), affine)
+
+            if extract_pam_values:
+                save_nifti(oshm, peaks.shm_coeff, affine)
+                save_nifti(opeaks_dir, reshape_peaks_for_visualization(peaks), affine)
+                save_nifti(opeaks_values, peaks.peak_values, affine)
+                save_nifti(opeaks_indices, peaks.peak_indices, affine)
+                save_nifti(ogfa, peaks.gfa, affine)
+                save_nifti(oqa, peaks.qa, affine)
+
+            logger.info(f"ODF-FP results saved to {Path(opam).parent.resolve()}")

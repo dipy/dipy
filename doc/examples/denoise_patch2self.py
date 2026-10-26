@@ -54,7 +54,7 @@ phase. But is not used in the training set for (A) nor is used to predict the
 denoised output in (B).
 
 Let's load the necessary modules:
-"""  # noqa: E501
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np

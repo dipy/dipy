@@ -1,6 +1,9 @@
+"""Testing CTI."""
+
 import math
 
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_raises
 
 from dipy.core.gradients import gradient_table
@@ -195,9 +198,9 @@ def test_cti_prediction():
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :]
-        assert np.allclose(
-            cti_pred_signals, qti_pred_signals
-        ), "CTI and QTI signals do not match!"
+        assert np.allclose(cti_pred_signals, qti_pred_signals), (
+            "CTI and QTI signals do not match!"
+        )
 
         # check the function predict of the CorrelationTensorFit object
         ctiF = ctiM.fit(cti_pred_signals)
@@ -309,6 +312,14 @@ def test_cti_fits():
         assert np.allclose(kt, wls_kt), "K do not match!"
         assert np.allclose(ct, wls_ct), "C do not match!"
 
+        # NLS fitting
+        cti_nlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="NLS")
+        cti_nlsF = cti_nlsM.fit(cti_pred_signals)
+        nls_evals, _, nls_kt, nls_ct = split_cti_params(cti_nlsF.model_params)
+        assert np.allclose(evals, nls_evals, atol=1e-3), "evals do not match!"
+        assert np.allclose(kt, nls_kt, atol=1e-3), "K do not match!"
+        assert np.allclose(ct, nls_ct, atol=1e-3), "C do not match!"
+
         # checking Mean Kurtosis Values
         mk_result = ctiF.mk(min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True)
         mean_kurtosis_result = mean_kurtosis(
@@ -390,12 +401,91 @@ def test_cti_fits():
         )
         assert np.isclose(K_iso, ground_truth_K_iso), error_msg
 
+        K_total = ctiF.K_total
+        K_aniso = ctiF.K_aniso
+        K_iso = ctiF.K_iso
+        K_micro = ctiF.K_micro
+
+        npt.assert_array_almost_equal(K_total, K_aniso + K_iso + K_micro)
+
         # checking microscopic source of kurtosis
         ground_truth_K_micro = 0
         K_micro = ctiF.K_micro
-        assert np.allclose(
-            K_micro, ground_truth_K_micro
-        ), "K_micro values don't match ground truth values"
+
+        error_msg = (
+            "K_micro is not zero when system only has multiple Gaussian compartments"
+        )
+        assert np.allclose(K_micro, ground_truth_K_micro), error_msg
+
+        # Test CTI metrics for a case that Kmicro is not zero and the system
+        # is well-aligned
+
+        cti_params_gt = np.array(
+            [
+                1.075,
+                0.3255,
+                0.3255,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.59927944,
+                1.66389033,
+                1.66389033,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.14829682,
+                0.14829682,
+                0.55463011,
+                0.0,
+                0.0,
+                0.0,
+                0.013125,
+                0.18358725,
+                0.18358725,
+                0.18358725,
+                0.0490875,
+                0.0490875,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
+
+        Kiso_gt = 0.9504530935095312
+        Kaniso_gt = 0.5319401049184376
+        Kmicro_gt = 0.2960649543684015
+        Ktotal_gt = 1.7784581527963703
+
+        model = cti.CorrelationTensorModel(gtab1, gtab2)
+
+        fit = cti.CorrelationTensorFit(model, cti_params_gt)
+
+        npt.assert_almost_equal(fit.K_iso, Kiso_gt, decimal=6)
+        npt.assert_almost_equal(fit.K_aniso, Kaniso_gt, decimal=6)
+        npt.assert_almost_equal(fit.K_micro, Kmicro_gt, decimal=6)
+        npt.assert_almost_equal(fit.K_total, Ktotal_gt, decimal=6)
 
 
 def test_cti_errors():
@@ -409,7 +499,8 @@ def test_cti_errors():
 def test_cti_design_matrix():
     A1 = design_matrix(gtab1, gtab2)
     A2 = design_matrix(gtab2, gtab1)
+
     # Check if the two matrices are the same
-    assert np.allclose(
-        A1, A2
-    ), "The design matrices are not symmetric for different gradientdirections order."
+    assert np.allclose(A1, A2), (
+        "The design matrices are not symmetric for different gradientdirections order."
+    )

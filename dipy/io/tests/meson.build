@@ -1,6 +1,8 @@
 python_sources = [
     '__init__.py',
+    'test_bids.py',
     'test_dpy.py',
+    'test_image.py',
     'test_io.py',
     'test_io_gradients.py',
     'test_io_peaks.py',

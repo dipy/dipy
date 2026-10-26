@@ -273,8 +273,7 @@ def test_connectivity_matrix_with_generator():
 
     # Create a generator version of streamlines
     def streamline_generator():
-        for sl in streamlines:
-            yield sl
+        yield from streamlines
 
     # Test that generator input works
     matrix = connectivity_matrix(
@@ -598,8 +597,7 @@ def test_near_roi():
 
     # Test with a generator input:
     def generate_sl(streamlines):
-        for sl in streamlines:
-            yield sl
+        yield from streamlines
 
     npt.assert_array_equal(
         near_roi(generate_sl(streamlines), np.eye(4), mask, mode="both_end"),
@@ -642,7 +640,7 @@ def test_streamline_mapping():
 
 
 @set_random_number_generator()
-def test_length(rng):
+def test_length(rng=None):
     # Generate a simulated bundle of fibers:
     n_streamlines = 50
     n_pts = 100
@@ -666,7 +664,7 @@ def test_length(rng):
 
 
 @set_random_number_generator()
-def test_seeds_from_mask(rng):
+def test_seeds_from_mask(rng=None):
     mask = rng.integers(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, np.eye(4), density=1)
     npt.assert_equal(mask.sum(), len(seeds))
@@ -689,7 +687,7 @@ def test_seeds_from_mask(rng):
 
 
 @set_random_number_generator()
-def test_random_seeds_from_mask(rng):
+def test_random_seeds_from_mask(rng=None):
     mask = rng.integers(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(
         mask, np.eye(4), seeds_count=24, seed_count_per_voxel=True
@@ -805,7 +803,7 @@ def test_reduce_rois():
 
 
 @set_random_number_generator()
-def test_path_length(rng):
+def test_path_length(rng=None):
     aoi = np.zeros((20, 20, 20), dtype=bool)
     aoi[0, 0, 0] = 1
 
@@ -884,7 +882,7 @@ def test_curvature_angle():
 
 
 @set_random_number_generator()
-def test_seeds_directions_pairs(rng):
+def test_seeds_directions_pairs(rng=None):
     positions = rng.random(size=(10, 3))
     peaks = rng.random(size=(10, 5, 3))
 

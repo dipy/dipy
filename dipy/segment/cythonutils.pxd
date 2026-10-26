@@ -4,12 +4,12 @@ cdef extern from "cythonutils.h":
     enum: MAX_NDIM
 
 ctypedef float[:] Data1D
-ctypedef float[:,:] Data2D
-ctypedef float[:,:,:] Data3D
-ctypedef float[:,:,:,:] Data4D
-ctypedef float[:,:,:,:,:] Data5D
-ctypedef float[:,:,:,:,:,:] Data6D
-ctypedef float[:,:,:,:,:,:,:] Data7D
+ctypedef float[:, :] Data2D
+ctypedef float[:, :, :] Data3D
+ctypedef float[:, :, :, :] Data4D
+ctypedef float[:, :, :, :, :] Data5D
+ctypedef float[:, :, :, :, :, :] Data6D
+ctypedef float[:, :, :, :, :, :, :] Data7D
 
 ctypedef fused Data:
     Data1D
@@ -21,9 +21,9 @@ ctypedef fused Data:
     Data7D
 
 cdef struct Shape:
-   Py_ssize_t ndim
-   Py_ssize_t dims[MAX_NDIM]
-   Py_ssize_t size
+    Py_ssize_t ndim
+    Py_ssize_t dims[MAX_NDIM]
+    Py_ssize_t size
 
 
 cdef Shape shape_from_memview(Data data) noexcept nogil
@@ -37,6 +37,8 @@ cdef shape2tuple(Shape shape)
 
 cdef int same_shape(Shape shape1, Shape shape2) noexcept nogil
 
-cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) noexcept nogil
+cdef Data2D* create_memview_2d(
+    Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]
+) noexcept nogil
 
 cdef void free_memview_2d(Data2D* memview) noexcept nogil

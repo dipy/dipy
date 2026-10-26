@@ -57,7 +57,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(42)
-def test_anisotropic_power_non_negative(rng):
+def test_anisotropic_power_non_negative(rng=None):
     sh_coeffs = rng.normal(size=(10, 15))
 
     ap = anisotropic_power(sh_coeffs, non_negative=True)
@@ -66,7 +66,7 @@ def test_anisotropic_power_non_negative(rng):
 
 
 @set_random_number_generator(0)
-def test_anisotropic_power_negative_allowed(rng):
+def test_anisotropic_power_negative_allowed(rng=None):
     # Use very small coefficients so ap < norm_factor, yielding negative log_ap
     sh_coeffs = rng.normal(size=(5, 15)) * 1e-4
 
@@ -457,8 +457,8 @@ def make_fake_signal():
     evecs1 = evecs0
     a = evecs0[0]
     b = evecs1[1]
-    S1 = single_tensor(gtab, 0.55, evals=evals[0], evecs=evecs0)
-    S2 = single_tensor(gtab, 0.45, evals=evals[1], evecs=evecs1)
+    S1 = single_tensor(gtab, S0=0.55, evals=evals[0], evecs=evecs0)
+    S2 = single_tensor(gtab, S0=0.45, evals=evals[1], evecs=evecs1)
     return S1 + S2, gtab, np.vstack([a, b])
 
 
@@ -528,7 +528,7 @@ class TestQballModel:
 
         assert_array_almost_equal(odf, odf_with_norm)
 
-    def test_mulit_voxel_fit(self):
+    def test_multi_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
         sphere = hemi_icosahedron
         nd_signal = np.vstack([signal, signal])
@@ -669,6 +669,42 @@ def test_SphHarmFit():
     assert_equal(data.shape, (4, 5))
     data = fit[:, :, 0]
     assert_equal(data.shape, (3, 4))
+
+
+def test_SphHarmFit_afd():
+    # Two positive Watson lobes crossing at 90 degrees with fractions 0.7/0.3
+    _, gtab, _ = make_fake_signal()
+    sphere = hemi_icosahedron.subdivide(n=5)
+    fractions = np.array([0.7, 0.3])
+    cos2 = (sphere.vertices @ np.eye(3)[:2].T) ** 2
+    sf = np.exp(5 * (cos2 - 1)) @ fractions
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        model = QballModel(gtab, sh_order_max=8)
+        coef = sf_to_sh(sf, sphere, sh_order_max=8)
+        fit = SphHarmFit(model, np.stack([coef, -coef, np.zeros_like(coef)]), None)
+
+        afd_all = fit.afd(npeaks=4, peak_threshold=0)
+        afd = fit[0].afd(npeaks=3)
+        afd_peak = fit[0].afd(npeaks=3, peak_threshold=0.5)
+        afd_integral = fit[0].afd(integral_threshold=afd[:2].mean())
+        afd_first = fit[0].afd(npeaks=1)
+
+    assert_equal(afd_all.shape, (3, 4))
+    # The lobes of a positive FOD partition its integral
+    npt.assert_allclose(afd_all[0].sum(), np.sqrt(4 * np.pi) * coef[0])
+    # No lobes without a positive isotropic component
+    assert_array_equal(afd_all[1:], 0)
+
+    assert_equal(afd[2], 0)
+    npt.assert_allclose(afd[:2] / afd[:2].sum(), fractions, atol=0.01)
+    npt.assert_allclose(afd_peak, [afd[0], 0, 0])
+    npt.assert_allclose(afd_integral, [afd[0], 0, 0, 0, 0])
+    npt.assert_allclose(afd_first, afd[:1])
 
 
 class TestOpdtModel(TestQballModel):

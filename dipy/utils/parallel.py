@@ -7,7 +7,7 @@ import tempfile
 import numpy as np
 from tqdm.auto import tqdm
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 
@@ -96,10 +96,10 @@ def auto_ray_chunk_size(
 
       where ``bytes_per_voxel = n_gradients × 4 + output_bytes_per_voxel``.
 
-    * **Parallelism upper bound** — at least ``n_jobs`` chunks are produced
-      so all workers stay busy::
+    * **Parallelism upper bound** — several chunks per worker are produced so
+      the scheduler can load-balance across workers::
 
-          N_par = n_vox // n_jobs   (only applied when n_vox is given)
+          N_par = n_vox // (n_jobs * 8)   (only applied when n_vox is given)
 
     Final result: ``clamp(min(N_mem, N_par), lo=N_min)``.  Available RAM
     is detected via :func:`_available_ram` (stdlib only, no extra
@@ -113,7 +113,7 @@ def auto_ray_chunk_size(
         Number of diffusion gradients — sets the input chunk byte size.
     n_vox : int, optional
         Total number of voxels to fit.  Used to cap chunk size so that
-        at least ``n_jobs`` chunks are produced.
+        several chunks per worker are produced.
     shared_obj_nbytes : int, optional
         Total bytes already placed in the Ray object store (e.g. the
         simulation library).  Deducted from the available RAM budget.
@@ -139,7 +139,11 @@ def auto_ray_chunk_size(
     bytes_per_voxel = n_gradients * 4 + output_bytes_per_voxel
     n_mem = int(ray_budget / n_jobs / bytes_per_voxel)
 
-    n_par = (n_vox // n_jobs) if n_vox is not None else n_mem
+    # Emit several chunks per worker rather than one, so the Ray scheduler can
+    # load-balance: fast workers pull extra chunks while slow ones take fewer,
+    # instead of every worker being blocked on a single large chunk.
+    chunks_per_worker = 8
+    n_par = (n_vox // (n_jobs * chunks_per_worker)) if n_vox is not None else n_mem
 
     return max(n_min, min(n_mem, n_par))
 
@@ -370,7 +374,7 @@ def paramap(
                     results.append(func(in_element, *func_args, **func_kwargs))
                     pbar.update(1)
     else:
-        raise ValueError("%s is not a valid engine" % engine)
+        raise ValueError(f"{engine} is not a valid engine")
 
     if out_shape is not None:
         return np.array(results).reshape(out_shape)

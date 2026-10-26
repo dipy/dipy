@@ -54,7 +54,7 @@ def test_roll_evals():
 
 
 @set_random_number_generator()
-def test_tensor_algebra(rng):
+def test_tensor_algebra(rng=None):
     # Test that the computation of tensor determinant and norm is correct
     test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
@@ -285,7 +285,7 @@ def test_diffusivities():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(S)
@@ -719,7 +719,7 @@ def test_mask():
 
 
 @set_random_number_generator()
-def test_nnls_jacobian_func(rng):
+def test_nnls_jacobian_func(rng=None):
     b0 = 1000.0
     bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table(bval, bvecs=bvecs)
@@ -966,7 +966,7 @@ def test_predict():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS", return_S0_hat=True)
     dmfit = dm.fit(S)
@@ -1032,8 +1032,8 @@ def test_eig_from_lo_tri():
     S = np.array(
         [
             [
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
             ]
         ]
     )

@@ -39,7 +39,7 @@ class TripWire:
     Traceback (most recent call last):
         ...
     TripWireError: We do not have silly_module_name
-    """  # noqa: E501
+    """
 
     def __init__(self, msg):
         self._msg = msg

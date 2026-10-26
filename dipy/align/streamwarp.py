@@ -9,8 +9,8 @@ from dipy.align.streamlinear import slr_with_qbx
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.stats.analysis import assignment_map
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.plotting import bundle_profile_plot

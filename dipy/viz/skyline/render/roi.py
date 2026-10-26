@@ -1,0 +1,266 @@
+"""Binary ROI masks meshed as translucent contours."""
+
+import numpy as np
+
+from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
+from dipy.viz.skyline.UI.elements import color_picker, colors_equal, thin_slider
+from dipy.viz.skyline.render.renderer import Visualization, format_affine_info
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import contour_from_roi, set_group_opacity
+
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
+if has_imgui:
+    imgui = imgui_bundle.imgui
+
+
+def create_roi_visualization(
+    input,
+    idx,
+    *,
+    opacity=100,
+    color=(1, 0, 0),
+    render_callback=None,
+):
+    """Create an ROI3D visualization from already-loaded ROI data.
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of ``(roi, affine, filename)`` or ``(roi, affine)`` holding an
+        already-loaded binary ROI mask array and its affine, with an
+        optional filename.
+    idx : int
+        Index of the ROI for naming purposes if filename is not provided.
+    opacity : int, optional
+        Opacity of the ROI rendering.
+    color : tuple, optional
+        Color of the ROI rendering.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+
+    Returns
+    -------
+    ROI3D
+        The created ROI3D object.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a tuple of length 2 or 3.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3):
+        raise ValueError(
+            "Input must be a tuple containing (roi, affine, filename) or "
+            "(roi, affine) for ROI visualization."
+        )
+
+    if len(input) == 2:
+        roi, affine = input
+        filename = f"ROI_{idx}"
+    else:
+        roi, affine, filename = input
+
+    return ROI3D(
+        filename,
+        roi,
+        affine=affine,
+        color=color,
+        opacity=opacity,
+        render_callback=render_callback,
+    )
+
+
+class ROI3D(Visualization):
+    """A binary ROI mask rendered as a translucent contour surface.
+
+    Only the first volume along the last axis is used when ``roi`` is 4D.
+
+    Parameters
+    ----------
+    name : str
+        Display name used in the Skyline UI.
+    roi : ndarray
+        Binary ROI mask array used to build the contour surface.
+    affine : ndarray, optional
+        Voxel-to-world affine used to position the contour in world
+        coordinates.
+    opacity : int, optional
+        Contour opacity in percent, expected in ``[0, 100]``.
+    color : tuple(float, float, float), optional
+        RGB color of the contour surface, in ``[0, 1]``.
+    render_callback : callable, optional
+        Callback used to request a render/update.
+
+    Raises
+    ------
+    ValueError
+        If ``roi`` is ``None`` or not an ``ndarray``.
+    """
+
+    def __init__(
+        self,
+        name,
+        roi,
+        *,
+        affine=None,
+        opacity=100,
+        color=(1, 0, 0),
+        render_callback=None,
+    ):
+        """Initialize the ROI contour visualization.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        roi : ndarray
+            Binary ROI mask array used to build the contour surface.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position the contour in world
+            coordinates.
+        opacity : int, optional
+            Contour opacity in percent, expected in ``[0, 100]``.
+        color : tuple(float, float, float), optional
+            RGB color of the contour surface, in ``[0, 1]``.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+
+        Raises
+        ------
+        ValueError
+            If ``roi`` is ``None`` or not an ``ndarray``.
+        """
+        self.roi = roi
+        if self.roi is None:
+            raise ValueError("ROI data cannot be None for ROI visualization.")
+        elif not isinstance(self.roi, np.ndarray):
+            raise ValueError("ROI data must be a numpy array for ROI visualization.")
+
+        if self.roi.ndim == 4:
+            logger.info(
+                "Input has 4 dims, taking the first volume for ROI visualization."
+            )
+            self.roi = self.roi[..., 0]
+        self.affine = affine
+        self.opacity = opacity
+        self.color = color
+        self._draft_color = color
+        self._color_picker_open = False
+        self._color_picker_popup_id = f"roi_color_picker_popup##{name}"
+        self._create_roi_actor()
+        super().__init__(name, render_callback)
+
+    def _create_roi_actor(self):
+        """Create the translucent contour actor for the ROI mask.
+
+        Builds the contour with ``fury.actor.contour_from_roi``, sets the
+        alpha blend mode, and disables depth writing when opacity is below
+        100%.
+        """
+        self._roi_surface = contour_from_roi(
+            self.roi, affine=self.affine, color=self.color, opacity=self.opacity / 100.0
+        )
+        for actor in self._roi_surface.children:
+            actor.material.alpha_mode = "blend"
+            if self.opacity < 100:
+                actor.material.depth_write = False
+
+    def _set_opacity(self, opacity):
+        """Set the contour opacity and toggle depth writing.
+
+        Sets the group opacity to ``opacity / 100`` and disables depth
+        writing below 100% opacity.
+
+        Parameters
+        ----------
+        opacity : int
+            Contour opacity in percent, expected in ``[0, 100]``.
+        """
+        set_group_opacity(self._roi_surface, opacity / 100.0)
+        for actor in self._roi_surface.children:
+            actor.material.depth_write = opacity >= 100
+
+    def _populate_info(self):
+        """Build the informational text describing the ROI mask.
+
+        Returns
+        -------
+        str
+            Multi-line text with the ROI shape, dtype, voxel count, and
+            affine information (if available).
+        """
+        info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
+        info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
+        if self.affine is not None:
+            info += format_affine_info(self.affine) + "\n"
+        return info
+
+    @property
+    def actor(self):
+        """The contour actor rendering the ROI mask.
+
+        Returns
+        -------
+        Contour
+            The actor of the ROI visualization.
+        """
+        return self._roi_surface
+
+    def render_widgets(self):
+        """Draw the ImGui controls for contour opacity and color.
+
+        Renders an opacity slider and a color picker; committing a new
+        color rebuilds the contour actor via :meth:`_create_roi_actor`.
+        """
+        changed, new = thin_slider(
+            "Opacity",
+            self.opacity,
+            0,
+            100,
+            value_type="int",
+            text_format=".0f",
+            value_unit="%",
+            step=1,
+        )
+        if changed:
+            self.opacity = new
+            self.apply_scene_op(self._set_opacity, self.opacity)
+
+        imgui.spacing()
+        color = np.asarray(self.color) * 255
+        color = color.astype(np.uint8)
+        selected_color = self._draft_color if self._color_picker_open else self.color
+        changed, new_color, is_open = color_picker(
+            selected_color=selected_color,
+            tooltip="Pick ROI color",
+            label=color,
+            popup_id=self._color_picker_popup_id,
+        )
+        if is_open and not self._color_picker_open:
+            self._draft_color = self.color
+        if changed:
+            self._draft_color = new_color
+        if self._color_picker_open and not is_open:
+            if not colors_equal(self._draft_color, self.color):
+                self.color = self._draft_color
+                self.apply_scene_op(self._create_roi_actor)
+                self.render()
+            self._draft_color = self.color
+        self._color_picker_open = is_open
+
+
+if not has_fury_v2:
+    create_roi_visualization = ROI3D = fury

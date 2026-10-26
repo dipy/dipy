@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import numpy as np
 cimport numpy as cnp
@@ -9,7 +9,7 @@ cimport numpy as cnp
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
-from cython.parallel import prange
+from cython.parallel import prange, threadid
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
 
@@ -18,8 +18,12 @@ from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
+# Minimum number of streamline pairs before _bundle_minimum_distance
+# spawns an OpenMP team rather than running serially.
+cdef cnp.npy_intp PARALLEL_MIN_PAIRS = 1000000
 
-cdef double min_direct_flip_dist(double *a,double *b,
+
+cdef double min_direct_flip_dist(double *a, double *b,
                                  cnp.npy_intp rows) noexcept nogil:
     r""" Minimum of direct and flip average (MDF) distance between two
     streamlines.
@@ -48,7 +52,6 @@ cdef double min_direct_flip_dist(double *a,double *b,
     cdef:
         cnp.npy_intp i=0, j=0
         double sub=0, subf=0, distf=0, dist=0, tmprow=0, tmprowf=0
-
 
     for i in range(rows):
         tmprow = 0
@@ -108,7 +111,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
+        cnp.npy_intp i=0, j=0
         int threads_to_use = -1
 
     threads_to_use = determine_num_threads(num_threads)
@@ -170,51 +173,85 @@ def _bundle_minimum_distance(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
-        double inf = np.finfo('f8').max
+        cnp.npy_intp i=0, j=0, t=0
+        cnp.npy_intp n_teams=1, tid=0
+        double sum_i=0, sum_j=0, tmp=0, local_min_j=0, cand=0
+        double inf = np.finfo("f8").max
         double dist=0
         double * min_j
         double * min_i
-        openmp.omp_lock_t lock
+        double * min_i_priv
+        double * row_i
         int threads_to_use = -1
 
     threads_to_use = determine_num_threads(num_threads)
     set_num_threads(threads_to_use)
 
-    with nogil:
+    # Running an OpenMP team costs more than the work itself on small inputs,
+    # so only go parallel once there are enough pairs to amortise the fork.
+    if have_openmp and static_size * moving_size >= PARALLEL_MIN_PAIRS:
+        n_teams = threads_to_use
+    else:
+        n_teams = 1
 
-        if have_openmp:
-            openmp.omp_init_lock(&lock)
+    with nogil:
 
         min_j = <double *> malloc(static_size * sizeof(double))
         min_i = <double *> malloc(moving_size * sizeof(double))
-
-        for i in range(static_size):
-            min_j[i] = inf
+        # Per-thread copies of min_i: each thread reduces into its own row, so
+        # no two threads ever write the same address and no lock is needed.
+        min_i_priv = <double *> malloc(n_teams * moving_size * sizeof(double))
 
         for j in range(moving_size):
             min_i[j] = inf
 
-        for i in prange(static_size):
+        for t in range(n_teams * moving_size):
+            min_i_priv[t] = inf
 
+        if n_teams > 1:
+            for i in prange(static_size, num_threads=n_teams):
+                tid = <cnp.npy_intp> threadid()
+                row_i = min_i_priv + tid * moving_size
+                local_min_j = inf
+
+                for j in range(moving_size):
+
+                    tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                               &moving[j * rows, 0], rows)
+
+                    if tmp < local_min_j:
+                        local_min_j = tmp
+
+                    if tmp < row_i[j]:
+                        row_i[j] = tmp
+
+                min_j[i] = local_min_j
+        else:
+            for i in range(static_size):
+                local_min_j = inf
+
+                for j in range(moving_size):
+
+                    tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                               &moving[j * rows, 0], rows)
+
+                    if tmp < local_min_j:
+                        local_min_j = tmp
+
+                    if tmp < min_i_priv[j]:
+                        min_i_priv[j] = tmp
+
+                min_j[i] = local_min_j
+
+        # Reduce the per-thread rows. min() is exactly associative and
+        # commutative on doubles, so this matches the serial result bit for bit
+        # whatever the thread count or the schedule.
+        for t in range(n_teams):
+            row_i = min_i_priv + t * moving_size
             for j in range(moving_size):
-
-                tmp = min_direct_flip_dist(&static[i * rows, 0],
-                                       &moving[j * rows, 0], rows)
-
-                if have_openmp:
-                    openmp.omp_set_lock(&lock)
-                if tmp < min_j[i]:
-                    min_j[i] = tmp
-
-                if tmp < min_i[j]:
-                    min_i[j] = tmp
-                if have_openmp:
-                    openmp.omp_unset_lock(&lock)
-
-        if have_openmp:
-            openmp.omp_destroy_lock(&lock)
+                cand = row_i[j]
+                if cand < min_i[j]:
+                    min_i[j] = cand
 
         for i in range(static_size):
             sum_i += min_j[i]
@@ -224,6 +261,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
         free(min_j)
         free(min_i)
+        free(min_i_priv)
 
         dist = (sum_i / <double>static_size + sum_j / <double>moving_size)
 
@@ -233,7 +271,6 @@ def _bundle_minimum_distance(double [:, ::1] static,
         restore_default_num_threads()
 
     return dist
-
 
 
 def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
@@ -280,8 +317,8 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
-        double inf = np.finfo('f8').max
+        double sum_i=0, tmp=0
+        double inf = np.finfo("f8").max
         double dist=0
         double * min_j
         openmp.omp_lock_t lock
@@ -345,8 +382,6 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
         cnp.npy_intp i, j, lentA, lentB
     # preprocess tracks
     cdef:
-        cnp.npy_intp longest_track_len = 0, track_len
-        longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA64
         cnp.ndarray[object, ndim=1] tracksB64
         cnp.ndarray[cnp.double_t, ndim=2] DM
@@ -355,10 +390,10 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     lentB = len(streamlines_b)
     tracksA64 = np.zeros((lentA,), dtype=object)
     tracksB64 = np.zeros((lentB,), dtype=object)
-    DM = np.zeros((lentA,lentB), dtype=np.double)
+    DM = np.zeros((lentA, lentB), dtype=np.double)
     if streamlines_a[0].shape[0] != streamlines_b[0].shape[0]:
-        msg = 'Streamlines should have the same number of points as required'
-        msg += 'by the MDF distance'
+        msg = "Streamlines should have the same number of points as required"
+        msg += "by the MDF distance"
         raise ValueError(msg)
     # process tracks to predictable memory layout
     for i in range(lentA):
@@ -369,12 +404,9 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     cdef:
         cnp.float64_t *t1_ptr
         cnp.float64_t *t2_ptr
-        cnp.float64_t *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float64_t, ndim=2] t1, t2
-        cnp.npy_intp t1_len, t2_len
-        double d[2]
     t_len = tracksA64[0].shape[0]
 
     for i from 0 <= i < lentA:
@@ -384,6 +416,6 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
             t2 = tracksB64[j]
             t2_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t2)
 
-            DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr,t_len)
+            DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr, t_len)
 
     return DM

@@ -1,7 +1,13 @@
+# ruff: noqa: E402
 import warnings
 
 import numpy.testing as npt
 import pytest
+
+pytest.skip(
+    "Horizon module deprecated in 1.13.0; scheduled for removal in 2.0.0",
+    allow_module_level=True,
+)
 
 from dipy.testing import check_for_warnings
 from dipy.testing.decorators import use_xvfb

@@ -204,7 +204,7 @@ def test_min_vs_min_fast_precision():
 
 
 @set_random_number_generator()
-def test_same_number_of_points(rng):
+def test_same_number_of_points(rng=None):
     A = [rng.random((10, 3)), rng.random((20, 3))]
     B = [rng.random((21, 3)), rng.random((30, 3))]
     C = [rng.random((10, 3)), rng.random((10, 3))]
@@ -263,7 +263,7 @@ def test_efficient_bmd():
 
 
 @set_random_number_generator()
-def test_openmp_locks(rng):
+def test_openmp_locks(rng=None):
     static = []
     moving = []
     pts = 20
@@ -427,7 +427,7 @@ def test_vectorize_streamlines():
 
 
 @set_random_number_generator()
-def test_x0_input(rng):
+def test_x0_input(rng=None):
     for x0 in [6, 7, 12, "Rigid", "rigid", "similarity", "Affine"]:
         StreamlineLinearRegistration(x0=x0)
 
@@ -452,7 +452,7 @@ def test_x0_input(rng):
 
 
 @set_random_number_generator()
-def test_compose_decompose_matrix44(rng):
+def test_compose_decompose_matrix44(rng=None):
     for _ in range(20):
         x0 = rng.random(12)
         mat = compose_matrix44(x0[:6])
@@ -495,7 +495,7 @@ def test_cascade_of_optimizations_and_threading():
 
 
 @set_random_number_generator()
-def test_wrong_num_threads(rng):
+def test_wrong_num_threads(rng=None):
     A = [rng.random((10, 3)), rng.random((10, 3))]
     B = [rng.random((10, 3)), rng.random((10, 3))]
 

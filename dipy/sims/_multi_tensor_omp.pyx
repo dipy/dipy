@@ -11,7 +11,6 @@ computation with optional OpenMP parallelization.
 """
 
 import numpy as np
-cimport numpy as cnp
 from libc.math cimport exp
 
 

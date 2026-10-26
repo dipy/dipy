@@ -8,8 +8,6 @@ Uses Cython with OpenMP (prange) for parallel heap operations.
 
 cimport cython
 from cython.parallel cimport prange
-from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
 from libc.stdint cimport int64_t
 
 
@@ -129,7 +127,7 @@ cdef void select_top_k_parallel(
     cdef float* dist_out
     cdef int64_t* idx_out
 
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         dist_row = distances + <size_t>i * n_database
         dist_out = out_distances + <size_t>i * k
         idx_out = out_indices + <size_t>i * k
@@ -164,7 +162,7 @@ cdef void heap_init_parallel(
     cdef int64_t* idx_out
     cdef float neg_inf = -1e30
 
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         dist_out = out_distances + <size_t>i * k
         idx_out = out_indices + <size_t>i * k
 
@@ -195,7 +193,7 @@ cdef void heap_update_batch_parallel(
     cdef int64_t* idx_out
     cdef int64_t global_idx
 
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         dist_row = distances + <size_t>i * chunk_size
         dist_out = out_distances + <size_t>i * k
         idx_out = out_indices + <size_t>i * k
@@ -221,7 +219,7 @@ cdef void heap_finalize_parallel(
     cdef float* dist_out
     cdef int64_t* idx_out
 
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         dist_out = out_distances + <size_t>i * k
         idx_out = out_indices + <size_t>i * k
         heap_reorder(dist_out, idx_out, k)

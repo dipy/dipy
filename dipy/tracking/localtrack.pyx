@@ -62,7 +62,7 @@ def local_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError('Invalid input parameter dimensions.')
+        raise ValueError("Invalid input parameter dimensions.")
 
     copy_point(&first_step[0], input_direction)
     copy_point(&voxel_size[0], input_voxel_size)
@@ -163,7 +163,7 @@ def pft_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError('Invalid input parameter dimensions.')
+        raise ValueError("Invalid input parameter dimensions.")
 
     copy_point(&first_step[0], input_direction)
     copy_point(&voxel_size[0], input_voxel_size)
@@ -206,10 +206,9 @@ cdef _pft_tracker(DirectionGetter dg,
         int strl_array_len
         double max_wm_pve, current_wm_pve
         double point[3]
-        void (*step)(double* , double*, double) noexcept nogil
 
     copy_point(seed, point)
-    copy_point(seed, &streamline[0,0])
+    copy_point(seed, &streamline[0, 0])
     copy_point(&direction[0], &directions[0, 0])
 
     stream_status[0] = TRACKPOINT
@@ -280,8 +279,7 @@ cdef _pft_tracker(DirectionGetter dg,
             # or an invalid point (PYERROR)
             break
 
-    if ((stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR)
-        and i > 1):
+    if ((stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR) and i > 1):
         i -= 1
     return i
 
@@ -368,12 +366,17 @@ cdef _pft(cnp.float_t[:, :] streamline,
                 # copy data in the temp arrays
                 for pp in range(particle_count):
                     for ss in range(pft_nbr_steps):
-                        copy_point(&particle_paths[0, pp, ss, 0],
-                                  &particle_paths[1, pp, ss, 0])
-                        copy_point(&particle_dirs[0, pp, ss, 0],
-                                  &particle_dirs[1, pp, ss, 0])
-                    particle_stream_statuses[1, pp] = \
+                        copy_point(
+                            &particle_paths[0, pp, ss, 0],
+                            &particle_paths[1, pp, ss, 0],
+                        )
+                        copy_point(
+                            &particle_dirs[0, pp, ss, 0],
+                            &particle_dirs[1, pp, ss, 0],
+                        )
+                    particle_stream_statuses[1, pp] = (
                             particle_stream_statuses[0, pp]
+                    )
                     particle_steps[1, pp] = particle_steps[0, pp]
 
                 # sample N new particle
@@ -386,12 +389,17 @@ cdef _pft(cnp.float_t[:, :] streamline,
                                                rdm_sample,
                                                particle_count)
                     for ss in range(pft_nbr_steps):
-                        copy_point(&particle_paths[1, p_source, ss, 0],
-                                  &particle_paths[0, pp, ss, 0])
-                        copy_point(&particle_dirs[1, p_source, ss, 0],
-                                  &particle_dirs[0, pp, ss, 0])
-                    particle_stream_statuses[0, pp] = \
+                        copy_point(
+                            &particle_paths[1, p_source, ss, 0],
+                            &particle_paths[0, pp, ss, 0],
+                        )
+                        copy_point(
+                            &particle_dirs[1, p_source, ss, 0],
+                            &particle_dirs[0, pp, ss, 0],
+                        )
+                    particle_stream_statuses[0, pp] = (
                             particle_stream_statuses[1, p_source]
+                    )
                     particle_steps[0, pp] = particle_steps[1, p_source]
                 for pp in range(particle_count):
                     particle_weights[pp] = 1. / particle_count

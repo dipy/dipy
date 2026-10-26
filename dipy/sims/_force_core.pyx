@@ -12,8 +12,6 @@ Low-level signal generation for multi-compartment diffusion simulations.
 import numpy as np
 cimport numpy as cnp
 
-from libc.math cimport exp
-
 ctypedef cnp.float64_t DTYPE_t
 ctypedef cnp.uint8_t LABEL_t
 
@@ -25,6 +23,10 @@ cdef double WM_D_PERP_MAX = 1.5e-3
 cdef double GM_D_MIN = 0.7e-3
 cdef double GM_D_MAX = 1.2e-3
 cdef double CSF_D = 3.0e-3
+
+# Minimum angular separation (degrees) between simulated fiber populations.
+DEFAULT_TWO_FIBER_MIN_ANGLE = 30.0
+DEFAULT_THREE_FIBER_MIN_ANGLE = 60.0
 
 
 def set_diffusivity_ranges(
@@ -64,7 +66,10 @@ def set_diffusivity_ranges(
         return lo, hi
 
     WM_D_PAR_MIN, WM_D_PAR_MAX = _validate_val_or_pair("wm_d_par_range", wm_d_par_range)
-    WM_D_PERP_MIN, WM_D_PERP_MAX = _validate_val_or_pair("wm_d_perp_range", wm_d_perp_range)
+    (
+        WM_D_PERP_MIN,
+        WM_D_PERP_MAX,
+    ) = _validate_val_or_pair("wm_d_perp_range", wm_d_perp_range)
     GM_D_MIN, GM_D_MAX = _validate_val_or_pair("gm_d_iso_range", gm_d_iso_range)
     CSF_D = float(csf_d)
 
@@ -88,7 +93,9 @@ cdef inline double get_dperp_extra(double d_par, double f_intra) noexcept:
     return d_par * (1.0 - f_intra) / (1.0 + f_intra)
 
 
-cdef inline double fa_stick_zeppelin(double d_par, double d_perp, double f_intra) noexcept:
+cdef inline double fa_stick_zeppelin(
+    double d_par, double d_perp, double f_intra
+) noexcept:
     """
     Compute microFA for stick-zeppelin model.
 
@@ -322,7 +329,8 @@ cpdef tuple generate_two_fibers(
     cnp.ndarray[DTYPE_t, ndim=1] bvals,
     cnp.ndarray[DTYPE_t, ndim=2] bvecs,
     object multi_tensor_func,
-    bint tortuosity
+    bint tortuosity,
+    double min_crossing_angle=DEFAULT_TWO_FIBER_MIN_ANGLE
 ):
     """
     Generate diffusion signal for two crossing fiber populations.
@@ -345,6 +353,8 @@ cpdef tuple generate_two_fibers(
         Function to compute multi-tensor signal.
     tortuosity : bool
         Whether to use tortuosity constraint.
+    min_crossing_angle : float, optional
+        Minimum separation between the two fibers, in degrees.
 
     Returns
     -------
@@ -386,15 +396,17 @@ cpdef tuple generate_two_fibers(
     index = np.random.randint(0, n_dirs, 2)
     _angle_tries = 0
     while not is_angle_valid(
-        angle_between(target_sphere[index[0]], target_sphere[index[1]])
+        angle_between(target_sphere[index[0]], target_sphere[index[1]]),
+        threshold=min_crossing_angle
     ):
         index = np.random.randint(0, n_dirs, 2)
         _angle_tries += 1
         if _angle_tries >= _MAX_ANGLE_TRIES:
             raise RuntimeError(
-                "Could not find two fiber directions with sufficient angular "
-                "separation after %d attempts. Consider using a finer sphere."
-                % _MAX_ANGLE_TRIES
+                "Could not find two fiber directions separated by at least "
+                f"{min_crossing_angle:g} degrees after {_MAX_ANGLE_TRIES} "
+                "attempts. Consider using a finer sphere or a smaller "
+                "min_crossing_angle."
             )
 
     idx0 = int(index[0])
@@ -454,7 +466,8 @@ cpdef tuple generate_three_fibers(
     cnp.ndarray[DTYPE_t, ndim=1] bvals,
     cnp.ndarray[DTYPE_t, ndim=2] bvecs,
     object multi_tensor_func,
-    bint tortuosity
+    bint tortuosity,
+    double min_crossing_angle=DEFAULT_THREE_FIBER_MIN_ANGLE
 ):
     """
     Generate diffusion signal for three crossing fiber populations.
@@ -477,6 +490,8 @@ cpdef tuple generate_three_fibers(
         Function to compute multi-tensor signal.
     tortuosity : bool
         Whether to use tortuosity constraint.
+    min_crossing_angle : float, optional
+        Minimum pairwise separation between the three fibers, in degrees.
 
     Returns
     -------
@@ -521,24 +536,25 @@ cpdef tuple generate_three_fibers(
     while (
         not is_angle_valid(
             angle_between(target_sphere[index[0]], target_sphere[index[1]]),
-            threshold=60
+            threshold=min_crossing_angle
         )
         or not is_angle_valid(
             angle_between(target_sphere[index[0]], target_sphere[index[2]]),
-            threshold=60
+            threshold=min_crossing_angle
         )
         or not is_angle_valid(
             angle_between(target_sphere[index[1]], target_sphere[index[2]]),
-            threshold=60
+            threshold=min_crossing_angle
         )
     ):
         index = np.random.randint(0, n_dirs, 3)
         _angle_tries += 1
         if _angle_tries >= _MAX_ANGLE_TRIES:
             raise RuntimeError(
-                "Could not find three fiber directions with sufficient angular "
-                "separation after %d attempts. Consider using a finer sphere."
-                % _MAX_ANGLE_TRIES
+                "Could not find three fiber directions pairwise separated "
+                f"by at least {min_crossing_angle:g} degrees after "
+                f"{_MAX_ANGLE_TRIES} attempts. Consider using a finer sphere "
+                "or a smaller min_crossing_angle."
             )
 
     idx0 = int(index[0])
@@ -598,7 +614,9 @@ cpdef tuple create_wm_signal(
     cnp.ndarray[DTYPE_t, ndim=1] bvals,
     cnp.ndarray[DTYPE_t, ndim=2] bvecs,
     object multi_tensor_func,
-    bint tortuosity
+    bint tortuosity,
+    double two_fiber_min_angle=DEFAULT_TWO_FIBER_MIN_ANGLE,
+    double three_fiber_min_angle=DEFAULT_THREE_FIBER_MIN_ANGLE
 ):
     """
     Create white matter signal with specified number of fibers.
@@ -623,6 +641,10 @@ cpdef tuple create_wm_signal(
         Function to compute multi-tensor signal.
     tortuosity : bool
         Whether to use tortuosity constraint.
+    two_fiber_min_angle : float, optional
+        Minimum separation for two-fiber configurations, in degrees.
+    three_fiber_min_angle : float, optional
+        Minimum pairwise separation for three-fiber configurations, in degrees.
 
     Returns
     -------
@@ -637,12 +659,14 @@ cpdef tuple create_wm_signal(
     elif num_fib == 2:
         return generate_two_fibers(
             target_sphere, evecs, bingham_sf, odi_list,
-            bvals, bvecs, multi_tensor_func, tortuosity
+            bvals, bvecs, multi_tensor_func, tortuosity,
+            two_fiber_min_angle
         )
     elif num_fib == 3:
         return generate_three_fibers(
             target_sphere, evecs, bingham_sf, odi_list,
-            bvals, bvecs, multi_tensor_func, tortuosity
+            bvals, bvecs, multi_tensor_func, tortuosity,
+            three_fiber_min_angle
         )
     else:
         raise ValueError("num_fib must be 1, 2 or 3")
@@ -739,7 +763,9 @@ cpdef tuple create_mixed_signal(
     cnp.ndarray[DTYPE_t, ndim=2] bvecs,
     object multi_tensor_func,
     double wm_threshold,
-    bint tortuosity
+    bint tortuosity,
+    double two_fiber_min_angle=DEFAULT_TWO_FIBER_MIN_ANGLE,
+    double three_fiber_min_angle=DEFAULT_THREE_FIBER_MIN_ANGLE
 ):
     """
     Create mixed WM/GM/CSF tissue signal.
@@ -767,6 +793,10 @@ cpdef tuple create_mixed_signal(
         Minimum WM fraction to include fiber labels.
     tortuosity : bool
         Whether to use tortuosity constraint.
+    two_fiber_min_angle : float, optional
+        Minimum separation for two-fiber configurations, in degrees.
+    three_fiber_min_angle : float, optional
+        Minimum pairwise separation for three-fiber configurations, in degrees.
 
     Returns
     -------
@@ -805,6 +835,8 @@ cpdef tuple create_mixed_signal(
         bvecs,
         multi_tensor_func,
         tortuosity,
+        two_fiber_min_angle,
+        three_fiber_min_angle,
     )
     wm_signal = wm_result[0]
     wm_label = wm_result[1]
@@ -827,7 +859,14 @@ cpdef tuple create_mixed_signal(
     csf_signal = csf_result[0]
     csf_d_par = csf_result[7]
 
-    odi = wm_fraction * float(wm_disp) + gm_fraction * float(gm_disp) + csf_fraction * 1.0
+    odi = (
+        wm_fraction
+        * float(wm_disp)
+        + gm_fraction
+        * float(gm_disp)
+        + csf_fraction
+        * 1.0
+    )
     nd = wm_fraction * float(wm_nd) + gm_fraction * float(gm_nd)
 
     combined_signal = (

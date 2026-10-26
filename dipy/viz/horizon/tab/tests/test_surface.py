@@ -1,6 +1,12 @@
+# ruff: noqa: E402
 from unittest.mock import patch
 
 import pytest
+
+pytest.skip(
+    "Horizon module deprecated in 1.13.0; scheduled for removal in 2.0.0",
+    allow_module_level=True,
+)
 
 from dipy.testing.decorators import set_random_number_generator, use_xvfb
 from dipy.utils.optpkg import optional_package

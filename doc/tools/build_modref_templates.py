@@ -93,6 +93,7 @@ if __name__ == '__main__':
         r'.*diffusion_evals.*',
         r'.*DATA_DIR.*',
         r'.*RegistrationStages.*',
+        r'.*EMERGENCY_REF.*',
         r'.*VerbosityLevels.*',
     ]
     docwriter.write_api_docs(outdir)

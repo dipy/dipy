@@ -17,20 +17,28 @@ It remains licensed as the rest of SynthSeg
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 """
 
+import warnings
+
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import (
+    get_padded_shape,
     normalize,
+    pad_crop,
     recover_img,
     set_logger_level,
     transform_img,
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.logging import logger
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
@@ -55,11 +63,13 @@ class Conv3dELU(Module):
     Mimics TensorFlow Conv3D + ELU fused behavior.
     """
 
+    @warning_for_keywords(from_version="1.13.0")
     def __init__(
         self,
         in_channels,
         out_channels,
         kernel_size,
+        *,
         padding=0,
         stride=1,
         dilation=1,
@@ -122,7 +132,7 @@ class Block(Module):
         n_layers,
         layer_type,
     ):
-        super(Block, self).__init__()
+        super().__init__()
         self.n_layers = n_layers
         self.layer_list = ModuleList()
         self.layer_type = layer_type
@@ -192,7 +202,7 @@ class Model(Module):
     """
 
     def __init__(self, *, model_scale=24, n_levels=5, output_channels=33):
-        super(Model, self).__init__()
+        super().__init__()
 
         self.block_list = ModuleList()
         self.channels = [model_scale * (2**i) for i in range(n_levels)]
@@ -464,7 +474,8 @@ class SynthSeg:
             60: "right ventral DC",
         }
 
-    def init_model(self, model_scale=24, n_levels=5, output_channels=33):
+    @warning_for_keywords(from_version="1.13.0")
+    def init_model(self, *, model_scale=24, n_levels=5, output_channels=33):
         """Initialize the SynthSeg model.
 
         Parameters
@@ -566,7 +577,7 @@ class SynthSeg:
         np.ndarray (batch, ...)
             Predicted brain labels
         """
-        return self.model(x_test).detach().numpy()
+        return self.model(x_test).detach().cpu().numpy()
 
     def predict(
         self,
@@ -575,6 +586,7 @@ class SynthSeg:
         *,
         batch_size=None,
         return_prob=False,
+        finalize_mask=True,
     ):
         """Wrapper function to facilitate prediction of larger dataset.
 
@@ -597,6 +609,9 @@ class SynthSeg:
         return_prob : bool, optional
             Whether to return the probability map instead of a
             label map. Useful for testing.
+        finalize_mask : bool, optional
+            Whether to remove potential holes or islands.
+            Useful for solving minor errors.
 
         Returns
         -------
@@ -606,11 +621,12 @@ class SynthSeg:
 
         label_dict : dict
             Dictionary mapping label indices to anatomical structure names.
-            Only if return_prob is False.
 
-        mask : np.ndarray (...) or (batch, ...)
-            Predicted brain mask.
-            Only if return_prob is False.
+        masks : np.ndarray (...) or (batch, ...)
+            Predicted brain masks in the original image space. By default, each
+            mask is generated as ``predicted_labels > 0``. If
+            ``finalize_mask`` is True, ``remove_holes_and_islands`` is
+            additionally applied.
         """
         affine = np.array(affine)
 
@@ -621,9 +637,8 @@ class SynthSeg:
             dim = 3
             if batch_size is not None:
                 logger.warning(
-                    "Batch size specified, but not used",
-                    "due to the input not having \
-                                a batch dimension",
+                    "Batch size specified, but not used due to the input not having "
+                    "a batch dimension"
                 )
 
             T1 = np.expand_dims(T1, 0)
@@ -635,25 +650,36 @@ class SynthSeg:
         if batch_size is None:
             batch_size = 1
 
-        input_data = np.zeros((len(T1), 192, 192, 192))
-        params_list = []
+        transformed_images = [None] * len(T1)
+        params_list = [None] * len(T1)
 
-        # Normalize the data.
+        # Resample the data to 1 mm isotropic resolution.
         ori_shape = T1.shape[1:]
         for i, T1_img in enumerate(T1):
             t_img, params = transform_img(
                 T1_img,
                 affine[i],
                 target_voxsize=(1.0, 1.0, 1.0),
-                final_size=(192, 192, 192),
                 order=3,
             )
+            transformed_images[i] = t_img
+            params_list[i] = params
+
+        # Pad all images to a common shape compatible with SynthSeg.
+        max_shape = np.max([img.shape for img in transformed_images], axis=0)
+        model_shape = get_padded_shape(max_shape, multiple=32)
+        input_data = np.zeros((len(T1),) + model_shape, dtype=np.float32)
+
+        for i, t_img in enumerate(transformed_images):
+            t_img, pad_vs, crop_vs = pad_crop(t_img, model_shape)
             min_v, max_v = np.percentile(t_img, (0.5, 99.5))
             t_img = normalize(t_img, min_v=min_v, max_v=max_v, new_min=0, new_max=1)
             input_data[i] = t_img
-            params_list.append(params)
+            params_list[i]["pad_value"] = pad_vs
+            params_list[i]["crop_value"] = crop_vs
+
         # Prediction stage
-        prediction = np.zeros((len(T1), 192, 192, 192, 33), dtype=np.float32)
+        prediction = np.zeros((len(T1),) + model_shape + (33,), dtype=np.float32)
         for batch_idx in range(batch_size, len(T1) + 1, batch_size):
             batch = input_data[batch_idx - batch_size : batch_idx]
             batch_start = batch_idx - batch_size
@@ -696,10 +722,26 @@ class SynthSeg:
             prediction[-remainder:] /= 2
 
         if return_prob:
-            labels = np.zeros((len(T1),) + (192, 192, 192, 33)).astype(np.float32)
+            labels = np.zeros((len(T1),) + model_shape + (33,), dtype=np.float32)
         else:
             labels = np.zeros((len(T1),) + ori_shape).astype(np.int32)
-            masks = np.zeros((len(T1),) + ori_shape)
+        masks = np.zeros((len(T1),) + ori_shape).astype(np.int32)
+        if finalize_mask:
+            warnings.warn(
+                "The finalized brain mask may differ from the non-background "
+                "region of the returned segmentation because holes are filled "
+                "and disconnected components are removed.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if return_prob:
+            warnings.warn(
+                "The probability maps are returned in SynthSeg model space, "
+                "while the brain masks are returned in the original image "
+                "space.",
+                UserWarning,
+                stacklevel=2,
+            )
         for i in range(len(T1)):
             output = prediction[i]
 
@@ -729,20 +771,20 @@ class SynthSeg:
             output /= np.sum(output, axis=-1)[..., np.newaxis]
             if return_prob:
                 labels[i] = output.astype("float32")
-                continue
-            else:
-                temp = self.labels_segmentation[
-                    output.argmax(-1).astype("int32")
-                ].astype("int32")
-                temp = recover_img(temp, params_list[i], order=0)
-                labels[i] = np.round(temp).astype(np.int32)
-            masks[i] = (labels[i] > 0).astype(np.int32)
+            temp = self.labels_segmentation[output.argmax(-1).astype("int32")].astype(
+                "int32"
+            )
+            temp = recover_img(temp, params_list[i], order=0)
+            temp = np.round(temp).astype(np.int32)
+            if not return_prob:
+                labels[i] = temp
+            mask = temp > 0
+            if finalize_mask:
+                mask = remove_holes_and_islands(mask)
+            masks[i] = mask.astype(np.int32)
 
         if dim == 3:
             labels = labels[0]
-            if not return_prob:
-                masks = masks[0]
+            masks = masks[0]
 
-        if return_prob:
-            return labels
         return labels, self.label_dict, masks

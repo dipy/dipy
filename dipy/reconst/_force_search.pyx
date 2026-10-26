@@ -29,7 +29,6 @@ cdef extern from "force_src/distances.h" namespace "faiss" nogil:
 
 # Import heap functions from local module
 from dipy.reconst._force_heap cimport (
-    select_top_k_parallel,
     heap_init_parallel,
     heap_update_batch_parallel,
     heap_finalize_parallel
@@ -64,7 +63,7 @@ cdef void compute_distances_simd(
     cdef size_t j
 
     # Parallel loop over queries
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         for j in range(n_database):
             distances[<size_t>i * n_database + j] = fvec_inner_product(
                 &queries[i, 0],
@@ -86,14 +85,14 @@ cdef void compute_distances_blas(
 
     Computes: distances_out[i, j] = queries[i, :] . database[j, :]
     """
-    cdef int nd = database.shape[0]
-    cdef int nq = queries.shape[0]
-    cdef int d = queries.shape[1]
+    cdef int nd = <int>database.shape[0]
+    cdef int nq = <int>queries.shape[0]
+    cdef int d = <int>queries.shape[1]
 
     cdef float alpha = 1.0
     cdef float beta = 0.0
-    cdef char trans_a = b'T'
-    cdef char trans_b = b'N'
+    cdef char trans_a = b"T"
+    cdef char trans_b = b"N"
 
     cdef int m = nd
     cdef int n = nq
@@ -143,7 +142,6 @@ cdef void knn_inner_product_streaming(
     """
     cdef size_t n_queries = queries.shape[0]
     cdef size_t n_database = database.shape[0]
-    cdef size_t d = queries.shape[1]
 
     cdef size_t chunk_start, chunk_end, chunk_size
     cdef size_t batch_size
@@ -252,13 +250,13 @@ def search_inner_product(
     indices : int64 array (n_queries, k)
         Indices of nearest neighbors
     """
-    cdef int n_queries = queries.shape[0]
-    cdef int n_database = database.shape[0]
-    cdef int d = queries.shape[1]
+    cdef cnp.npy_intp n_queries = queries.shape[0]
+    cdef cnp.npy_intp n_database = database.shape[0]
 
     if queries.shape[1] != database.shape[1]:
         raise ValueError(
-            f"Dimension mismatch: queries {queries.shape[1]} != database {database.shape[1]}"
+            f"Dimension mismatch: queries {queries.shape[1]} != "
+            f"database {database.shape[1]}"
         )
 
     if k <= 0:
@@ -268,10 +266,10 @@ def search_inner_product(
         raise ValueError(f"k ({k}) cannot be larger than database size ({n_database})")
 
     # Allocate output arrays (C-contiguous)
-    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode='c'] distances = \
-        np.empty((n_queries, k), dtype=np.float32, order='C')
-    cdef cnp.ndarray[cnp.int64_t, ndim=2, mode='c'] indices = \
-        np.empty((n_queries, k), dtype=np.int64, order='C')
+    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] distances = \
+        np.empty((n_queries, k), dtype=np.float32, order="C")
+    cdef cnp.ndarray[cnp.int64_t, ndim=2, mode="c"] indices = \
+        np.empty((n_queries, k), dtype=np.int64, order="C")
 
     # Get memoryviews
     cdef float[:, ::1] distances_view = distances
@@ -311,7 +309,7 @@ def inner_product_single(
     float
         Inner product
     """
-    cdef int d = x.shape[0]
+    cdef cnp.npy_intp d = x.shape[0]
 
     if x.shape[0] != y.shape[0]:
         raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")
@@ -342,7 +340,7 @@ def l2sqr_single(
     float
         Squared L2 distance
     """
-    cdef int d = x.shape[0]
+    cdef cnp.npy_intp d = x.shape[0]
 
     if x.shape[0] != y.shape[0]:
         raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")

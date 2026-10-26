@@ -9,12 +9,10 @@ discrete distribution (pmf) at each step of the tracking.
 """
 from random import random
 
-import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
-                                     where_to_insert)
+from dipy.utils.fast_numpy cimport copy_point, cumsum, norm, normalize, where_to_insert
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -60,7 +58,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
 
-
     cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Samples a pmf to updates ``direction`` array with a new direction.
 
@@ -87,7 +84,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         _len = self.len_pmf
         pmf = self._get_pmf(point)
 
-
         if norm(&direction[0]) == 0:
             return 1
         normalize(&direction[0])
@@ -111,9 +107,11 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         newdir = self.vertices[idx]
         # Update direction and return 0 for error
-        if (direction[0] * newdir[0]
+        if (
+            direction[0] * newdir[0]
             + direction[1] * newdir[1]
-            + direction[2] * newdir[2] > 0):
+            + direction[2] * newdir[2] > 0
+        ):
             copy_point(&newdir[0], &direction[0])
         else:
             newdir[0] = newdir[0] * -1
@@ -177,9 +175,11 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
 
             newdir = self.vertices[max_idx]
             # Update direction and return 0 for error
-            if (direction[0] * newdir[0]
+            if (
+                direction[0] * newdir[0]
                 + direction[1] * newdir[1]
-                + direction[2] * newdir[2] > 0):
+                + direction[2] * newdir[2] > 0
+            ):
                 copy_point(&newdir[0], &direction[0])
             else:
                 newdir[0] = newdir[0] * -1

@@ -4,6 +4,7 @@ cython_sources = [
   ]
 
 cython_headers = [
+  'constants.pxd',
   'fast_numpy.pxd',
   'omp.pxd',
   ]
@@ -29,6 +30,7 @@ python_sources = [
   'compatibility.py',
   'convert.py',
   'deprecator.py',
+  'histeq.py',
   'logging.py',
   'multiproc.py',
   'optpkg.py',

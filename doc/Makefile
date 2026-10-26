@@ -4,6 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    = -j auto
 SPHINXBUILD   = sphinx-build
+PYTHON        ?= python3
 PAPER         =
 
 # Internal variables.
@@ -11,7 +12,7 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
+.PHONY: help clean api api-clean examples-clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -53,7 +54,7 @@ gitwash-update:
 
 html: api
 	#  Standard html build after examples have been prepared
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	DIPY_OFFSCREEN=1 FURY_OFFSCREEN=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 

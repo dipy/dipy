@@ -6,7 +6,7 @@ References
 .. footbibliography::
 """
 
-from warnings import catch_warnings, filterwarnings, warn
+from warnings import warn
 
 import numpy as np
 
@@ -19,7 +19,7 @@ from dipy.reconst.dti import (
 from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -429,7 +429,7 @@ def dtd_covariance(DTD):
     if len(dims) != 3 or (dims[1:3] != (3, 3) and dims[1:3] != (6, 1)):
         raise ValueError(
             "The shape of DTD must be (number of tensors, 3, 3) or (number of "
-            + "tensors, 6, 1)."
+            "tensors, 6, 1)."
         )
     if dims[1:3] == (3, 3):
         DTD = from_3x3_to_6x1(DTD)
@@ -497,7 +497,7 @@ def qti_signal(gtab, D, C, *, S0=1):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
                 "S0 must be a single number or an array of the same shape "
-                + " compatible with D and C."
+                " compatible with D and C."
             )
 
     # Generate signals
@@ -743,29 +743,23 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, *, weights=None, return_leverages=F
         vox_W = W[i : i + 1, :].T
         vox_log_data = log_data[i : i + 1, :].T
         y.value = vox_W * vox_log_data
-        A_val = vox_W * X
-        A.value = A_val
+        A.value = vox_W * X
 
-        # Suppress SCS CSC warning only for small matrices
-        with catch_warnings():
-            if A_val.shape[0] < 1000:
-                filterwarnings("ignore", message="Converting A to a CSC")
-
+        try:
+            prob.solve(solver=cvxpy_solver, verbose=False, ignore_dpp=True)
+            m = x.value
+        except Exception:
+            msg = "Constrained optimization failed, attempting unconstrained"
+            msg += " optimization."
+            warn(msg, stacklevel=2)
             try:
-                prob.solve(solver=cvxpy_solver, verbose=False, ignore_dpp=True)
+                unconstrained.solve(solver=cvxpy_solver)
                 m = x.value
             except Exception:
-                msg = "Constrained optimization failed, attempting unconstrained"
-                msg += " optimization."
+                msg = "Unconstrained optimization failed,"
+                msg += " returning zero array."
                 warn(msg, stacklevel=2)
-                try:
-                    unconstrained.solve(solver=cvxpy_solver)
-                    m = x.value
-                except Exception:
-                    msg = "Unconstrained optimization failed,"
-                    msg += " returning zero array."
-                    warn(msg, stacklevel=2)
-                    m = np.zeros(x.shape)
+                m = np.zeros(x.shape)
 
         params_masked[i : i + 1, :] = m.T
 
@@ -822,8 +816,8 @@ class QtiModel(ReconstModel):
         if rank < 28:
             warn(
                 "The combination of the b-tensor shapes, sizes, and "
-                + "orientations does not enable all elements of the covariance "
-                + f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
+                "orientations does not enable all elements of the covariance "
+                f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
                 stacklevel=2,
             )
 
@@ -832,7 +826,7 @@ class QtiModel(ReconstModel):
         except KeyError as e:
             raise ValueError(
                 f"Invalid value ({fit_method}) for 'fit_method'."
-                + " Options: 'OLS', 'WLS', 'SDPdc', 'RWLS'."
+                " Options: 'OLS', 'WLS', 'SDPdc', 'RWLS'."
             ) from e
 
         self.cvxpy_solver = cvxpy_solver

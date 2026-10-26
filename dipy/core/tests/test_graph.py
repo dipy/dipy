@@ -1,10 +1,12 @@
 from numpy.testing import assert_equal
+import pytest
 
 from dipy.core.graph import Graph
 
 
 def test_graph():
-    g = Graph()
+    with pytest.warns(DeprecationWarning, match="dipy.core.graph.Graph is deprecated"):
+        g = Graph()
 
     g.add_node("a", attr=5)
     g.add_node("b", attr=6)

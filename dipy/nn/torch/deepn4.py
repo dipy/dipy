@@ -7,8 +7,11 @@ from scipy.ndimage import gaussian_filter
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.logging import logger
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
@@ -45,7 +48,7 @@ class UNet3D(Module):
     """
 
     def __init__(self, n_in, n_out):
-        super(UNet3D, self).__init__()
+        super().__init__()
         # Encoder
         c = 32
         self.ec0 = self.encoder_block(n_in, c, kernel_size=3, stride=1, padding=1)
@@ -306,7 +309,7 @@ class DeepN4:
         np.ndarray (batch, ...)
             Predicted bias field
         """
-        return self.model(x_test)[:, 0].detach().numpy()
+        return self.model(x_test)[:, 0].detach().cpu().numpy()
 
     def pad(self, img, sz):
         """Pad or crop the image to the specified size.

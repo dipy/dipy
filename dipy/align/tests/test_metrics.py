@@ -1,11 +1,15 @@
 import itertools
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 from scipy import ndimage
 
-from dipy.align import floating
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -13,6 +17,7 @@ def test_exceptions():
     for invalid_dim in [-1, 0, 1, 4, 5]:
         assert_raises(ValueError, CCMetric, invalid_dim)
         assert_raises(ValueError, EMMetric, invalid_dim)
+        assert_raises(ValueError, MIMetric, invalid_dim)
         assert_raises(ValueError, SSDMetric, invalid_dim)
     assert_raises(ValueError, SSDMetric, 3, step_type="unknown_metric_name")
     assert_raises(ValueError, EMMetric, 3, step_type="unknown_metric_name")
@@ -48,13 +53,136 @@ def test_exceptions():
     metric.initialize_iteration()
 
 
+def setup_metric(metric, static, moving):
+    """Initialize a metric with a simple pair of images for one iteration."""
+    metric.set_static_image(static, None, np.ones(metric.dim), None)
+    metric.set_moving_image(moving, None, np.ones(metric.dim), None)
+    metric.initialize_iteration()
+
+
+def cc_energy_from_factors(factors, radius):
+    """Compute CC energy as implemented in ``crosscorr.pyx`` step functions.
+
+    This replicates the local NCC energy accumulation used by
+    ``compute_cc_step_2d``.
+    """
+    energy = 0
+    factors = np.asarray(factors)
+    for r in range(radius, factors.shape[0] - radius):
+        for c in range(radius, factors.shape[1] - radius):
+            sfm = factors[r, c, 2]
+            sff = factors[r, c, 3]
+            smm = factors[r, c, 4]
+            if sff == 0 or smm == 0:
+                continue
+            local_correlation = 0
+            if sff * smm > 1e-5:
+                local_correlation = sfm * sfm / (sff * smm)
+            if local_correlation < 1:
+                energy -= local_correlation
+    return energy
+
+
+def mi_energy_from_pdfs(joint, smarginal, mmarginal):
+    """Compute mutual information from joint and marginal PDFs."""
+    independent = smarginal[:, None] * mmarginal[None, :]
+    valid = joint > 0
+    return np.sum(joint[valid] * np.log(joint[valid] / independent[valid]))
+
+
 @set_random_number_generator(7181309)
-def test_EMMetric_image_dynamics(rng):
+def test_mi_metric_energy_matches_negative_mutual_information(rng=None):
+    """Verify that MIMetric reports the negative mutual information energy.
+
+    The forward and backward MI steps both should store the negative of the
+    same scalar data energy for the initialized image pair.
+    """
+    for dim, shape in [(2, (5, 5)), (3, (5, 5, 5))]:
+        static = rng.random(shape).astype(np.float32)
+        moving = rng.random(shape).astype(np.float32)
+
+        metric = MIMetric(dim, nbins=16, smooth=0)
+        setup_metric(metric, static, moving)
+        metric.forward_histogram.update_pdfs_dense(static, moving)
+        expected = -mi_energy_from_pdfs(
+            metric.forward_histogram.joint,
+            metric.forward_histogram.smarginal,
+            metric.forward_histogram.mmarginal,
+        )
+        metric.compute_forward()
+        assert_almost_equal(metric.get_energy(), expected)
+        metric.free_iteration()
+
+        metric = MIMetric(dim, nbins=16, smooth=0)
+        setup_metric(metric, static, moving)
+        metric.backward_histogram.update_pdfs_dense(moving, static)
+        expected = -mi_energy_from_pdfs(
+            metric.backward_histogram.joint,
+            metric.backward_histogram.smarginal,
+            metric.backward_histogram.mmarginal,
+        )
+        metric.compute_backward()
+        assert_almost_equal(metric.get_energy(), expected)
+        metric.free_iteration()
+
+
+@set_random_number_generator(7181309)
+def test_cc_metric_energy_matches_local_cross_correlation(rng=None):
+    """Verify that CCMetric reports the local cross-correlation energy.
+
+    The forward and backward CC steps both should store the same scalar data
+    energy for the initialized image pair.
+    """
+    static = rng.random((5, 5)).astype(np.float32)
+    moving = rng.random((5, 5)).astype(np.float32)
+    radius = 1
+
+    metric = CCMetric(2, radius=radius, sigma_diff=0)
+    setup_metric(metric, static, moving)
+    expected = cc_energy_from_factors(metric.factors, radius)
+    metric.compute_forward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+    metric = CCMetric(2, radius=radius, sigma_diff=0)
+    setup_metric(metric, static, moving)
+    expected = cc_energy_from_factors(metric.factors, radius)
+    metric.compute_backward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+
+@set_random_number_generator(7181309)
+def test_ssd_metric_energy_matches_squared_difference(rng=None):
+    """Verify that SSDMetric reports the sum of squared differences energy.
+
+    The forward and backward SSD steps both should store the same
+    squared-difference energy for the initialized image pair.
+    """
+    static = rng.random((5, 5)).astype(np.float32)
+    moving = rng.random((5, 5)).astype(np.float32)
+    expected = np.sum((static - moving) ** 2)
+
+    metric = SSDMetric(2, smooth=0)
+    setup_metric(metric, static, moving)
+    metric.compute_forward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+    metric = SSDMetric(2, smooth=0)
+    setup_metric(metric, static, moving)
+    metric.compute_backward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+
+@set_random_number_generator(7181309)
+def test_EMMetric_image_dynamics(rng=None):
     metric = EMMetric(2)
 
     target_shape = (10, 10)
     # create a random image
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.ndarray(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(tuple(target_shape))
     # compute the expected binary mask
     expected = (image > 0).astype(np.int32)
@@ -119,14 +247,14 @@ def test_em_demons_step_2d():
     sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
-    metric.gradient_static = np.array(grad_F, dtype=floating)
-    metric.gradient_moving = np.array(grad_G, dtype=floating)
-    metric.static_image = np.array(F, dtype=floating)
-    metric.moving_image = np.array(G, dtype=floating)
-    metric.staticq_means_field = np.array(F, dtype=floating)
-    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
-    metric.movingq_means_field = np.array(G, dtype=floating)
-    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
+    metric.gradient_static = np.array(grad_F, dtype=np.float32)
+    metric.gradient_moving = np.array(grad_G, dtype=np.float32)
+    metric.static_image = np.array(F, dtype=np.float32)
+    metric.moving_image = np.array(G, dtype=np.float32)
+    metric.staticq_means_field = np.array(F, dtype=np.float32)
+    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
+    metric.movingq_means_field = np.array(G, dtype=np.float32)
+    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
 
     # compute the step using the implementation under test
     actual_forward = metric.compute_demons_step(forward_step=True)
@@ -213,14 +341,14 @@ def test_em_demons_step_3d():
     sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
-    metric.gradient_static = np.array(grad_F, dtype=floating)
-    metric.gradient_moving = np.array(grad_G, dtype=floating)
-    metric.static_image = np.array(F, dtype=floating)
-    metric.moving_image = np.array(G, dtype=floating)
-    metric.staticq_means_field = np.array(F, dtype=floating)
-    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
-    metric.movingq_means_field = np.array(G, dtype=floating)
-    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
+    metric.gradient_static = np.array(grad_F, dtype=np.float32)
+    metric.gradient_moving = np.array(grad_G, dtype=np.float32)
+    metric.static_image = np.array(F, dtype=np.float32)
+    metric.moving_image = np.array(G, dtype=np.float32)
+    metric.staticq_means_field = np.array(F, dtype=np.float32)
+    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
+    metric.movingq_means_field = np.array(G, dtype=np.float32)
+    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
 
     # compute the step using the implementation under test
     actual_forward = metric.compute_demons_step(forward_step=True)

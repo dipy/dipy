@@ -2,7 +2,6 @@ import numpy as np
 import numpy.testing as npt
 from scipy.ndimage import map_coordinates
 
-from dipy.align import floating
 from dipy.core.interpolation import (
     NearestNeighborInterpolator,
     OutsideImage,
@@ -22,7 +21,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator()
-def test_trilinear_interpolate(rng):
+def test_trilinear_interpolate(rng=None):
     """This tests that the trilinear interpolation returns the correct values."""
     a, b, c = rng.random(3)
 
@@ -67,13 +66,13 @@ def test_trilinear_interpolate(rng):
 
 
 @set_random_number_generator(5324989)
-def test_interpolate_scalar_2d(rng):
+def test_interpolate_scalar_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz + 2, sz + 2), dtype=floating)
+    extended_image = np.zeros((sz + 2, sz + 2), dtype=np.float32)
     extended_image[1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
@@ -109,10 +108,10 @@ def test_interpolate_scalar_2d(rng):
 
 
 @set_random_number_generator(1924781)
-def test_interpolate_scalar_nn_2d(rng):
+def test_interpolate_scalar_nn_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -137,10 +136,10 @@ def test_interpolate_scalar_nn_2d(rng):
 
 
 @set_random_number_generator(3121121)
-def test_interpolate_scalar_nn_3d(rng):
+def test_interpolate_scalar_nn_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -165,13 +164,13 @@ def test_interpolate_scalar_nn_3d(rng):
 
 
 @set_random_number_generator(9216326)
-def test_interpolate_scalar_3d(rng):
+def test_interpolate_scalar_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=floating)
+    extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=np.float32)
     extended_image[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
@@ -209,13 +208,13 @@ def test_interpolate_scalar_3d(rng):
 
 
 @set_random_number_generator(7711219)
-def test_interpolate_vector_3d(rng):
+def test_interpolate_vector_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    field = np.empty(target_shape + (3,), dtype=floating)
+    field = np.empty(target_shape + (3,), dtype=np.float32)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (3,))
 
-    extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=floating)
+    extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=np.float32)
     extended_field[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 800
@@ -259,12 +258,12 @@ def test_interpolate_vector_3d(rng):
 
 
 @set_random_number_generator(1271244)
-def test_interpolate_vector_2d(rng):
+def test_interpolate_vector_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    field = np.empty(target_shape + (2,), dtype=floating)
+    field = np.empty(target_shape + (2,), dtype=np.float32)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (2,))
-    extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=floating)
+    extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=np.float32)
     extended_field[1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 200

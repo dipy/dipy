@@ -16,8 +16,6 @@ Read :ref:`faq`
 
 """
 
-import os
-
 import nibabel as nib
 import numpy as np
 
@@ -44,7 +42,7 @@ from dipy.tracking.utils import density_map
 fetch_file_formats()
 bundles_filename, ref_anat_filename = get_file_formats()
 for filename in bundles_filename:
-    print(os.path.basename(filename))
+    print(filename.name)
 reference_anatomy = nib.load(ref_anat_filename)
 
 ###############################################################################
@@ -111,7 +109,7 @@ print(is_header_compatible(reference_anatomy, bundles_filename[0]))
 
 nifti_header = create_nifti_header(affine, dimensions, voxel_sizes)
 nib.save(nib.Nifti1Image(np.zeros(dimensions), affine, nifti_header), "fake.nii.gz")
-nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
+nib.save(reference_anatomy, ref_anat_filename.name)
 
 ###############################################################################
 # Once loaded, no matter the original file format, the stateful tractogram is

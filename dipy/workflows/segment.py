@@ -29,7 +29,7 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
-    @deprecated_params(["autocrop"], since="1.11.0", until="1.13.0")
+    @deprecated_params(["autocrop"], since="1.11", until="1.13")
     def run(
         self,
         input_files,
@@ -108,8 +108,7 @@ class MedianOtsuFlow(Workflow):
         if len(bvalues_files or []) > 0 and io_it:
             if len(bvalues_files) != len(io_it.inputs):
                 logger.error(
-                    "Number of b-values files must match the number of "
-                    "input volumes."
+                    "Number of b-values files must match the number of input volumes."
                 )
                 sys.exit(1)
 
@@ -176,6 +175,7 @@ class RecoBundlesFlow(Workflow):
         r_reduction_thr=12.0,
         r_pruning_thr=6.0,
         no_r_slr=False,
+        num_threads=None,
         out_dir="",
         out_recognized_transf="recognized.trx",
         out_recognized_labels="labels.npy",
@@ -227,6 +227,13 @@ class RecoBundlesFlow(Workflow):
         no_r_slr : bool, optional
             Don't enable Refine local Streamline-based Linear
             Registration.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is ``"symmetric"``.
         out_dir : string or Path, optional
             Output directory.
         out_recognized_transf : string, optional
@@ -316,6 +323,7 @@ class RecoBundlesFlow(Workflow):
                 slr_bounds=bounds,
                 slr_select=slr_select,
                 slr_method="L-BFGS-B",
+                num_threads=num_threads,
             )
 
             if refine:
@@ -351,6 +359,7 @@ class RecoBundlesFlow(Workflow):
                         slr_bounds=affine_bounds,
                         slr_select=slr_select,
                         slr_method="L-BFGS-B",
+                        num_threads=num_threads,
                     )
 
             if len(labels) > 0:
@@ -551,8 +560,7 @@ class ClassifyTissueFlow(Workflow):
                 save_nifti(tissue_out_path, segmentation_final, affine)
                 save_nifti(opve, PVE, affine)
                 class_list.append(["0", "Background"])
-                for i in range(1, nclass + 1):
-                    class_list.append([f"{i}", f"Tissue_{i}"])
+                class_list.extend([f"{i}", f"Tissue_{i}"] for i in range(1, nclass + 1))
                 class_list.append(
                     [
                         "# Due to the nature of the HMRF algorithm",
@@ -622,7 +630,7 @@ class BrainMaskFlow(Workflow):
         numpass=5,
         vol_idx=None,
         dilate=None,
-        finalize_mask=False,
+        finalize_mask=True,
         save_masked=False,
         use_cuda=False,
         out_dir="",
@@ -671,7 +679,7 @@ class BrainMaskFlow(Workflow):
             'median_otsu' method.
         finalize_mask : bool, optional
             Whether to remove potential holes or islands. Useful for solving
-            minor errors. Used only for 'median_otsu' method.
+            minor errors. Used for 'median_otsu' and 'synthseg' methods.
         save_masked : bool, optional
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
@@ -708,8 +716,7 @@ class BrainMaskFlow(Workflow):
         if method == "median_otsu":
             if vol_idx is not None and bvalues_files is not None and io_it:
                 logger.warning(
-                    "'vol_idx' parameter is ignored when 'bvalues_files' is "
-                    "provided."
+                    "'vol_idx' parameter is ignored when 'bvalues_files' is provided."
                 )
 
             if bvalues_files is not None and not isinstance(bvalues_files, list):
@@ -788,7 +795,9 @@ class BrainMaskFlow(Workflow):
                         "be used for 'synthseg' brain masking."
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
-                _, _, mask_volume = synthseg_model.predict(vol, affine)
+                _, _, mask_volume = synthseg_model.predict(
+                    vol, affine, finalize_mask=finalize_mask
+                )
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )

@@ -1,5 +1,3 @@
-target-version = "py310"
-
 line-length = 88
 force-exclude = true
 extend-exclude = [
@@ -14,23 +12,26 @@ extend-exclude = [
 ]
 
 [lint]
-select = [
-  "F",
-  "E",
-  "C",
-  "W",
+extend-select = [
   "B",
+  "C4",
+  "ISC",
+  "FLY",
   "I",
+  "C90",
+  "PERF",
+  "W",
+  "UP",
+  "FURB",
 ]
 ignore = [
   "B905",
   "C901",
-  "E203",
-  "F811"
+  "F811",
+  "FURB171",
 ]
 
 [lint.extend-per-file-ignores]
-"dipy/align/__init__.py" = ["E402"]
 "dipy/reconst/*.py" = ["B026"]
 "dipy/viz/__init__.py" = ["F401"]
 "doc/examples/**" = ["E402"]

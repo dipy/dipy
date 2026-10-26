@@ -1,3 +1,8 @@
+"""Simulation of diffusion MRI data.
+
+Generation of synthetic diffusion-weighted images and signals
+for testing and validation.
+"""
 # init for simulations
 
 from dipy.sims.force import (

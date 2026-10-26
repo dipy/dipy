@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution, least_squares
 
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -139,6 +139,8 @@ def ivim_model_selector(gtab, *, fit_method="trr", **kwargs):
 
     Parameters
     ----------
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
     fit_method : string, optional
         The value fit_method can either be 'trr' or 'varpro'.
         default : trr
@@ -555,7 +557,7 @@ class IvimModelVP(ReconstModel):
         self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
-    def fit(self, data, bounds_de=None, **kwargs):
+    def fit(self, data, *, bounds_de=None, **kwargs):
         r"""Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro) :footcite:p:`Fadnavis2019`.
@@ -581,7 +583,8 @@ class IvimModelVP(ReconstModel):
         b = self.bvals
 
         # Setting up the bounds for differential_evolution
-        bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
+        if bounds_de is None:
+            bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         # Optimizer #1: Differential Evolution
         res_one = differential_evolution(

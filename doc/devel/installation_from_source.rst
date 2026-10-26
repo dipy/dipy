@@ -35,7 +35,7 @@ This command will delete all files not present in your github repository.
 
 Then, complete your installation by using this command::
 
-    pip install -r requirements/build.txt
+    pip install --group build
     pip install --no-build-isolation -e .
 
 This command will do the following :
@@ -53,7 +53,7 @@ Change directory into the *DIPY source root directory*.
 
 First, install some python build packages::
 
-    pip install -r requirements/build.txt
+    pip install --group build
 
 Then, to install for the system::
 
@@ -146,7 +146,7 @@ change directory into the *DIPY source root directory*.
 
 Start to install the build tools::
 
-    pip install -r requirements/build.txt
+    pip install --group build
 
 Then to install into your system::
 
@@ -244,7 +244,7 @@ If you plan to contribute code to DIPY, it's recommended to set up pre-commit
 hooks to automatically check your code style before committing. This helps catch
 issues early and ensures consistency::
 
-    pip install -e .[style]
+    pip install -e . --group style
     pre-commit install
 
 After this, pre-commit will run automatically on every ``git commit``. For more
@@ -272,8 +272,8 @@ To build the documentation in HTML in your computer you will need to do::
 
 You will also need to install the requirements for the documentation::
 
-    pip install -r requirements/doc.txt
-    pip install -r requirements/optional.txt
+    pip install --group doc
+    pip install .[optional]
 
 Then change directory to ``<dipy root>`` and::
 

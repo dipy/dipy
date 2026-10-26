@@ -1,0 +1,676 @@
+import logging
+
+import nibabel as nib
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from dipy.io.image import save_nifti
+from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.io import load_files
+    from dipy.viz.skyline.render.image import Image3D, create_image_visualization
+    from dipy.viz.skyline.render.renderer import (
+        slice_slider_bounds,
+        slice_slider_values_from_state,
+        slice_state_from_slider_values,
+    )
+
+AFFINE = np.eye(4)
+SHAPE = (10, 11, 12)
+
+
+def _volume(shape=SHAPE, seed=0):
+    return np.random.default_rng(seed).random(shape).astype(np.float32)
+
+
+def _image(**kwargs):
+    kwargs.setdefault("affine", AFFINE)
+    return Image3D("vol.nii.gz", _volume(), **kwargs)
+
+
+def _materials(image):
+    return [actor.material for actor in image.actor.children]
+
+
+def _info_line(info, prefix):
+    """The remainder of the single ``info`` line starting with ``prefix``."""
+    return next(
+        line.split(prefix, 1)[1].strip()
+        for line in info.splitlines()
+        if line.startswith(prefix)
+    )
+
+
+def _voxel_sizes(info):
+    return np.fromstring(_info_line(info, "Voxel Sizes:").strip("[]"), sep=" ")
+
+
+def test_create_image_visualization_rejects_invalid_input():
+    with pytest.raises(ValueError, match="Input must be a tuple"):
+        create_image_visualization("not a tuple", 0)
+    with pytest.raises(ValueError, match="Input must be a tuple"):
+        create_image_visualization((_volume(),), 0)
+
+
+def test_create_image_visualization_names_by_index():
+    viz = create_image_visualization((_volume(), AFFINE), 4)
+
+    assert viz.path == "Image_4"
+    assert isinstance(viz, Image3D)
+
+
+def test_create_image_visualization_uses_the_given_filename():
+    viz = create_image_visualization((_volume(), AFFINE, "t1.nii.gz"), 0)
+
+    assert viz.path == "t1.nii.gz"
+    assert viz.viz_type == "image"
+
+
+def test_create_image_visualization_forwards_its_options():
+    viz = create_image_visualization(
+        (_volume(), AFFINE, "t1.nii.gz"),
+        0,
+        interpolation="nearest",
+        opacity=50,
+        value_percentiles=(5, 95),
+        colormap="Viridis",
+    )
+
+    assert viz.interpolation == "nearest"
+    assert viz.opacity == 50
+    assert viz._value_percentiles == (5, 95)
+    assert viz.colormap == "Viridis"
+
+
+def test_image3d_defaults():
+    image = _image()
+
+    assert image.rgb is False
+    assert image._has_directions is False
+    assert image._volume_idx == 0
+    assert image.interpolation == "linear"
+    assert image._slice_visibility == [True, True, True]
+    assert image._synchronize is True
+    assert image.actor is image._slicer
+
+
+def test_image3d_empty_interpolation_falls_back_to_linear():
+    assert _image(interpolation=None).interpolation == "linear"
+
+
+def test_image3d_state_starts_at_the_volume_center():
+    image = _image()
+
+    npt.assert_allclose(image.state, np.mean(image.bounds, axis=0))
+    assert len(image.actor.children) == 3
+
+
+def test_image3d_changing_direction_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+
+    image.update_state(np.asarray([*moved, 3]))
+
+    assert image._volume_idx == 3
+    npt.assert_allclose(image.state, moved)
+
+
+def test_image3d_rebuilding_the_slicer_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+    image.update_state(moved)
+
+    image._volume_idx = 2
+    image._create_slicer_actor()
+
+    npt.assert_allclose(image.state, moved)
+
+
+def test_image3d_synced_views_keep_the_slice_position_on_direction_change():
+    # Wired the way Skyline syncs views: the source pushes its state to the others.
+    data = _volume((6, 7, 8, 5))
+    views = []
+
+    def sync(source, new_state):
+        for view in views:
+            if view is not source:
+                view.update_state(np.asarray(new_state))
+
+    source = Image3D("a.nii.gz", data, affine=AFFINE, sync_callabck=sync)
+    other = Image3D("b.nii.gz", data.copy(), affine=AFFINE, sync_callabck=sync)
+    views += [source, other]
+    moved = np.asarray(source.bounds[0], dtype=float) + 1
+    source.state = moved
+    sync(source, moved)
+
+    # What the Directions slider does on the source view.
+    source._volume_idx = 3
+    sync(source, np.asarray([*source.state, source._volume_idx]))
+    source._create_slicer_actor()
+
+    assert other._volume_idx == 3
+    npt.assert_allclose(source.state, moved)
+    npt.assert_allclose(other.state, moved)
+
+
+def test_image3d_active_volume_is_the_whole_volume_for_3d_data():
+    image = _image()
+
+    assert image.active_volume is image.dwi
+
+
+def test_image3d_active_volume_selects_a_direction_for_4d_data():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+
+    assert image._has_directions is True
+    npt.assert_array_equal(image.active_volume, data[..., 0])
+
+
+def test_image3d_rgb_volume_is_not_directional():
+    data = _volume((6, 7, 8, 3))
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert image.rgb is True
+    assert image._has_directions is False
+    assert image.active_volume is data
+
+
+@pytest.mark.parametrize("n_channels", [2, 5])
+def test_image3d_rgb_logs_error_for_invalid_channel_count(n_channels, caplog):
+    data = _volume((4, 4, 4, n_channels))
+
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
+
+
+@pytest.mark.parametrize("channels", ["RGB", "RGBA"])
+@pytest.mark.parametrize("rgb", [None, False])
+@set_random_number_generator()
+def test_image3d_file_color_ingestion(tmp_path, channels, rgb, rng=None):
+    values = rng.integers(0, 256, size=(2, 3, 4, len(channels)), dtype=np.uint8)
+    raw = np.empty(values.shape[:3], dtype=[(name, "uint8") for name in channels])
+    for index, name in enumerate(channels):
+        raw[name] = values[..., index]
+    affine = np.diag([2.0, 3.0, 4.0, 1.0])
+    affine[:3, 3] = [5, 6, 7]
+    fname = tmp_path / "color.nii.gz"
+    nib.save(nib.Nifti1Image(raw, affine), fname)
+
+    loaded = load_files([str(fname)])
+    img, loaded_affine, _ = loaded["images"][0]
+    image = create_image_visualization((img, None, "color label"), 0, rgb=rgb)
+    npt.assert_array_equal(image.dwi, values)
+    npt.assert_array_equal(image.affine, loaded_affine)
+    assert image.dwi.dtype == np.uint8
+    assert image.rgb is (rgb is None)
+    assert image._has_directions is (rgb is False)
+    info = image._populate_info()
+    assert _info_line(info, "Dimensions:") == str(raw.shape)
+    assert _info_line(info, "Data Type:") == str(raw.dtype)
+    npt.assert_allclose(_voxel_sizes(info), [2, 3, 4])
+    if rgb is False:
+        npt.assert_array_equal(image.active_volume, values[..., 0])
+        assert _info_line(info, "Directions:") == str(len(channels))
+    else:
+        npt.assert_array_equal(image.active_volume, values)
+        assert "Directions:" not in info
+
+
+@pytest.mark.parametrize("n_volumes", [3, 4])
+@set_random_number_generator()
+def test_image3d_file_numeric_channels_are_directional(tmp_path, n_volumes, rng=None):
+    values = rng.integers(0, 256, size=(2, 3, 4, n_volumes), dtype=np.uint8)
+    fname = tmp_path / "numeric.nii.gz"
+    save_nifti(fname, values, AFFINE)
+    image = create_image_visualization(load_files([str(fname)])["images"][0], 0)
+
+    assert image.rgb is False
+    assert image._has_directions is True
+    npt.assert_array_equal(image.active_volume, values[..., 0])
+    image.update_state([*image.state, n_volumes - 1])
+    npt.assert_array_equal(image.active_volume, values[..., -1])
+
+
+def test_image3d_image_affine_override(tmp_path):
+    values = _volume((2, 3, 4))
+    image_affine = np.diag([2.0, 3.0, 4.0, 1.0])
+    fname = tmp_path / "scalar.nii.gz"
+    save_nifti(fname, values, image_affine)
+    img = load_files([str(fname)])["images"][0][0]
+    explicit_affine = np.diag([5.0, 6.0, 7.0, 1.0])
+    image = Image3D("nonexistent display label", img, affine=explicit_affine)
+
+    npt.assert_array_equal(image.affine, explicit_affine)
+    npt.assert_allclose(_voxel_sizes(image._populate_info()), [5, 6, 7])
+    npt.assert_array_equal(image.active_volume, values)
+
+
+def test_image3d_structured_rgb_auto_detected():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is True
+    assert image._has_directions is False
+    assert image.dwi.dtype == np.uint8
+    assert image.dwi.shape == (6, 7, 8, 3)
+    assert image.active_volume is image.dwi
+
+
+def test_image3d_structured_rgba_auto_detected():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgba.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is True
+    assert image.dwi.shape == (6, 7, 8, 4)
+
+
+def test_image3d_structured_rgb_preserves_channel_values():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((2, 2, 2), dtype=dtype)
+    data[0, 0, 0]["R"] = 10
+    data[0, 0, 0]["G"] = 20
+    data[0, 0, 0]["B"] = 30
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    npt.assert_array_equal(image.dwi[0, 0, 0], [10, 20, 30])
+
+
+def test_image3d_explicit_rgb_true_overrides_detection():
+    data = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    image = Image3D("dir.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert image.rgb is True
+    assert image._has_directions is False
+
+
+def test_image3d_rgb_none_plain_uint8_shows_toggle_not_auto_rgb():
+    data = np.zeros((6, 7, 8, 3), dtype=np.uint8)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is False
+    assert image._rgb_capable is True
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_false_suppresses_structured_detection():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=False)
+
+    assert image.rgb is False
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_false_preserves_explicit_rgb_false():
+    """rgb=False must stay locked off; render_widgets gates its toggle on
+    ``_rgb_user is not False``, so this state must never flip back to True.
+    """
+    data = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=False)
+
+    assert image._rgb_user is False
+    assert image._rgb_capable is True
+    assert image.rgb is False
+
+
+def test_image3d_rgb_true_on_3d_scalar_logs_error(caplog):
+    data = _volume((6, 7, 8))
+
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("vol.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
+
+
+def test_image3d_dwi_range_volume_not_rgb_capable():
+    data = np.full((6, 7, 8, 3), 1000, dtype=np.int16)
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is False
+    assert image._rgb_capable is False
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_true_on_incompatible_values_logs_error(caplog):
+    data = np.full((6, 7, 8, 3), 1000, dtype=np.int16)
+
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("dwi.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
+
+
+def test_image3d_value_range_follows_the_percentiles():
+    data = _volume()
+    image = Image3D("vol.nii.gz", data, affine=AFFINE, value_percentiles=(10, 90))
+
+    npt.assert_allclose(
+        image._value_range_from_percentile(data), np.percentile(data, (10, 90))
+    )
+    npt.assert_allclose(image.value_range, np.percentile(data, (10, 90)))
+
+
+def test_image3d_gray_colormap_clears_the_material_map():
+    image = _image(colormap="Gray")
+
+    assert image._is_divergent_colormap() is False
+    assert image._is_distinct_colormap() is False
+    for material in _materials(image):
+        assert material.map is None
+        npt.assert_allclose(material.clim, image.value_range)
+
+
+def test_image3d_named_colormap_sets_a_material_map():
+    image = _image(colormap="Viridis")
+
+    for material in _materials(image):
+        assert material.map is not None
+        npt.assert_allclose(material.clim, image.value_range)
+
+
+def test_image3d_divergent_colormap_is_symmetric_and_nearest():
+    image = _image(colormap="Divergent")
+
+    assert image._is_divergent_colormap() is True
+    assert image.interpolation == "nearest"
+    max_abs = float(np.max(np.abs(image.active_volume)))
+    for material in _materials(image):
+        assert material.map is not None
+        assert material.interpolation == "nearest"
+        npt.assert_allclose(material.clim, (-max_abs, max_abs))
+
+
+def test_image3d_divergent_colormap_handles_an_all_zero_volume():
+    image = Image3D(
+        "zeros.nii.gz",
+        np.zeros(SHAPE, dtype=np.float32),
+        affine=AFFINE,
+        colormap="Divergent",
+    )
+
+    for material in _materials(image):
+        npt.assert_allclose(material.clim, (-1.0, 1.0))
+
+
+def test_image3d_distinct_colormap_is_nearest():
+    image = _image(colormap="Distinct")
+
+    assert image._is_distinct_colormap() is True
+    assert image.interpolation == "nearest"
+    for material in _materials(image):
+        assert material.map is not None
+        assert material.interpolation == "nearest"
+
+
+def test_image3d_switching_colormaps_updates_every_slice():
+    image = _image(colormap="Gray")
+
+    image._apply_colormap("Plasma")
+
+    assert image.colormap == "Plasma"
+    assert all(material.map is not None for material in _materials(image))
+
+    image._apply_colormap("Gray")
+
+    assert all(material.map is None for material in _materials(image))
+
+
+def test_image3d_colormap_options_cover_the_special_cases():
+    image = _image()
+
+    assert "Gray" in image._colormap_options
+    assert "Divergent" in image._colormap_options
+    assert "Distinct" in image._colormap_options
+
+
+def test_image3d_info_lists_dimensions_dtype_and_affine():
+    image = _image()
+
+    info = image._populate_info()
+
+    assert f"Dimensions: {SHAPE}" in info
+    assert "Data Type: float32" in info
+    npt.assert_allclose(_voxel_sizes(info), (1.0, 1.0, 1.0))
+    assert "Voxel Order: RAS" in info
+    assert "Affine:" in info
+    assert "Directions:" not in info
+
+
+def test_image3d_info_reports_directions_for_4d_data():
+    image = Image3D("dwi.nii.gz", _volume((4, 5, 6, 7)), affine=AFFINE)
+
+    assert "Directions: 7" in image._populate_info()
+
+
+def test_image3d_info_reports_the_las_voxel_order():
+    affine = np.diag([-2.0, 2.0, 2.0, 1.0])
+    image = Image3D("vol.nii.gz", _volume(), affine=affine)
+
+    info = image._populate_info()
+
+    assert "Voxel Order: LAS" in info
+    npt.assert_allclose(_voxel_sizes(info), (2.0, 2.0, 2.0))
+
+
+def test_image3d_info_without_an_affine():
+    image = Image3D("vol.nii.gz", _volume(), affine=None)
+
+    info = image._populate_info()
+
+    assert "Affine:" not in info
+    assert "Voxel Order:" not in info
+
+
+def test_image3d_info_reports_orientation_for_a_permuted_affine():
+    """A permuted (non axis-aligned-sign) affine must resolve through
+    ``nib.aff2axcodes`` rather than the broken ``affine[0, 0] < 0`` heuristic,
+    which would misreport this affine as ``RAS``.
+    """
+    affine = np.eye(4)
+    affine[:3, :3] = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+    image = Image3D("vol.nii.gz", _volume(), affine=affine)
+
+    assert "Voxel Order: SRA" in image._populate_info()
+
+
+def test_image3d_update_state_moves_the_slices():
+    image = _image()
+    target = image.state + 1.0
+
+    image.update_state(target)
+
+    npt.assert_allclose(image.state, target[:3])
+
+
+def test_image3d_update_state_is_ignored_when_sync_is_off():
+    image = _image()
+    before = np.array(image.state, dtype=float).copy()
+    image._synchronize = False
+
+    image.update_state(before + 5.0)
+
+    npt.assert_allclose(image.state, before)
+
+
+def test_image3d_update_state_switches_the_active_direction():
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+    state = np.append(np.array(image.state, dtype=float), 3.0)
+
+    image.update_state(state)
+
+    assert image._volume_idx == 3
+    npt.assert_array_equal(image.active_volume, image.dwi[..., 3])
+
+
+def test_image3d_update_state_keeps_the_direction_for_a_three_value_state():
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+
+    image.update_state(np.array(image.state, dtype=float))
+
+    assert image._volume_idx == 0
+
+
+def test_image3d_update_state_ignores_an_out_of_range_direction():
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 4)), affine=AFFINE)
+    state = np.append(np.array(image.state, dtype=float), 9.0)
+
+    image.update_state(state)
+
+    assert image._volume_idx == 0
+
+
+def test_image3d_opacity_below_full_enables_blending():
+    image = _image()
+
+    image._set_opacity(40)
+
+    for material in _materials(image):
+        assert material.depth_write is False
+        assert material.alpha_mode == "blend"
+
+
+def test_image3d_full_opacity_restores_bayer_dithering():
+    image = _image()
+    image._set_opacity(40)
+
+    image._set_opacity(100)
+
+    for material in _materials(image):
+        assert material.depth_write is True
+        assert material.alpha_mode == "bayer"
+
+
+@pytest.mark.parametrize("synchronize", [False, True])
+@pytest.mark.parametrize("group_visible", [False, True])
+def test_image3d_set_slice_visibility_preserves_state(synchronize, group_visible):
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+    image.update_state([1, 2, 3, 2])
+    image._synchronize = synchronize
+    image._visible = False
+    image.actor.visible = group_visible
+    before = np.asarray(image.state).copy()
+    planes = [tuple(actor.material.plane) for actor in image.actor.children]
+    visibility = [True, False, True]
+
+    image.set_slice_visibility(visibility)
+    visibility[0] = False
+
+    assert image._slice_visibility == [True, False, True]
+    assert [actor.visible for actor in image.actor.children] == [True, False, True]
+    assert [tuple(actor.material.plane) for actor in image.actor.children] == planes
+    npt.assert_array_equal(image.state, before)
+    assert image._volume_idx == 2
+    assert image._visible is False
+    assert image.actor.visible is group_visible
+
+
+def test_image3d_queued_visibility_survives_direction_rebuild():
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+    original_actor = image.actor
+    deferred = []
+    image._scene_op_callback = lambda func, *args, **kwargs: deferred.append(
+        (func, args, kwargs)
+    )
+    visibility = [False, True, False]
+
+    image.set_slice_visibility(visibility)
+    visibility[:] = [True, True, True]
+    image.update_state(np.array([1, 2, 3, 3]))
+
+    assert image._slice_visibility == [False, True, False]
+    assert [actor.visible for actor in original_actor.children] == [True, True, True]
+    for func, args, kwargs in deferred:
+        func(*args, **kwargs)
+
+    assert image.actor is not original_actor
+    assert [actor.visible for actor in image.actor.children] == [False, True, False]
+    assert image._volume_idx == 3
+    npt.assert_array_equal(image.state, [1, 2, 3])
+    npt.assert_allclose(
+        [actor.material.plane[3] for actor in image.actor.children],
+        np.array([1, 2, 3]) + 1e-3,
+    )
+
+
+@pytest.mark.parametrize("rgb", [False, True])
+def test_image3d_rgb_rebuild_preserves_slice_visibility(rgb):
+    image = Image3D("rgb.nii.gz", _volume((6, 7, 8, 3)), affine=AFFINE, rgb=rgb)
+    image.update_state(np.array([1, 2, 3]))
+    image.set_slice_visibility([False, True, False])
+    original_actor = image.actor
+
+    image.rgb = not rgb
+    image._has_directions = not image.rgb
+    image._create_slicer_actor()
+
+    assert image.actor is not original_actor
+    assert image.rgb is (not rgb)
+    assert image._slice_visibility == [False, True, False]
+    assert [actor.visible for actor in image.actor.children] == [False, True, False]
+    npt.assert_array_equal(image.state, [1, 2, 3])
+    npt.assert_allclose(
+        [actor.material.plane[3] for actor in image.actor.children],
+        np.array([1, 2, 3]) + 1e-3,
+    )
+
+
+def test_image3d_set_clim_updates_every_slice():
+    image = _image()
+
+    image._set_clim((0.25, 0.75))
+
+    for material in _materials(image):
+        npt.assert_allclose(material.clim, (0.25, 0.75))
+
+
+def test_image3d_set_interpolation_updates_every_slice():
+    image = _image()
+
+    image._set_interpolation("nearest")
+
+    assert image.interpolation == "nearest"
+    for material in _materials(image):
+        assert material.interpolation == "nearest"
+
+
+def test_image3d_slice_slider_bounds_use_affine_scaled_shape():
+    image = Image3D("vol.nii.gz", _volume((10, 20, 30)), affine=np.diag([2, 1, 3, 1]))
+
+    bounds = slice_slider_bounds(image.dwi.shape[:3], affine=image.affine)
+
+    assert bounds == ((0, 20), (0, 20), (0, 90))
+
+
+def test_image3d_slice_slider_value_maps_to_world_state():
+    affine = np.array(
+        [
+            [2.0, 0.0, 0.0, 10.0],
+            [0.0, 0.5, 0.0, 20.0],
+            [0.0, 0.0, 3.0, 30.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    image = Image3D("vol.nii.gz", _volume(), affine=affine)
+    slider_state = np.array([8.0, 4.0, 15.0])
+
+    image.state = slice_state_from_slider_values(slider_state, affine=image.affine)
+    displayed_state = slice_slider_values_from_state(image.state, affine=image.affine)
+
+    npt.assert_allclose(image.state, (18.0, 22.0, 45.0))
+    npt.assert_allclose(displayed_state, slider_state)

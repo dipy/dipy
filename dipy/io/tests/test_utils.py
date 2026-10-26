@@ -17,18 +17,18 @@ from dipy.io.utils import (
     decfa,
     decfa_to_float,
     get_reference_info,
+    has_rgb_dtype,
     is_header_compatible,
     is_reference_info_valid,
+    is_rgb_compatible_data,
     read_img_arr_or_path,
     split_filename_extension,
+    unpack_rgb_array,
 )
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
-
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 
@@ -49,7 +49,7 @@ def teardown_module():
     FILEPATH_DIX = (None,)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_equivalence_lpsmm_sft_sfs():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.vtk"],
@@ -74,7 +74,8 @@ def test_equivalence_lpsmm_sft_sfs():
     assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-def test_decfa():
+@set_random_number_generator()
+def test_decfa(rng=None):
     data_orig = np.zeros((4, 4, 4, 3))
     data_orig[0, 0, 0] = np.array([1, 0, 0])
     img_orig = nib.Nifti1Image(data_orig, np.eye(4))
@@ -103,6 +104,28 @@ def test_decfa():
     data_rt = np.asanyarray(round_trip.dataobj)
     assert data_rt.shape == (4, 4, 4, 3)
     assert np.all(data_rt[0, 0, 0] == np.array([25, 0, 0]))
+
+    data_large = rng.random((10, 10, 10, 3))
+    img_large = nib.Nifti1Image(data_large, np.eye(4))
+    img_rgb = decfa(img_large, scale=True)
+    out_rgb = np.asanyarray(img_rgb.dataobj)
+    unpacked = unpack_rgb_array(out_rgb)
+    expected = (data_large * 255).astype("uint8")
+    assert_array_equal(unpacked, expected)
+
+    rt = decfa_to_float(img_rgb)
+    rt_data = np.asanyarray(rt.dataobj)
+    assert_array_equal(rt_data, expected)
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.int16, np.int32])
+def test_decfa_integer_scaling_preserves_channels(dtype):
+    data = np.array([[[[10, 200, 255], [0, 1, 128]]]], dtype=dtype)
+    img = nib.Nifti1Image(data, np.eye(4))
+
+    converted = decfa(img, scale=True)
+
+    assert_array_equal(unpack_rgb_array(np.asanyarray(converted.dataobj)), data)
 
 
 def is_affine_valid(affine):
@@ -240,7 +263,7 @@ def test_all_zeros_affine():
 
 
 @set_random_number_generator()
-def test_read_img_arr_or_path(rng):
+def test_read_img_arr_or_path(rng=None):
     data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
     aff[:3, :] = rng.standard_normal((3, 4))
@@ -295,3 +318,68 @@ def test_split_filename_extension(filename, expected_name, expected_extension):
 def test_split_filename_extension_warning(caplog, filename_to_test):
     split_filename_extension(filename_to_test)
     assert "Filename contains more than two instances" in caplog.text
+
+
+def test_has_rgb_dtype():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgb_dtype))
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgba_dtype))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=other_struct))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=np.float32))
+
+
+def test_is_rgb_compatible_data():
+    # Shape requirements: ndim == 4, last dim 3 or 4
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8, 5), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((0, 4, 4, 3), dtype=np.int16))
+    assert not is_rgb_compatible_data(np.zeros((2, 3, 4, 5, 3), dtype=np.uint8))
+
+    # uint8 with valid shape
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 3), dtype=np.uint8))
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 4), dtype=np.uint8))
+
+    # Integer in [0, 255]
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 200, dtype=np.int16))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 1000, dtype=np.int16))
+
+    # Float in [0, 1] with no NaN
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 0.5, dtype=np.float32))
+    nan_arr = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    nan_arr[0, 0, 0, 0] = np.nan
+    assert not is_rgb_compatible_data(nan_arr)
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), -0.5, dtype=np.float32))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 2.0, dtype=np.float32))
+
+    # Structured dtype arrays are not checked here
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=rgb_dtype))
+
+
+def test_unpack_rgb_array():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    # RGB structured (3,3,3) → (3,3,3,3) uint8
+    rgb_arr = np.zeros((3, 3, 3), dtype=rgb_dtype)
+    out = unpack_rgb_array(rgb_arr)
+    assert out.shape == (3, 3, 3, 3)
+    assert out.dtype == np.dtype("u1")
+
+    # RGBA structured (3,3,3) → (3,3,3,4) uint8
+    rgba_arr = np.zeros((3, 3, 3), dtype=rgba_dtype)
+    out = unpack_rgb_array(rgba_arr)
+    assert out.shape == (3, 3, 3, 4)
+    assert out.dtype == np.dtype("u1")
+
+    # Non-RGB structured → same object
+    other_arr = np.zeros((3,), dtype=other_struct)
+    assert unpack_rgb_array(other_arr) is other_arr
+
+    # Plain float → same object
+    plain = np.zeros((3, 3, 3), dtype=np.float32)
+    assert unpack_rgb_array(plain) is plain

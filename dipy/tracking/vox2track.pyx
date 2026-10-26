@@ -71,7 +71,7 @@ def _voxel2streamline(sl,
                 v2fn[s_idx][voxel_id].append(node_idx)
             else:
                 v2fn[s_idx][voxel_id] = [node_idx]
-    return v2f ,v2fn
+    return v2f, v2fn
 
 
 def streamline_mapping(streamlines, affine=None,
@@ -172,16 +172,16 @@ cdef inline void c_get_closest_edge(cnp.double_t* p,
                                     cnp.double_t* direction,
                                     cnp.double_t* edge,
                                     double eps=1.) noexcept nogil:
-     edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
-     edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
-     edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
+    edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
+    edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
+    edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 def _streamlines_in_mask(list streamlines,
-                         cnp.uint8_t[:,:,:] mask,
+                         cnp.uint8_t[:, :, :] mask,
                          lin_T, offset):
     """Filters streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm for compressed streamlines.
@@ -208,7 +208,7 @@ def _streamlines_in_mask(list streamlines,
         0 if passing through mask, 1 otherwise
         (2 for single-point streamline)
     """
-    cdef cnp.double_t[:,:] voxel_indices
+    cdef cnp.double_t[:, :] voxel_indices
 
     cdef cnp.npy_intp nb_streamlines = len(streamlines)
     cdef cnp.uint8_t[:] in_mask = np.zeros(nb_streamlines, dtype=np.uint8)
@@ -227,8 +227,8 @@ def _streamlines_in_mask(list streamlines,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef cnp.npy_intp _streamline_in_mask(
-        cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) noexcept nogil:
+        cnp.double_t[:, :] streamline,
+        cnp.uint8_t[:, :, :] mask) noexcept nogil:
     """
     Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.
@@ -283,9 +283,12 @@ cdef cnp.npy_intp _streamline_in_mask(
             for dim_idx in range(3):
                 if direction[dim_idx] != 0:
                     length_ratio = fmin(
-                        fabs((current_edge[dim_idx] - current_pt[dim_idx])
-                            / direction[dim_idx]),
-                        length_ratio)
+                        fabs(
+                            (current_edge[dim_idx] - current_pt[dim_idx])
+                            / direction[dim_idx]
+                        ),
+                        length_ratio,
+                    )
 
             # Check if last point is already on an edge
             remaining_distance -= length_ratio * direction_norm
@@ -298,7 +301,11 @@ cdef cnp.npy_intp _streamline_in_mask(
             x = <cnp.npy_intp>floor(current_pt[0] + half_ratio * direction[0])
             y = <cnp.npy_intp>floor(current_pt[1] + half_ratio * direction[1])
             z = <cnp.npy_intp>floor(current_pt[2] + half_ratio * direction[2])
-            if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+            if (
+                0 <= x < mask.shape[0]
+                and 0 <= y < mask.shape[1]
+                and 0 <= z < mask.shape[2]
+            ):
                 if mask[x, y, z]:
                     return 1
 
@@ -326,7 +333,7 @@ cdef cnp.npy_intp _streamline_in_mask(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
+def track_counts(tracks, vol_dims, vox_sizes=(1, 1, 1), return_elements=True):
     """ Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm
@@ -401,7 +408,6 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     cdef cnp.ndarray[cnp.npy_intp, ndim=1] tcs = \
         np.zeros((n_voxels,), dtype=np.intp)
     # pointer to output track indices
-    cdef cnp.npy_intp i
     if return_elements:
         el_inds = {}
     # cython numpy pointer to individual track array
@@ -437,7 +443,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
                 if v < 0:
                     v = 0
                 elif v >= vd[cno]:
-                    v = vd[cno]-1 # last index for this dimension
+                    v = vd[cno]-1  # last index for this dimension
                 out_pt[cno] = v
             # calculate element number in flattened tcs array
             el_no = out_pt[0] * yz + out_pt[1] * vd[2] + out_pt[2]

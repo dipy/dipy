@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 
 import numpy as np
@@ -14,6 +14,7 @@ cdef extern from "dpy_math.h" nogil:
 
 cdef inline int ifloor(double x) nogil:
     return int(floor(x))
+
 
 def quantize_positive_2d(floating[:, :] v, int num_levels):
     """Quantize a 2D image to num_levels quantization levels.
@@ -54,7 +55,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         cnp.npy_intp nrows = v.shape[0]
         cnp.npy_intp ncols = v.shape[1]
         cnp.npy_intp npix = nrows * ncols
-        cnp.npy_intp i, j, l
+        cnp.npy_intp i, j, bin_idx
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -62,13 +63,13 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         cnp.npy_int32[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
 
-    #Quantizing at zero levels is undefined
-    #Quantizing at one level is not supported because we want to make sure the
-    #maximum level in the quantization is never greater than num_levels-1
+    # Quantizing at zero levels is undefined
+    # Quantizing at one level is not supported because we want to make sure the
+    # maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
-        raise ValueError('Quantization levels must be at least 2')
+        raise ValueError("Quantization levels must be at least 2")
     if num_levels >= 2**31:
-        raise ValueError('Quantization levels must be < 2**31')
+        raise ValueError("Quantization levels must be < 2**31")
 
     num_levels -= 1  # zero is one of the levels
 
@@ -106,9 +107,9 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         for i in range(nrows):
             for j in range(ncols):
                 if v[i, j] > 0:
-                    l = ifloor((v[i, j] - min_val) / delta)
-                    out[i, j] = l + 1
-                    hist[l + 1] += 1
+                    bin_idx = ifloor((v[i, j] - min_val) / delta)
+                    out[i, j] = bin_idx + 1
+                    hist[bin_idx + 1] += 1
                 else:
                     out[i, j] = 0
                     hist[0] += 1
@@ -156,7 +157,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         cnp.npy_intp nrows = v.shape[1]
         cnp.npy_intp ncols = v.shape[2]
         cnp.npy_intp nvox = nrows * ncols * nslices
-        cnp.npy_intp i, j, k, l
+        cnp.npy_intp i, j, k, bin_idx
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -165,11 +166,11 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
                                     dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
 
-    #Quantizing at zero levels is undefined
-    #Quantizing at one level is not supported because we want to make sure the
-    #maximum level in the quantization is never greater than num_levels-1
+    # Quantizing at zero levels is undefined
+    # Quantizing at one level is not supported because we want to make sure the
+    # maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
-        raise ValueError('Quantization levels must be at least 2')
+        raise ValueError("Quantization levels must be at least 2")
 
     num_levels -= 1  # zero is one of the levels
 
@@ -209,17 +210,18 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
             for i in range(nrows):
                 for j in range(ncols):
                     if v[k, i, j] > 0:
-                        l = ifloor((v[k, i, j] - min_val) / delta)
-                        out[k, i, j] = l + 1
-                        hist[l + 1] += 1
+                        bin_idx = ifloor((v[k, i, j] - min_val) / delta)
+                        out[k, i, j] = bin_idx + 1
+                        hist[bin_idx + 1] += 1
                     else:
                         out[k, i, j] = 0
                         hist[0] += 1
     return np.asarray(out), np.asarray(levels), np.asarray(hist)
 
 
-def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
-                                     int num_labels, int[:, :] labels):
+def compute_masked_class_stats_2d(
+    int[:, :] mask, floating[:, :] v, int num_labels, int[:, :] labels
+):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for
@@ -285,8 +287,9 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
     return np.asarray(means), np.asarray(variances)
 
 
-def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
-                                      int num_labels, int[:, :, :] labels):
+def compute_masked_class_stats_3d(
+    int[:, :, :] mask, floating[:, :, :] v, int num_labels, int[:, :, :] labels
+):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for
@@ -353,14 +356,15 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                 variances[i] = INF64
     return np.asarray(means), np.asarray(variances)
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_em_demons_step_2d(floating[:,:] delta_field,
-                              floating[:,:] sigma_sq_field,
-                              floating[:,:,:] gradient_moving,
+def compute_em_demons_step_2d(floating[:, :] delta_field,
+                              floating[:, :] sigma_sq_field,
+                              floating[:, :, :] gradient_moving,
                               double sigma_sq_x,
-                              floating[:,:,:] out):
+                              floating[:, :, :] out):
     r"""Demons step for EM metric in 2D
 
     Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
@@ -420,8 +424,8 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                sigma_sq_i = sigma_sq_field[i,j]
-                delta = delta_field[i,j]
+                sigma_sq_i = sigma_sq_field[i, j]
+                delta = delta_field[i, j]
                 energy += (delta**2)
                 if dpy_isinf(sigma_sq_i) != 0:
                     out[i, j, 0], out[i, j, 1] = 0, 0
@@ -443,14 +447,15 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                         out[i, j, 1] = prod * gradient_moving[i, j, 1] / den
     return np.asarray(out), energy
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_em_demons_step_3d(floating[:,:,:] delta_field,
-                              floating[:,:,:] sigma_sq_field,
-                              floating[:,:,:,:] gradient_moving,
+def compute_em_demons_step_3d(floating[:, :, :] delta_field,
+                              floating[:, :, :] sigma_sq_field,
+                              floating[:, :, :, :] gradient_moving,
                               double sigma_sq_x,
-                              floating[:,:,:,:] out):
+                              floating[:, :, :, :] out):
     r"""Demons step for EM metric in 3D
 
     Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
@@ -512,8 +517,8 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    sigma_sq_i = sigma_sq_field[k,i,j]
-                    delta = delta_field[k,i,j]
+                    sigma_sq_i = sigma_sq_field[k, i, j]
+                    delta = delta_field[k, i, j]
                     energy += (delta**2)
                     if dpy_isinf(sigma_sq_i) != 0:
                         out[k, i, j, 0] = 0
@@ -529,18 +534,24 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                                 out[k, i, j, 1] = 0
                                 out[k, i, j, 2] = 0
                             else:
-                                out[k, i, j, 0] = (delta *
-                                    gradient_moving[k, i, j, 0] / nrm2)
-                                out[k, i, j, 1] = (delta *
-                                    gradient_moving[k, i, j, 1] / nrm2)
-                                out[k, i, j, 2] = (delta *
-                                    gradient_moving[k, i, j, 2] / nrm2)
+                                out[k, i, j, 0] = (
+                                    delta * gradient_moving[k, i, j, 0] / nrm2
+                                )
+                                out[k, i, j, 1] = (
+                                    delta * gradient_moving[k, i, j, 1] / nrm2
+                                )
+                                out[k, i, j, 2] = (
+                                    delta * gradient_moving[k, i, j, 2] / nrm2
+                                )
                         else:
                             den = (sigma_sq_x * nrm2 + sigma_sq_i)
-                            out[k, i, j, 0] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 0] / den)
-                            out[k, i, j, 1] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 1] / den)
-                            out[k, i, j, 2] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 2] / den)
+                            out[k, i, j, 0] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 0] / den
+                            )
+                            out[k, i, j, 1] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 1] / den
+                            )
+                            out[k, i, j, 2] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 2] / den
+                            )
     return np.asarray(out), energy

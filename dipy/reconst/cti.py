@@ -13,10 +13,11 @@ from dipy.reconst.dti import (
     decompose_tensor,
     from_lower_triangular,
     lower_triangular,
+    nlls_fit_tensor,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import cti_design_matrix as design_matrix
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def from_qte_to_cti(C):
@@ -200,6 +201,7 @@ def cti_prediction(cti_params, gtab1, gtab2, *, S0=1):
 class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab1, gtab2, *args, fit_method="WLS", **kwargs):
         """Correlation Tensor Imaging Model.
 
@@ -269,15 +271,25 @@ class CorrelationTensorModel(ReconstModel):
             A boolean array of the same shape as data.shape[-1]. It
             designates which coordinates in the data should be analyzed.
         """
+
         data_thres = np.maximum(data, self.min_signal)
-        params = self.fit_method(
-            self.design_matrix,
-            data_thres,
-            self.inverse_design_matrix,
-            weights=self.weights,
-            *self.args,
-            **self.kwargs,
-        )
+
+        if self.fit_method is nlls_fit_tensor:
+            params, _ = self.fit_method(
+                self.design_matrix,
+                data_thres,
+                *self.args,
+                **self.kwargs,
+            )
+        else:
+            params = self.fit_method(
+                self.design_matrix,
+                data_thres,
+                self.inverse_design_matrix,
+                weights=self.weights,
+                *self.args,
+                **self.kwargs,
+            )
 
         return CorrelationTensorFit(self, params)
 
@@ -502,7 +514,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                     + D[..., 2, 2] ** 2
                     + 2 * D[..., 0, 1] ** 2
                     + 2 * D[..., 0, 2] ** 2
-                    + D[..., 1, 2] ** 2
+                    + 2 * D[..., 1, 2] ** 2
                 )
                 / (mean_D**2)
             ) - (6 / 5)
@@ -600,4 +612,6 @@ common_fit_methods = {
     "ULLS": ls_fit_cti,
     "WLLS": ls_fit_cti,
     "OLLS": ls_fit_cti,
+    "NLS": nlls_fit_tensor,
+    "NLLS": nlls_fit_tensor,
 }

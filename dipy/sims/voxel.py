@@ -4,7 +4,7 @@ from scipy.special import jn
 
 from dipy.core.geometry import sphere2cart, vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
@@ -338,7 +338,7 @@ def cylinders_and_ball_soderman(
 
 
 @warning_for_keywords()
-def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
+def single_tensor(gtab, *, S0=1, evals=None, evecs=None, snr=None, rng=None):
     """Simulate diffusion-weighted signals with a single tensor.
 
     See :footcite:p:`Stejskal1965`, :footcite:p:`Descoteaux2008b`.

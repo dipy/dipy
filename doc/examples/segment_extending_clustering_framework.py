@@ -87,7 +87,7 @@ class ArcLengthFeature(Feature):
 
     def __init__(self):
         # The arc length stays the same even if the streamline is reversed.
-        super(ArcLengthFeature, self).__init__(is_order_invariant=True)
+        super().__init__(is_order_invariant=True)
 
     def infer_shape(self, streamline):
         """Infers the shape of features extracted from `streamline`."""
@@ -171,7 +171,7 @@ class CosineMetric(Metric):
     def __init__(self):
         # For simplicity, features will be the vector between endpoints of a
         # streamline.
-        super(CosineMetric, self).__init__(feature=VectorOfEndpointsFeature())
+        super().__init__(feature=VectorOfEndpointsFeature())
 
     def are_compatible(self, shape1, shape2):
         """Check if two features are vectors of same dimension.

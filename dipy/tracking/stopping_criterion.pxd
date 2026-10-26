@@ -13,7 +13,9 @@ cpdef enum StreamlineStatus:
 cdef class StoppingCriterion:
 
     cpdef StreamlineStatus check_point(self, double[::1] point)
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=*) noexcept nogil
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=*
+    ) noexcept nogil
 
 
 cdef class BinaryStoppingCriterion(StoppingCriterion):

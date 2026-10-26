@@ -1,9 +1,16 @@
 import numpy as np
 
+from dipy.utils.deprecator import deprecate_with_version
 from dipy.viz.horizon.tab import HorizonTab, build_slider
 
 
 class ClustersTab(HorizonTab):
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, clusters_visualizer, threshold):
         """Initialize Interaction tab for cluster visualization.
 
@@ -134,6 +141,11 @@ class ClustersTab(HorizonTab):
             else:
                 cluster["actor"].SetVisibility(True)
 
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab.build is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Position the elements in the tab.
 
@@ -157,6 +169,11 @@ class ClustersTab(HorizonTab):
         self._threshold_slider.position = (x_pos, 0.38)
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab.name is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Title of the tab.
 
@@ -167,6 +184,11 @@ class ClustersTab(HorizonTab):
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab.cluster_actors is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def cluster_actors(self):
         """Cluster actors of the tractograms.
 
@@ -178,6 +200,11 @@ class ClustersTab(HorizonTab):
         return self._visualizer.cluster_actors
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab.centroid_actors is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def centroid_actors(self):
         """Centroid actors of the tractograms.
 
@@ -189,6 +216,11 @@ class ClustersTab(HorizonTab):
         return self._visualizer.centroid_actors
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ClustersTab.actors is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """All the actors in the visualizer.
 
@@ -196,9 +228,8 @@ class ClustersTab(HorizonTab):
         -------
         list
         """
-        actors = []
-        for cluster_actor in self.cluster_actors.values():
-            actors.append(cluster_actor["actor"])
-        for centroid_actor in self.centroid_actors.values():
-            actors.append(centroid_actor["actor"])
-        return actors
+        return [
+            cluster_actor["actor"] for cluster_actor in self.cluster_actors.values()
+        ] + [
+            centroid_actor["actor"] for centroid_actor in self.centroid_actors.values()
+        ]

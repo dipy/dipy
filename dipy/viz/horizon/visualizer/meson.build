@@ -1,11 +1,10 @@
 python_sources = [
   '__init__.py',
   'cluster.py',
+  'peak.py',
   'slice.py',
   'surface.py',
-  'peak.py',
-  ]
-
+]
 
 py3.install_sources(
   python_sources,

@@ -30,7 +30,7 @@ cdef void copy_point(
         double * a,
         double * b) noexcept nogil
 
-cdef void scalar_muliplication_point(
+cdef void scalar_multiplication_point(
         double * a,
         double scalar) noexcept nogil
 
