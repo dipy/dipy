@@ -6,6 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.align.disco import HAVE_SYNB0
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
@@ -25,6 +26,7 @@ from dipy.workflows.align import (
     ResliceFlow,
     SlrWithQbxFlow,
     SynRegistrationFlow,
+    Synb0SynFlow,
 )
 
 _, have_pd, _ = optional_package("pandas")
@@ -949,6 +951,32 @@ def test_syn_registration_flow(tmp_path):
     npt.assert_equal(Path(warped_path).is_file(), True)
     warped_map_path = syn_flow.last_generated_outputs["out_field"]
     npt.assert_equal(Path(warped_map_path).is_file(), True)
+
+
+@pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
+def test_synb0_syn_flow(tmp_path):
+    rng = np.random.default_rng(0)
+    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    dwi = (rng.random((40, 40, 40, 2)) * 1000).astype(np.float32)
+    t1 = (rng.random((40, 40, 40)) * 150).astype(np.float32)
+    save_nifti(tmp_path / "dwi.nii.gz", dwi, affine)
+    save_nifti(tmp_path / "t1.nii.gz", t1, affine)
+
+    flow = Synb0SynFlow()
+    flow._force_overwrite = True
+    flow.run(
+        str(tmp_path / "dwi.nii.gz"),
+        str(tmp_path / "t1.nii.gz"),
+        pe_axis=1,
+        out_dir=tmp_path,
+    )
+    corrected, corrected_affine = load_nifti(
+        flow.last_generated_outputs["out_corrected"]
+    )
+    field = load_nifti_data(flow.last_generated_outputs["out_field"])
+    npt.assert_equal(corrected.shape, dwi.shape)
+    npt.assert_array_almost_equal(corrected_affine, affine)
+    npt.assert_equal(field.shape, dwi.shape[:3])
 
 
 @pytest.mark.skipif(not have_pd, reason="Requires pandas")
