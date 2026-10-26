@@ -13,12 +13,12 @@ from dipy.viz.skyline.UI.elements import render_section_header
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0 or higher."
-    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+    "Skyline requires Fury version 2.1.0 or higher."
+    " Please upgrade Fury by `pip install -U fury` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0",
+    min_version="2.1.0",
     trip_msg=fury_trip_msg,
 )
 
@@ -403,7 +403,7 @@ def create_window(
         - "standalone": a standalone window with full interactivity.
         - "gui": a Qt-based GUI window.
         - "jupyter": an inline Jupyter notebook visualizer.
-        - "stealth": an offscreen visualizer without GUI or corner axes gizmo.
+        - "stealth": an offscreen visualizer without GUI.
     size : tuple of int, optional
         Window size in pixels as ``(width, height)``.
     screen_config : list, optional
@@ -459,8 +459,6 @@ def create_window(
                 glfw.set_window_icon(show_m.window._window, 1, [(img)])
                 glfw.poll_events()
                 img.close()
-        if hasattr(show_m, "show_axes_gizmo"):
-            show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
         logger.info(
             "Created visualizer currently assumes Neurological convention for axes."
         )

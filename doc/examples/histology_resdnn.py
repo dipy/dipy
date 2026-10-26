@@ -18,11 +18,10 @@ import numpy as np
 import scipy.ndimage as ndi
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, get_sphere
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.histo_resdnn import HistoResDNN
-from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.segment.mask import median_otsu
 from dipy.viz import actor, window
 
@@ -66,63 +65,39 @@ predicted_sh = resdnn_model.predict(data, gtab, mask=mask)
 save_nifti("predicted_sh.nii.gz", predicted_sh, affine)
 
 ###############################################################################
-# Preparing the scene using FURY. The ODF slicer and the background image are
-# added as actors and a mid-coronal slice is selected.
+# Preparing the scene using FURY. The mid-coronal slice is cropped around the
+# corpus callosum, so that the fODF should be aligned with its curvature and a
+# single-fiber population should be visible. The coronal slice lies in the
+# x-z plane, so we rotate it about the x axis into the x-y plane faced by the
+# default camera. The background image is transposed accordingly.
 
-interactive = False
-sphere = get_sphere(name="repulsion724")
-B, invB = sh_to_sf_matrix(
-    sphere, sh_order_max=8, basis_type=resdnn_model.basis_type, smooth=0.0006
+slice_index = mask.shape[1] // 2
+roi = (slice(21, 62), slice(slice_index, slice_index + 1), slice(38, 68))
+
+coronal_to_xy = np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, -1, 0, 0],
+        [0, 0, 0, 1],
+    ]
 )
+
 fod_spheres = actor.odf_slicer(
-    predicted_sh, sphere=sphere, scale=0.6, norm=True, mask=mask, B_matrix=B
+    sh_coeffs=predicted_sh[roi],
+    basis_type=resdnn_model.basis_type,
+    mask=mask[roi],
+    affine=coronal_to_xy,
+    scale=0.6,
+    visibility=(False, False, True),
 )
 
-mean_sh = np.mean(predicted_sh, axis=-1)
-background_img = actor.slicer(mean_sh, opacity=0.5, interpolation="nearest")
-
-# Select the mid coronal slice for slicer
-ori_shape = mask.shape[0:3]
-slice_index = ori_shape[1] // 2
-fod_spheres.display_extent(0, ori_shape[0], slice_index, slice_index, 0, ori_shape[2])
-background_img.display_extent(
-    0, ori_shape[0], slice_index, slice_index, 0, ori_shape[2]
+mean_sh = np.mean(predicted_sh[roi], axis=-1).swapaxes(1, 2)
+background_img = actor.data_slicer(
+    mean_sh, opacity=0.5, interpolation="nearest", visibility=(False, False, True)
 )
 
-scene = window.Scene()
-scene.add(fod_spheres)
-scene.add(background_img)
-
-###############################################################################
-# Adjusting the camera for a nice zoom-in of the corpus callosum (coronal) to
-# screenshot the resulting prediction. FODF should be aligned with the
-# curvature of the corpus callosum and a single-fiber population should be
-# visible.
-
-camera = {
-    "zoom_factor": 0.85,
-    "view_position": np.array(
-        [(ori_shape[0] - 1) / 2.0, max(ori_shape), (ori_shape[2] - 1) / 1.5]
-    ),
-    "view_center": np.array(
-        [(ori_shape[0] - 1) / 2.0, slice_index, (ori_shape[2] - 1) / 1.5]
-    ),
-    "up_vector": np.array([0.0, 0.0, 1.0]),
-}
-
-scene.set_camera(
-    position=camera["view_position"],
-    focal_point=camera["view_center"],
-    view_up=camera["up_vector"],
-)
-scene.zoom(camera["zoom_factor"])
-
-if interactive:
-    window.show(scene, reset_camera=False)
-
-window.record(
-    scene=scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=False
-)
+window.show([fod_spheres, background_img], title="pred_fODF")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

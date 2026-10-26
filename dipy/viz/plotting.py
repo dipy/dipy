@@ -12,7 +12,7 @@ from dipy.io.utils import split_filename_extension
 from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury_v2, _ = optional_package("fury", min_version="2.0.0")
+fury, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
 if has_fury_v2:
     from fury import actor, window
 
