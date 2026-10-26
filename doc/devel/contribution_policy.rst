@@ -46,13 +46,18 @@ background. It is not suitable for automatic processing by AI tools.
 - **Disclosing AI usage is mandatory.** Every pull request must fill the
   "AI usage disclosure" section of the `pull request template
   <https://github.com/dipy/dipy/blob/master/.github/PULL_REQUEST_TEMPLATE.md>`_,
-  including when no AI tool was used.
+  including when no AI tool was used. A bot comments on pull requests where
+  this section is missing or not filled.
 - AI-generated text in issues, pull request descriptions and comments is
   allowed if you disclose it. You remain responsible for its content: keep it
   concise, accurate and specific to your change. Long, generic or inaccurate
   text makes your contribution harder to review.
 - Pull requests that appear to violate this policy will be closed without
   review.
+- Maintainers may label a pull request that does not meet the quality and
+  clarity needed for an effective review with ``autoclose``. It is then closed
+  automatically after 14 days, unless it is substantially improved and a
+  maintainer removes the label.
 
 AI agents working on DIPY should also follow the instructions in `AGENTS.md
 <https://github.com/dipy/dipy/blob/master/AGENTS.md>`_.
@@ -90,4 +95,6 @@ next steps decided. You are welcome to join the discussion, but please do not
 open a pull request until the ``type:needs triage`` label is removed, there is
 a clear consensus on addressing the issue and some directions on how to address
 it. Pull requests opened against an issue that still carries this label may be
-closed without review.
+closed without review: a bot closes them automatically when their author has
+fewer than 5 merged pull requests in DIPY. New issues opened from a template or
+from a blank form receive this label until a maintainer triages them.
