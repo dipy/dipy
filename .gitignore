@@ -2,6 +2,7 @@
 *.pyd
 *.so
 *.c
+!dipy/nn/meshnet_cpu.c
 *.cpp
 *.png
 *.vtk
