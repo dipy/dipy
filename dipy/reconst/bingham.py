@@ -31,7 +31,7 @@ def _bingham_fit_peak(sf, peak, sphere, max_search_angle):
         The peak direction of the lobe to fit.
     sphere: `Sphere` class instance
         The Sphere providing the odf's discrete directions
-    max_angle: float
+    max_search_angle: float
         The maximum angle in degrees of the neighbourhood around the
         peak to consider for fitting.
 
@@ -134,7 +134,7 @@ def _single_sf_to_bingham(
         for fitting the Bingham distribution. Although they suggest 6 degrees
         in :footcite:p:`Riffert2014`, tests show that a value around 45 degrees
         is more stable.
-    npeak: int, optional
+    npeaks: int, optional
         Maximum number of peaks found (default 5 peaks).
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
@@ -414,7 +414,7 @@ def odi2k(odi):
 
     Parameters
     ----------
-    ODI: ndarray
+    odi: ndarray
         Orientation Dispersion Index
 
     Returns
@@ -672,7 +672,7 @@ def sf_to_bingham(
         for fitting the Bingham distribution.
     mask: ndarray, optional
         Map marking the coordinates in the data that should be analyzed.
-    npeak: int, optional
+    npeaks: int, optional
         Maximum number of peaks found.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
@@ -743,7 +743,7 @@ def sh_to_bingham(
         SH basis. Either `descoteaux07` or `tournier07`.
     legacy: bool, optional
         Use legacy SH basis definitions.
-    npeak: int, optional
+    npeaks: int, optional
         Maximum number of peaks found.
     min_sep_angle: float, optional
         Minimum separation angle between two peaks for peak extraction.
