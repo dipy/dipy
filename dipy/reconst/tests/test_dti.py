@@ -5,6 +5,8 @@ import random
 import numpy as np
 import numpy.testing as npt
 
+import warnings
+
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
 from dipy.core.subdivide_octahedron import create_unit_sphere
@@ -1318,6 +1320,12 @@ def test_dti_nlls_cholesky_positivity():
         return_lower_triangular=True,
     )
 
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+        "ignore",
+        message=r"Number of calls to function has reached maxfev.*",
+        category=RuntimeWarning,
+    )
     cholesky_params, _ = dti.nlls_fit_tensor(
         design_matrix,
         signal_pred,
