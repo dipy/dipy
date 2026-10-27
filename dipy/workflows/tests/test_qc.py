@@ -311,8 +311,8 @@ def test_output_buttons():
             page_dir=out_dir,
         )
         (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-        path, command = json.loads(f"[{html.unescape(onclick)}]")
-        assert path == volume
+        key, command = json.loads(f"[{html.unescape(onclick)}]")
+        assert key == "fa.nii.gz"
         assert command == report.skyline_command(path=volume)
         assert 'href="affine.txt"' in items
         assert items.count("qc-open") == 2
@@ -332,8 +332,8 @@ def test_output_buttons_quote_paths(tmp_path):
         outputs={"out_fa": volume, "out_affine": text}, page_dir=str(tmp_path)
     )
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    path, command = json.loads(f"[{html.unescape(onclick)}]")
-    assert path == volume
+    key, command = json.loads(f"[{html.unescape(onclick)}]")
+    assert key == f"{folder.name}/fa.nii.gz"
     assert command == report.skyline_command(path=volume)
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
     assert (
@@ -386,6 +386,66 @@ def test_report_server_refuses_foreign_path():
         finally:
             httpd.shutdown()
             httpd.server_close()
+
+
+def test_report_server_launches_only_files_inside_its_root(tmp_path):
+    out_dir = tmp_path / "report"
+    sibling_dir = tmp_path / "report-old"
+    bin_dir = tmp_path / "bin"
+    for folder in (out_dir, sibling_dir, bin_dir):
+        folder.mkdir()
+    volume = out_dir / "fa.nii.gz"
+    outside = sibling_dir / "fa.nii.gz"
+    for fname in (volume, outside):
+        save_nifti(str(fname), np.zeros((2, 2, 2), dtype=np.float32), np.eye(4))
+
+    if os.name == "nt":
+        skyline = bin_dir / "dipy_skyline.bat"
+        skyline.write_text("@exit /b 0\n", encoding="utf-8")
+    else:
+        skyline = bin_dir / "dipy_skyline"
+        skyline.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    skyline.chmod(0o755)
+
+    old_path = os.environ.get("PATH", "")
+    os.environ["PATH"] = os.pathsep.join([str(bin_dir), old_path])
+    httpd, base = _serve(out_dir=str(out_dir), token="secret")
+    try:
+        for target in (str(outside), "../report-old/fa.nii.gz", str(volume)):
+            with npt.assert_raises(HTTPError) as cm:
+                _post(f"{base}/qc-open", path=target, token="secret")
+            assert cm.exception.code == 403
+
+        reply = _post(f"{base}/qc-open", path="fa.nii.gz", token="secret")
+        assert reply.status == 200
+        assert reply.read().decode() == "Skyline launched on fa.nii.gz."
+    finally:
+        os.environ["PATH"] = old_path
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_output_buttons_name_files_from_the_served_root(tmp_path):
+    # A pipeline run with a relative out_dir records paths relative to where
+    # it ran; the server only knows paths relative to the output directory.
+    out_dir = tmp_path / "run" / "out"
+    (out_dir / "reports").mkdir(parents=True)
+    (out_dir / "dwi").mkdir()
+    volume = out_dir / "dwi" / "fa.nii.gz"
+    save_nifti(str(volume), np.zeros((2, 2, 2), dtype=np.float32), np.eye(4))
+    cwd = Path.cwd()
+    os.chdir(tmp_path / "run")
+    try:
+        items = report._output_items(
+            outputs={"out_fa": "out/dwi/fa.nii.gz"}, page_dir="out/reports"
+        )
+    finally:
+        os.chdir(cwd)
+    (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
+    key, command = json.loads(f"[{html.unescape(onclick)}]")
+    assert key == "dwi/fa.nii.gz"
+    assert command == report.skyline_command(path=volume)
+    assert report.skyline_files(root=out_dir) == {key: volume}
 
 
 def test_report_server_requires_its_token():
