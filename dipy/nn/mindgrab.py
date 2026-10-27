@@ -13,6 +13,7 @@ from scipy.special import expit
 
 from dipy.data import get_fnames
 from dipy.nn.meshnet import meshnet_forward_cpu
+from dipy.nn.meshnet_webgpu import meshnet_forward_webgpu, webgpu_device, wgpu
 from dipy.nn.utils import (
     load_state_dict,
     recover_img,
@@ -39,6 +40,7 @@ MODEL_SHAPE = (256, 256, 256)
 DILATIONS = (16, 8, 4, 2, 1) * 5
 CHANNELS = 15
 N_CLASSES = 2
+DEVICES = ("auto", "cpu", "webgpu", "cuda")
 
 
 def ras_to_lia(volume):
@@ -216,7 +218,8 @@ class MindGrab:
     handles T1w, T2w, FLAIR, DWI, CT or PET volumes alike.
 
     Inference runs on the CPU with a compiled kernel that needs no deep
-    learning framework. PyTorch is only needed to run it on a GPU.
+    learning framework, or on any GPU through WebGPU with the ``wgpu``
+    package, or on CUDA with PyTorch.
 
     References
     ----------
@@ -224,17 +227,33 @@ class MindGrab:
     """
 
     @doctest_skip_parser
-    def __init__(self, *, verbose=False, use_cuda=False, num_threads=None):
+    def __init__(
+        self, *, verbose=False, device="auto", half_precision=False, num_threads=None
+    ):
         """Model initialization
 
         Parameters
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
-        use_cuda : bool, optional
-            Whether to use GPU for processing, which requires PyTorch. CUDA is
-            used when available, otherwise the Apple Metal (MPS) GPU. If False
-            or no GPU is detected, CPU will be used.
+        device : {'auto', 'cpu', 'webgpu', 'cuda'}, optional
+            Where to run the network.
+
+            - 'auto': CUDA if PyTorch finds an NVIDIA GPU, otherwise a GPU
+              through WebGPU if the ``wgpu`` package finds one, otherwise
+              the CPU.
+            - 'cpu': compiled CPU kernel, which needs no extra package.
+            - 'webgpu': any GPU through Vulkan, Metal or Direct3D 12, which
+              needs the ``wgpu`` package. Software adapters emulating a GPU
+              on the CPU are ignored.
+            - 'cuda': PyTorch on CUDA, or on the Apple MPS GPU.
+
+            If the requested device is not available, the CPU is used.
+        half_precision : bool, optional
+            Whether to store activations in float16 on WebGPU, halving the
+            GPU memory needed at the cost of a few differing voxels. Float16
+            is also used, when supported, if float32 activations do not fit
+            in the GPU memory.
         num_threads : int, optional
             Number of threads to use on the CPU. If None, the value of the
             ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
@@ -242,21 +261,36 @@ class MindGrab:
             $|num_threads + 1|$ is used (enter -1 to use as many threads as
             possible). 0 raises an error.
         """
+        if device not in DEVICES:
+            raise ValueError(f"device should be one of {DEVICES}, got {device!r}")
         log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
+        self.half_precision = half_precision
         self.num_threads = num_threads
-        self.device = None
-        if use_cuda:
-            if not have_torch:
-                logger.warning("GPU processing requires PyTorch, switching to CPU")
-            elif torch.cuda.is_available():
-                self.device = torch.device("cuda")
-            elif torch.backends.mps.is_available():
-                self.device = torch.device("mps")
-                logger.info("CUDA not found, using the Apple MPS GPU instead")
-            else:
-                logger.warning("CUDA requested but not found, switching to CPU")
+        self.torch_device = None
+        self.webgpu_device = None
+        if device in ("auto", "cuda") and have_torch and torch.cuda.is_available():
+            self.torch_device = torch.device("cuda")
+        elif device == "cuda" and have_torch and torch.backends.mps.is_available():
+            self.torch_device = torch.device("mps")
+        elif device in ("auto", "webgpu"):
+            self.webgpu_device = webgpu_device()
+
+        if self.torch_device is not None:
+            self.device = self.torch_device.type
+        elif self.webgpu_device is not None:
+            self.device = "webgpu"
+        else:
+            self.device = "cpu"
+            if device == "cuda":
+                logger.warning("No GPU found by PyTorch, switching to CPU")
+            elif device == "webgpu":
+                logger.warning(
+                    "No WebGPU adapter found, switching to CPU. Using WebGPU "
+                    "requires the wgpu package and a GPU driver."
+                )
+        logger.info(f"MindGrab runs on {self.device}")
 
         self.model = None
         self.fetch_default_weights()
@@ -280,7 +314,7 @@ class MindGrab:
         """
         kernels, classifier, bias = read_mindgrab_weights(weights_path)
         self.kernels, self.classifier, self.bias = kernels, classifier, bias
-        if self.device is None:
+        if self.torch_device is None:
             return
 
         state = {f"model.{i}.0.weight": kernel for i, kernel in enumerate(kernels)}
@@ -288,7 +322,7 @@ class MindGrab:
         state[f"model.{len(kernels)}.bias"] = bias
         self.model = MeshNet()
         self.model.load_state_dict({k: torch.from_numpy(v) for k, v in state.items()})
-        self.model.to(self.device).eval()
+        self.model.to(self.torch_device).eval()
 
     def _predict_volume(self, volume):
         """Compute the brain probability of a conformed volume.
@@ -303,7 +337,14 @@ class MindGrab:
         np.ndarray (256, 256, 256)
             Brain probability.
         """
-        if self.model is None:
+        logits = None
+        if self.model is not None:
+            x = torch.from_numpy(np.ascontiguousarray(volume)[None, None])
+            with torch.no_grad():
+                logits = self.model(x.to(self.torch_device))[0].cpu().numpy()
+        elif self.webgpu_device is not None:
+            logits = self._predict_webgpu(volume)
+        if logits is None:
             logits = meshnet_forward_cpu(
                 volume,
                 self.kernels,
@@ -312,11 +353,47 @@ class MindGrab:
                 self.bias,
                 num_threads=self.num_threads,
             )
-        else:
-            x = torch.from_numpy(np.ascontiguousarray(volume)[None, None])
-            with torch.no_grad():
-                logits = self.model(x.to(self.device))[0].cpu().numpy()
         return expit(logits[1] - logits[0])
+
+    def _predict_webgpu(self, volume):
+        """Compute the class logits of a conformed volume on WebGPU.
+
+        Falls back to float16 storage when float32 activations do not fit in
+        the GPU, and gives up WebGPU for the CPU on any other GPU error.
+
+        Parameters
+        ----------
+        volume : np.ndarray (256, 256, 256)
+            Normalized volume in the LIA orientation.
+
+        Returns
+        -------
+        np.ndarray (2, 256, 256, 256) or None
+            Class logits, or None if WebGPU failed.
+        """
+        precisions = [self.half_precision]
+        if not self.half_precision and "shader-f16" in self.webgpu_device.features:
+            precisions.append(True)
+        for half in precisions:
+            try:
+                return meshnet_forward_webgpu(
+                    volume,
+                    self.kernels,
+                    DILATIONS,
+                    self.classifier,
+                    self.bias,
+                    device=self.webgpu_device,
+                    half_precision=half,
+                )
+            except MemoryError as e:
+                error = e
+            except (RuntimeError, ValueError, wgpu.GPUError) as e:
+                error = e
+                break
+        logger.warning(f"WebGPU inference failed, switching to CPU: {error}")
+        self.webgpu_device = None
+        self.device = "cpu"
+        return None
 
     def predict(self, image, affine, *, return_prob=False, finalize_mask=True):
         """Extract the brain from one or several volumes.

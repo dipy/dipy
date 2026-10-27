@@ -12,10 +12,13 @@ from dipy.nn.meshnet import (
     meshnet_cpu_kernels,
     meshnet_forward_cpu,
 )
+from dipy.nn.meshnet_webgpu import meshnet_forward_webgpu, webgpu_device
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+# Software adapters such as lavapipe are slow but fine for small volumes.
+test_device = webgpu_device(allow_software=True)
 
 
 def reference_meshnet(volume, kernels, dilations, classifier, bias):
@@ -176,7 +179,9 @@ def test_read_mindgrab_weights(tmp_path):
 
 
 def test_wrong_inputs():
-    model = mindgrab.MindGrab()
+    npt.assert_raises(ValueError, mindgrab.MindGrab, device="tpu")
+    model = mindgrab.MindGrab(device="cpu")
+    npt.assert_equal(model.device, "cpu")
     npt.assert_raises(ValueError, model.predict, np.zeros((5, 5)), np.eye(4))
     npt.assert_raises(ValueError, model.predict, np.zeros((5, 5, 5, 5)), np.eye(4))
 
@@ -195,13 +200,71 @@ def test_meshnet():
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
 @set_random_number_generator()
 def test_torch_matches_cpu(rng=None):
-    model = mindgrab.MindGrab()
+    model = mindgrab.MindGrab(device="cpu")
     volume = rng.random((40, 36, 33)).astype(np.float32)
     prob_cpu = model._predict_volume(volume)
 
-    model.device = torch.device("cpu")
+    model.torch_device = torch.device("cpu")
     model.load_model_weights(get_fnames(name="mindgrab_weights"))
     prob_torch = model._predict_volume(volume)
 
     npt.assert_equal(prob_cpu.shape, volume.shape)
     npt.assert_allclose(prob_cpu, prob_torch, atol=1e-4)
+
+
+@pytest.mark.skipif(test_device is None, reason="Requires a WebGPU adapter")
+@set_random_number_generator()
+def test_meshnet_forward_webgpu(rng=None):
+    precisions = [False]
+    if "shader-f16" in test_device.features:
+        precisions.append(True)
+    cases = [
+        ((7, 9, 11), (4, 2, 1), 15, 2),
+        ((6, 5, 150), (1, 3, 1), 15, 3),
+        ((5, 6, 3), (1,), 7, 2),
+    ]
+    for shape, dilations, channels, n_classes in cases:
+        kernels, classifier, bias = random_meshnet(
+            rng, channels=channels, n_layers=len(dilations), n_classes=n_classes
+        )
+        volume = rng.random(shape).astype(np.float32)
+        expected = meshnet_forward_cpu(volume, kernels, dilations, classifier, bias)
+        for half in precisions:
+            logits = meshnet_forward_webgpu(
+                volume,
+                kernels,
+                dilations,
+                classifier,
+                bias,
+                device=test_device,
+                half_precision=half,
+            )
+            npt.assert_equal(logits.shape, expected.shape)
+            # float16 storage keeps about three significant digits.
+            atol = 0.05 if half else 1e-4
+            npt.assert_allclose(logits, expected, atol=atol)
+
+    npt.assert_raises(
+        ValueError,
+        meshnet_forward_webgpu,
+        volume[0],
+        kernels,
+        dilations,
+        classifier,
+        bias,
+        device=test_device,
+    )
+
+
+@set_random_number_generator()
+def test_mindgrab_webgpu(rng=None):
+    model = mindgrab.MindGrab(device="webgpu")
+    if webgpu_device() is None:
+        npt.assert_equal(model.device, "cpu")
+        return
+    npt.assert_equal(model.device, "webgpu")
+    volume = rng.random((40, 36, 33)).astype(np.float32)
+    prob_webgpu = model._predict_volume(volume)
+    model.device = "cpu"
+    model.webgpu_device = None
+    npt.assert_allclose(prob_webgpu, model._predict_volume(volume), atol=1e-4)

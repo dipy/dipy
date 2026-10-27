@@ -19,6 +19,7 @@ py3.extension_module('meshnet',
 
 python_sources = [
   '__init__.py',
+  'meshnet_webgpu.py',
   'mindgrab.py',
   'utils.py',
   ]

@@ -47,8 +47,11 @@ def _set_simd_allowed(*, allow):
     meshnet_allow_simd(1 if allow else 0)
 
 
-def _pack_kernels(kernels, channels):
-    """Pack PyTorch-layout kernels into the channel-last layout of the C code.
+def pack_meshnet_kernels(kernels, channels):
+    """Pack PyTorch-layout kernels into the layout of the MeshNet kernels.
+
+    The CPU and WebGPU kernels share this channel-last layout, indexed
+    (tap, input channel, output channel).
 
     Parameters
     ----------
@@ -159,7 +162,7 @@ def meshnet_forward_cpu(volume, kernels, dilations, classifier, bias, *,
     if np.any(dilations < 1):
         raise ValueError("dilations should be positive")
 
-    first, hidden = _pack_kernels(kernels, channels)
+    first, hidden = pack_meshnet_kernels(kernels, channels)
     logits = np.empty((n_classes,) + volume.shape, dtype=np.float32)
 
     c_volume = np.ascontiguousarray(volume, dtype=np.float32)
