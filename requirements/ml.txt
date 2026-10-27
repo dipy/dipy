@@ -5,3 +5,4 @@ pandas
 statsmodels>=0.14.0
 tables
 torch
+wgpu>=0.31.0

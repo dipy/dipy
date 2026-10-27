@@ -95,7 +95,9 @@ DIPY 1.13.0 changes
 
 - ``dipy_brain_mask`` (``BrainMaskFlow``) gains the ``mindgrab`` method, which
   is now the default instead of ``synthseg``. MindGrab runs on the CPU without
-  PyTorch; pass ``--method synthseg`` to keep the previous behavior.
+  PyTorch; pass ``--method synthseg`` to keep the previous behavior. Its new
+  ``--device`` option runs it on any GPU through WebGPU when the optional
+  ``wgpu`` package is installed.
 
 DIPY 1.12.0 changes
 -------------------

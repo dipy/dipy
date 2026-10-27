@@ -634,6 +634,7 @@ class BrainMaskFlow(Workflow):
         finalize_mask=True,
         save_masked=False,
         use_cuda=False,
+        device="auto",
         num_threads=None,
         out_dir="",
         out_mask="brain_mask.nii.gz",
@@ -689,7 +690,12 @@ class BrainMaskFlow(Workflow):
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
             Use CUDA for GPU acceleration. Used only for 'evac', 'synthseg'
-            and 'mindgrab' methods. 'mindgrab' needs PyTorch for it.
+            and 'mindgrab' methods. For 'mindgrab', same as ``device='cuda'``.
+        device : string, optional
+            Where to run 'mindgrab': 'auto', 'cpu', 'webgpu' or 'cuda'. 'auto'
+            uses CUDA if PyTorch finds an NVIDIA GPU, otherwise any GPU
+            through WebGPU if the wgpu package is installed, otherwise the
+            CPU. Used only for 'mindgrab' method.
         num_threads : int, optional
             Number of threads to use on the CPU. If None, the value of the
             ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
@@ -758,7 +764,9 @@ class BrainMaskFlow(Workflow):
         elif method == "mindgrab":
             logger.info("Loading MindGrab model...")
             mindgrab_model = MindGrab(
-                verbose=True, use_cuda=use_cuda, num_threads=num_threads
+                verbose=True,
+                device="cuda" if use_cuda else device,
+                num_threads=num_threads,
             )
             logger.info("MindGrab model loaded.")
 
