@@ -36,4 +36,12 @@ int meshnet_forward(const float *volume, float *logits, int nz, int ny, int nx,
                     const float *classifier, const float *bias, int n_classes,
                     int n_threads);
 
+/* Name of the instruction set meshnet_forward runs with: "avx2" on x86 CPUs
+   with AVX2 and FMA when built with GCC or Clang, "baseline" otherwise. */
+const char *meshnet_kernels(void);
+
+/* Allow (non-zero) or forbid (zero) the AVX2 kernels; they are allowed by
+   default. Meant for testing, not thread safe. */
+void meshnet_allow_simd(int allow);
+
 #endif

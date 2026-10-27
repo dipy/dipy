@@ -45,6 +45,18 @@
 #define MN_INLINE static
 #endif
 
+/* GCC and Clang can build a second copy of the hot loops for AVX2 + FMA and
+   pick it at run time, so that wheels built for baseline x86-64 still use the
+   wider registers: 4 blocks of 16 channels fit in 8 ymm registers, but spill
+   out of the 16 xmm ones. MSVC has no per-function target attribute. */
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__) && \
+    !defined(_MSC_VER)
+#define MN_X86_DISPATCH 1
+#define MN_TARGET_AVX2 __attribute__((target("avx2,fma")))
+#else
+#define MN_X86_DISPATCH 0
+#endif
+
 typedef struct {
     int nz, ny, nx;
 } mn_shape;
@@ -171,40 +183,6 @@ MN_INLINE void mn_conv_slice(const float *MN_RESTRICT source,
     }
 }
 
-static void mn_conv_first(const float *source, float *destination,
-                          const float *weights, int dilation, mn_shape shape,
-                          int n_threads)
-{
-    int z;
-    (void)n_threads;
-#ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic, 4) num_threads(n_threads)
-#endif
-    for (z = 0; z < shape.nz; z++)
-        mn_conv_slice(source, destination, weights, dilation, z, shape, 1, 1);
-}
-
-static void mn_conv_hidden(const float *source, float *destination,
-                           const float *weights, int dilation, int channels,
-                           mn_shape shape, int n_threads)
-{
-    int z;
-    (void)n_threads;
-#ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic, 4) num_threads(n_threads)
-#endif
-    for (z = 0; z < shape.nz; z++) {
-        /* A literal input channel count lets the compiler fully unroll the
-           inner loop; skipping MindGrab's zero padding lane saves ~15%. */
-        if (channels == 15)
-            mn_conv_slice(source, destination, weights, dilation, z, shape,
-                          MN_CS, 15);
-        else
-            mn_conv_slice(source, destination, weights, dilation, z, shape,
-                          MN_CS, MN_CS);
-    }
-}
-
 /* tanh-form GELU, with the rational tanh approximation of brainchopC, which
    unlike tanhf lets the compiler vectorize the activation loop. */
 MN_INLINE float mn_tanh(float x)
@@ -232,17 +210,146 @@ MN_INLINE float mn_gelu(float x)
     return (0.5f * x) * (1.0f + mn_tanh(u));
 }
 
+MN_INLINE void mn_moments_slice(const float *MN_RESTRICT buffer,
+                                double *MN_RESTRICT partial, mn_shape shape,
+                                int z)
+{
+    const size_t plane = (size_t)shape.ny * shape.nx;
+    double sum[MN_CS], square[MN_CS];
+    for (int channel = 0; channel < MN_CS; channel++)
+        sum[channel] = square[channel] = 0.0;
+    const float *slice = buffer + (size_t)z * plane * MN_CS;
+    for (size_t i = 0; i < plane; i++)
+        for (int channel = 0; channel < MN_CS; channel++) {
+            double value = slice[i * MN_CS + channel];
+            sum[channel] += value;
+            square[channel] += value * value;
+        }
+    for (int channel = 0; channel < MN_CS; channel++) {
+        partial[(size_t)z * 2 * MN_CS + channel] = sum[channel];
+        partial[(size_t)z * 2 * MN_CS + MN_CS + channel] = square[channel];
+    }
+}
+
+MN_INLINE void mn_gelu_slice(float *MN_RESTRICT buffer,
+                             const float *MN_RESTRICT mean,
+                             const float *MN_RESTRICT invstd, mn_shape shape,
+                             int z)
+{
+    const size_t plane = (size_t)shape.ny * shape.nx;
+    float *slice = buffer + (size_t)z * plane * MN_CS;
+    for (size_t i = 0; i < plane; i++) {
+        float *value = slice + i * MN_CS;
+        for (int channel = 0; channel < MN_CS; channel++)
+            value[channel] =
+                mn_gelu((value[channel] - mean[channel]) * invstd[channel]);
+    }
+}
+
+typedef struct {
+    const float *source;
+    float *destination;
+    const float *weights;
+    int dilation;
+    int channels;
+    mn_shape shape;
+} mn_conv_job;
+
+typedef struct {
+    const char *name;
+    void (*conv_first)(const mn_conv_job *job, int z);
+    void (*conv_hidden)(const mn_conv_job *job, int z);
+    void (*moments)(const float *buffer, double *partial, mn_shape shape, int z);
+    void (*gelu)(float *buffer, const float *mean, const float *invstd,
+                 mn_shape shape, int z);
+} mn_kernels;
+
+/*
+ * The per-slice work, compiled once per instruction set. In the hidden layers
+ * a literal input channel count lets the compiler fully unroll the inner
+ * loop; skipping MindGrab's zero padding lane saves ~15%.
+ */
+#define MN_DEFINE_KERNELS(SUFFIX, TARGET)                                      \
+    TARGET static void mn_conv_first_##SUFFIX(const mn_conv_job *job, int z)   \
+    {                                                                          \
+        mn_conv_slice(job->source, job->destination, job->weights,            \
+                      job->dilation, z, job->shape, 1, 1);                     \
+    }                                                                          \
+    TARGET static void mn_conv_hidden_##SUFFIX(const mn_conv_job *job, int z)  \
+    {                                                                          \
+        if (job->channels == 15)                                               \
+            mn_conv_slice(job->source, job->destination, job->weights,        \
+                          job->dilation, z, job->shape, MN_CS, 15);            \
+        else                                                                   \
+            mn_conv_slice(job->source, job->destination, job->weights,        \
+                          job->dilation, z, job->shape, MN_CS, MN_CS);         \
+    }                                                                          \
+    TARGET static void mn_moments_##SUFFIX(const float *buffer,               \
+                                           double *partial, mn_shape shape,    \
+                                           int z)                              \
+    {                                                                          \
+        mn_moments_slice(buffer, partial, shape, z);                           \
+    }                                                                          \
+    TARGET static void mn_gelu_##SUFFIX(float *buffer, const float *mean,     \
+                                        const float *invstd, mn_shape shape,   \
+                                        int z)                                 \
+    {                                                                          \
+        mn_gelu_slice(buffer, mean, invstd, shape, z);                         \
+    }                                                                          \
+    static const mn_kernels mn_kernels_##SUFFIX = {                            \
+        #SUFFIX, mn_conv_first_##SUFFIX, mn_conv_hidden_##SUFFIX,              \
+        mn_moments_##SUFFIX, mn_gelu_##SUFFIX};
+
+MN_DEFINE_KERNELS(baseline, )
+#if MN_X86_DISPATCH
+MN_DEFINE_KERNELS(avx2, MN_TARGET_AVX2)
+#endif
+
+static int mn_simd_allowed = 1;
+
+static const mn_kernels *mn_select_kernels(void)
+{
+    if (!mn_simd_allowed) return &mn_kernels_baseline;
+#if MN_X86_DISPATCH
+    __builtin_cpu_init();
+    if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
+        return &mn_kernels_avx2;
+#endif
+    return &mn_kernels_baseline;
+}
+
+const char *meshnet_kernels(void)
+{
+    return mn_select_kernels()->name;
+}
+
+void meshnet_allow_simd(int allow)
+{
+    mn_simd_allowed = allow != 0;
+}
+
+static void mn_conv(void (*slice)(const mn_conv_job *, int),
+                    const mn_conv_job *job, int n_threads)
+{
+    int z;
+    (void)n_threads;
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 4) num_threads(n_threads)
+#endif
+    for (z = 0; z < job->shape.nz; z++)
+        slice(job, z);
+}
+
 /*
  * Group normalization with one group per channel, followed by GELU, in place.
  *
  * The per-slice moments are folded serially, so the result does not depend on
  * the number of threads. Padding lanes hold zeros, which stay zeros.
  */
-static void mn_norm_gelu(float *buffer, double *partial, mn_shape shape,
-                         int n_threads)
+static void mn_norm_gelu(const mn_kernels *kernels, float *buffer,
+                         double *partial, mn_shape shape, int n_threads)
 {
-    const size_t plane = (size_t)shape.ny * shape.nx;
-    const double count = (double)plane * shape.nz;
+    const double count = (double)shape.ny * shape.nx * shape.nz;
     float mean[MN_CS], invstd[MN_CS];
     int z;
     (void)n_threads;
@@ -250,22 +357,8 @@ static void mn_norm_gelu(float *buffer, double *partial, mn_shape shape,
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 4) num_threads(n_threads)
 #endif
-    for (z = 0; z < shape.nz; z++) {
-        double sum[MN_CS], square[MN_CS];
-        for (int channel = 0; channel < MN_CS; channel++)
-            sum[channel] = square[channel] = 0.0;
-        const float *slice = buffer + (size_t)z * plane * MN_CS;
-        for (size_t i = 0; i < plane; i++)
-            for (int channel = 0; channel < MN_CS; channel++) {
-                double value = slice[i * MN_CS + channel];
-                sum[channel] += value;
-                square[channel] += value * value;
-            }
-        for (int channel = 0; channel < MN_CS; channel++) {
-            partial[(size_t)z * 2 * MN_CS + channel] = sum[channel];
-            partial[(size_t)z * 2 * MN_CS + MN_CS + channel] = square[channel];
-        }
-    }
+    for (z = 0; z < shape.nz; z++)
+        kernels->moments(buffer, partial, shape, z);
 
     for (int channel = 0; channel < MN_CS; channel++) {
         double sum = 0.0, square = 0.0;
@@ -283,15 +376,8 @@ static void mn_norm_gelu(float *buffer, double *partial, mn_shape shape,
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 4) num_threads(n_threads)
 #endif
-    for (z = 0; z < shape.nz; z++) {
-        float *slice = buffer + (size_t)z * plane * MN_CS;
-        for (size_t i = 0; i < plane; i++) {
-            float *value = slice + i * MN_CS;
-            for (int channel = 0; channel < MN_CS; channel++)
-                value[channel] =
-                    mn_gelu((value[channel] - mean[channel]) * invstd[channel]);
-        }
-    }
+    for (z = 0; z < shape.nz; z++)
+        kernels->gelu(buffer, mean, invstd, shape, z);
 }
 
 static void mn_classify(const float *source, float *logits,
@@ -347,16 +433,21 @@ int meshnet_forward(const float *volume, float *logits, int nz, int ny, int nx,
         return 2;
     }
 
-    mn_conv_first(volume, first, first_kernel, dilations[0], shape, n_threads);
-    mn_norm_gelu(first, partial, shape, n_threads);
+    const mn_kernels *kernels = mn_select_kernels();
+    mn_conv_job job = {volume, first, first_kernel, dilations[0], channels,
+                       shape};
+    mn_conv(kernels->conv_first, &job, n_threads);
+    mn_norm_gelu(kernels, first, partial, shape, n_threads);
 
     const size_t hidden_size = (size_t)27 * MN_CS * MN_CS;
     float *source = first, *destination = second;
     for (int layer = 1; layer < n_layers; layer++) {
-        mn_conv_hidden(source, destination,
-                       hidden_kernels + (size_t)(layer - 1) * hidden_size,
-                       dilations[layer], channels, shape, n_threads);
-        mn_norm_gelu(destination, partial, shape, n_threads);
+        job.source = source;
+        job.destination = destination;
+        job.weights = hidden_kernels + (size_t)(layer - 1) * hidden_size;
+        job.dilation = dilations[layer];
+        mn_conv(kernels->conv_hidden, &job, n_threads);
+        mn_norm_gelu(kernels, destination, partial, shape, n_threads);
         float *swap = source;
         source = destination;
         destination = swap;

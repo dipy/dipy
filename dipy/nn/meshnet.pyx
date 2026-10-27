@@ -17,6 +17,34 @@ cdef extern from "meshnet_cpu.h" nogil:
                         const float *hidden_kernels, const int *dilations,
                         int n_layers, int channels, const float *classifier,
                         const float *bias, int n_classes, int n_threads)
+    const char *meshnet_kernels()
+    void meshnet_allow_simd(int allow)
+
+
+def meshnet_cpu_kernels():
+    """Name the instruction set used by ``meshnet_forward_cpu``.
+
+    On x86 CPUs supporting AVX2 and FMA, a copy of the kernels built for
+    these instructions is selected at run time, whatever the instruction set
+    DIPY was compiled for.
+
+    Returns
+    -------
+    str
+        ``"avx2"`` or ``"baseline"``.
+    """
+    return meshnet_kernels().decode()
+
+
+def _set_simd_allowed(*, allow):
+    """Allow or forbid the AVX2 kernels, to compare both in tests.
+
+    Parameters
+    ----------
+    allow : bool
+        Whether the AVX2 kernels may be selected.
+    """
+    meshnet_allow_simd(1 if allow else 0)
 
 
 def _pack_kernels(kernels, channels):
