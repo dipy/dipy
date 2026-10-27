@@ -7,7 +7,11 @@ import pytest
 
 from dipy.data import get_fnames
 from dipy.nn import mindgrab
-from dipy.nn.meshnet import meshnet_forward_cpu
+from dipy.nn.meshnet import (
+    _set_simd_allowed,
+    meshnet_cpu_kernels,
+    meshnet_forward_cpu,
+)
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
@@ -99,6 +103,28 @@ def test_meshnet_forward_cpu(rng=None):
             volume, kernels, dilations, classifier, bias, num_threads=3
         )
         npt.assert_array_equal(logits_threads, logits)
+
+
+@set_random_number_generator()
+def test_meshnet_cpu_kernels(rng=None):
+    kernels = meshnet_cpu_kernels()
+    npt.assert_equal(kernels in ("avx2", "baseline"), True)
+    if kernels == "baseline":
+        pytest.skip("No AVX2 kernels on this CPU")
+
+    dilations = (4, 2, 1)
+    weights = random_meshnet(rng, channels=15, n_layers=3, n_classes=2)
+    volume = rng.random((10, 12, 14)).astype(np.float32)
+    logits = meshnet_forward_cpu(volume, weights[0], dilations, *weights[1:])
+    try:
+        _set_simd_allowed(allow=False)
+        npt.assert_equal(meshnet_cpu_kernels(), "baseline")
+        logits_baseline = meshnet_forward_cpu(
+            volume, weights[0], dilations, *weights[1:]
+        )
+    finally:
+        _set_simd_allowed(allow=True)
+    npt.assert_allclose(logits, logits_baseline, atol=1e-4)
 
 
 @set_random_number_generator()
