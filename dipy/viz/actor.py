@@ -20,11 +20,11 @@ fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.actor import *
     from fury.actor import Group, create_axes_helper
-    from fury.lib import EventType
+    from fury.lib import EventType, PointerEvent
     from fury.transform import apply_transformation
     from fury.window import update_camera
 else:
-    Group = create_axes_helper = EventType = fury
+    Group = create_axes_helper = EventType = PointerEvent = fury
     apply_transformation = update_camera = fury
 
 
@@ -306,7 +306,8 @@ def gizmo(
     Returns
     -------
     anchor : fury.actor.Group
-        The gizmo actor, hosted in the screen's UI scene.
+        The gizmo actor, hosted in the screen's UI scene. Its ``endpoints``
+        attribute maps each label to its clickable disk.
 
     Notes
     -----
@@ -336,9 +337,43 @@ def gizmo(
         disk.add_event_handler(handler, EventType.POINTER_DOWN)
         label.add_event_handler(handler, EventType.POINTER_DOWN)
 
+    anchor.endpoints = dict(zip(labels, parts["disks"]))
     target_screen.scene.ui_scene.add(anchor)
     _sync_gizmo(parts, target_screen.camera)
     show_manager.register_callback(
         _sync_gizmo, 0.016, True, name, parts, target_screen.camera
     )
     return anchor
+
+
+def click_gizmo(show_manager, gizmo_actor, label):
+    """Simulate a left click on a gizmo axis label.
+
+    Parameters
+    ----------
+    show_manager : fury.window.ShowManager
+        Window hosting the gizmo.
+    gizmo_actor : fury.actor.Group
+        Gizmo returned by :func:`gizmo`.
+    label : str
+        Label of the clicked axis, one of the labels given to :func:`gizmo`.
+
+    Notes
+    -----
+    Useful to snap the camera in scripts and offscreen renders, where no mouse
+    is available.
+    """
+    if label not in gizmo_actor.endpoints:
+        raise ValueError(
+            f"Unknown gizmo label {label!r}; expected one of "
+            f"{list(gizmo_actor.endpoints)}."
+        )
+    show_manager.renderer.dispatch_event(
+        PointerEvent(
+            x=-1,
+            y=-1,
+            type="pointer_down",
+            button=1,
+            target=gizmo_actor.endpoints[label],
+        )
+    )
