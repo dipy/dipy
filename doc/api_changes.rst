@@ -93,6 +93,10 @@ DIPY 1.13.0 changes
   tuples with nibabel images, preserving metadata and RGB detection. Direct
   viewer inputs still accept ndarrays.
 
+- ``dipy_brain_mask`` (``BrainMaskFlow``) gains the ``mindgrab`` method, which
+  is now the default instead of ``synthseg``. MindGrab runs on the CPU without
+  PyTorch; pass ``--method synthseg`` to keep the previous behavior.
+
 DIPY 1.12.0 changes
 -------------------
 

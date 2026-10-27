@@ -1,18 +1,27 @@
+from collections import OrderedDict
+import os
+import pickle
 import subprocess
 import sys
 import warnings
+import zipfile
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.nn.utils import (
     get_padded_shape,
+    load_state_dict,
     normalize,
     recover_img,
     transform_img,
     unnormalize,
 )
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
 
 @set_random_number_generator()
@@ -89,3 +98,40 @@ def test_tensorflow_backend_is_deprecated():
 
 def test_torch_backend_is_not_deprecated():
     npt.assert_equal(_import_warnings("dipy.nn.utils"), [])
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@set_random_number_generator()
+def test_load_state_dict(tmp_path, rng=None):
+    storage = torch.from_numpy(rng.random((4, 6)).astype(np.float32))
+    state = OrderedDict(
+        weight=storage,
+        transposed=storage.T,
+        sliced=storage[1:3, 2:],
+        double=torch.arange(5, dtype=torch.float64),
+        count=torch.tensor(7),
+    )
+    fname = tmp_path / "state.pth"
+    torch.save(state, fname)
+
+    loaded = load_state_dict(fname)
+    npt.assert_equal(list(loaded), list(state))
+    for name, tensor in state.items():
+        npt.assert_equal(loaded[name].dtype, tensor.numpy().dtype)
+        npt.assert_array_equal(loaded[name], tensor.numpy())
+
+
+def test_load_state_dict_wrong_files(tmp_path):
+    not_zip = tmp_path / "not_zip.pth"
+    not_zip.write_bytes(b"not a state dict")
+    npt.assert_raises(ValueError, load_state_dict, not_zip)
+
+    no_pickle = tmp_path / "no_pickle.pth"
+    with zipfile.ZipFile(no_pickle, "w") as archive:
+        archive.writestr("archive/version", "3")
+    npt.assert_raises(ValueError, load_state_dict, no_pickle)
+
+    unsafe = tmp_path / "unsafe.pth"
+    with zipfile.ZipFile(unsafe, "w") as archive:
+        archive.writestr("archive/data.pkl", pickle.dumps(os.system))
+    npt.assert_raises(ValueError, load_state_dict, unsafe)
