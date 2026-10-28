@@ -70,19 +70,13 @@ csd_fit = csd_model.fit(data_small)
 
 csd_odf = csd_fit.odf(sphere)
 
-interactive = False
-
 scene = window.Scene()
 
-fodf_spheres = actor.odf_slicer(
-    csd_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
-)
+fodf_spheres = actor.odf_slicer(sh_func=csd_odf, sphere=sphere, scale=0.9, norm=False)
 scene.add(fodf_spheres)
 
-print("Saving the illustration as csd_odfs.png")
-window.record(scene=scene, out_path="csd_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="csd_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -137,17 +131,13 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 
 bim_odf = BinghamMetrics.odf(sphere)
 
-scene.rm(fodf_spheres)
+scene.clear()
 
-fodf_spheres = actor.odf_slicer(
-    bim_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
-)
+fodf_spheres = actor.odf_slicer(sh_func=bim_odf, sphere=sphere, scale=0.9, norm=False)
 scene.add(fodf_spheres)
 
-print("Saving the illustration as Bingham_odfs.png")
-window.record(scene=scene, out_path="Bingham_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="Bingham_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -82,9 +82,6 @@ print(
 ###############################################################################
 # We can visualize what this default response looks like.
 
-# Enables/disables interactive visualization
-interactive = False
-
 scene = window.Scene()
 
 evals = rumba.wm_response
@@ -93,21 +90,19 @@ evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 response_odf = single_tensor_odf(sphere.vertices, evals=evals, evecs=evecs)
 # Transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma")
-
+response_actor = actor.odf_slicer(sh_func=response_odf, sphere=sphere)
 scene.add(response_actor)
-print("Saving illustration as default_response.png")
-window.record(scene=scene, out_path="default_response.png", size=(200, 200))
-
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="default_response", size=(200, 200), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Default response function.
 
-scene.rm(response_actor)
+scene.clear()
 
 ###############################################################################
 # **Strategy 2: estimate from local brain region**
@@ -132,19 +127,19 @@ evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 response_odf = single_tensor_odf(sphere.vertices, evals=evals, evecs=evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap="plasma")
+response_actor = actor.odf_slicer(sh_func=response_odf, sphere=sphere)
 scene.add(response_actor)
-print("Saving illustration as estimated_response.png")
-window.record(scene=scene, out_path="estimated_response.png", size=(200, 200))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="estimated_response", size=(200, 200), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Estimated response function.
 
-scene.rm(response_actor)
+scene.clear()
 
 ###############################################################################
 # **Strategy 3: recursive, data-driven estimation**
@@ -178,20 +173,19 @@ rec_response = recursive_response(
 rec_response_signal = rec_response.on_sphere(sphere)
 # transform our data from 1D to 4D
 rec_response_signal = rec_response_signal[None, None, None, :]
-response_actor = actor.odf_slicer(rec_response_signal, sphere=sphere, colormap="plasma")
-
+response_actor = actor.odf_slicer(sh_func=rec_response_signal, sphere=sphere)
 scene.add(response_actor)
-print("Saving illustration as recursive_response.png")
-window.record(scene=scene, out_path="recursive_response.png", size=(200, 200))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="recursive_response", size=(250, 250), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Recursive response function.
 
-scene.rm(response_actor)
+scene.clear()
 
 ###############################################################################
 # Step 2. fODF Reconstruction
@@ -288,25 +282,21 @@ plt.savefig("wm_iso_partition.png")
 # To visualize the fODFs, it's recommended to combine the fODF and the
 # isotropic components. This is done using the `RumbaFit` object's method
 # `combined_odf_iso`. To reach a proper scale for visualization, the argument
-# `norm=True` is used in FURY's `odf_slicer` method.
+# `norm=True` is used in `actor.odf_slicer`.
 
 combined = rumba_fit.combined_odf_iso
 
-fodf_spheres = actor.odf_slicer(
-    combined, sphere=sphere, norm=True, scale=0.5, colormap=None
-)
+fodf_spheres = actor.odf_slicer(sh_func=combined, sphere=sphere, norm=True, scale=0.5)
 scene.add(fodf_spheres)
-print("Saving illustration as rumba_odfs.png")
-window.record(scene=scene, out_path="rumba_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="rumba_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # RUMBA-SD fODFs
 
-scene.rm(fodf_spheres)
+scene.clear()
 
 ###############################################################################
 # We can extract the peaks from these fODFs using `peaks_from_model`. This
@@ -329,19 +319,17 @@ rumba_peaks = peaks_from_model(
 peak_values = np.clip(rumba_peaks.peak_values * 15, 0, 1)
 peak_dirs = rumba_peaks.peak_dirs
 
-fodf_peaks = actor.peak_slicer(peak_dirs, peaks_values=peak_values)
+fodf_peaks = actor.peaks_slicer(peak_dirs, peak_values=peak_values)
 scene.add(fodf_peaks)
-
-window.record(scene=scene, out_path="rumba_peaks.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="rumba_peaks", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # RUMBA-SD peaks
 
-scene.rm(fodf_peaks)
+scene.clear()
 
 ###############################################################################
 # **Option 2: global fit**
@@ -382,14 +370,13 @@ combined = rumba_fit.combined_odf_iso
 # Now we can visualize the combined fODF map as before.
 
 fodf_spheres = actor.odf_slicer(
-    combined, sphere=sphere, norm=True, scale=0.5, colormap=None
+    sh_func=combined[:, :, 0:1], sphere=sphere, norm=True, scale=0.5
 )
-
 scene.add(fodf_spheres)
-print("Saving illustration as rumba_global_odfs.png")
-window.record(scene=scene, out_path="rumba_global_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="rumba_global_odfs", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -401,7 +388,7 @@ if interactive:
 # This can be compared with the result without TV regularization, and one can
 # observe that the coherence between neighboring voxels is improved.
 
-scene.rm(fodf_spheres)
+scene.clear()
 
 ###############################################################################
 # For peak detection, `peaks_from_model` cannot be used as it doesn't support
@@ -427,22 +414,19 @@ for idx in np.ndindex(shape):  # iterate through each voxel
 # Scale up for visualization
 peak_values = np.clip(peak_values * 15, 0, 1)
 
-fodf_peaks = actor.peak_slicer(
-    peak_dirs[:, :, 0:1, :], peaks_values=peak_values[:, :, 0:1, :]
+fodf_peaks = actor.peaks_slicer(
+    peak_dirs[:, :, 0:1, :], peak_values=peak_values[:, :, 0:1, :]
 )
 scene.add(fodf_peaks)
-
-print("Saving illustration as rumba_global_peaks.png")
-window.record(scene=scene, out_path="rumba_global_peaks.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="rumba_global_peaks", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # RUMBA-SD + TV peaks
-
-scene.rm(fodf_peaks)
 
 ###############################################################################
 # References
