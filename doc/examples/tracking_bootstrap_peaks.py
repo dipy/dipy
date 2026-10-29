@@ -27,10 +27,7 @@ from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import bootstrap_tracking, closestpeak_tracking
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -80,12 +77,24 @@ streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_bootstrap_dg.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(scene=scene, out_path="tractogram_bootstrap_dg.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+scene = window.Scene()
+scene.add(
+    actor.streamlines(
+        streamlines,
+        colors=colormap.line_colors(streamlines),
+        thickness=0.05,
+        outline_thickness=0,
+    )
+)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo.
+
+show_manager = window.ShowManager(
+    title="tractogram_bootstrap_dg", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -116,14 +125,24 @@ streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "closest_peak_dg_CSD.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_closest_peak_dg.png", size=(800, 800)
+scene = window.Scene()
+scene.add(
+    actor.streamlines(
+        streamlines,
+        colors=colormap.line_colors(streamlines),
+        thickness=0.05,
+        outline_thickness=0,
     )
-    if interactive:
-        window.show(scene)
+)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo.
+
+show_manager = window.ShowManager(
+    title="tractogram_closest_peak_dg", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

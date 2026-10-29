@@ -32,9 +32,6 @@ from dipy.tracking.streamline import Streamlines, transform_streamlines
 from dipy.tracking.tracker import probabilistic_tracking
 from dipy.viz import actor, colormap, window
 
-# Enables/disables interactive visualization
-interactive = False
-
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
 t1_fname = get_fnames(name="stanford_t1")
@@ -120,26 +117,31 @@ streamline_generator = probabilistic_tracking(
 )
 streamlines = Streamlines(streamline_generator)
 
-color = colormap.line_colors(streamlines)
-streamlines_actor = actor.streamtube(
-    list(transform_streamlines(streamlines, inv(t1_aff))), colors=color, linewidth=0.1
+streamlines_actor = actor.streamlines(
+    list(transform_streamlines(streamlines, inv(t1_aff))),
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
 )
-
-vol_actor = actor.slicer(t1_data)
-vol_actor.display(x=40)
-vol_actor2 = vol_actor.copy()
-vol_actor2.display(z=35)
+t1_slicer = actor.volume_slicer(
+    t1_data,
+    visibility=(True, False, True),
+    initial_slices=(40, 0, 35),
+    depth_write=True,
+)
 
 scene = window.Scene()
-scene.add(vol_actor)
-scene.add(vol_actor2)
+scene.add(t1_slicer)
 scene.add(streamlines_actor)
-if interactive:
-    window.show(scene)
 
-window.record(
-    scene=scene, out_path="tractogram_probabilistic_rumba.png", size=(800, 800)
+###############################################################################
+# Show the streamlines with an orientation gizmo.
+
+show_manager = window.ShowManager(
+    title="tractogram_probabilistic_rumba", size=(800, 800), scene=scene
 )
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_probabilistic_rumba.trx")

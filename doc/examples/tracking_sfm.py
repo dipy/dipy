@@ -28,10 +28,7 @@ from dipy.tracking.streamline import (
     transform_streamlines,
 )
 from dipy.tracking.tracker import eudx_tracking
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # To begin, we read the Stanford HARDI data set into memory:
@@ -119,7 +116,6 @@ streamlines = Streamlines(streamline_generator)
 
 t1_fname = get_fnames(name="stanford_t1")
 t1_data, t1_aff = load_nifti(t1_fname)
-color = colormap.line_colors(streamlines)
 
 ###############################################################################
 # To speed up visualization, we will select a random sub-set of streamlines to
@@ -129,27 +125,29 @@ color = colormap.line_colors(streamlines)
 
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
-if has_fury:
-    streamlines_actor = actor.streamtube(
-        list(transform_streamlines(plot_streamlines, inv(t1_aff))),
-        colors=colormap.line_colors(streamlines),
-        linewidth=0.1,
-    )
+streamlines_actor = actor.streamlines(
+    list(transform_streamlines(plot_streamlines, inv(t1_aff))),
+    colors=colormap.line_colors(plot_streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+t1_slicer = actor.volume_slicer(
+    t1_data,
+    visibility=(True, False, True),
+    initial_slices=(40, 0, 35),
+    depth_write=True,
+)
 
-    vol_actor = actor.slicer(t1_data)
+scene = window.Scene()
+scene.add(streamlines_actor)
+scene.add(t1_slicer)
 
-    vol_actor.display(x=40)
-    vol_actor2 = vol_actor.copy()
-    vol_actor2.display(z=35)
+###############################################################################
+# Show the streamlines with an orientation gizmo.
 
-    scene = window.Scene()
-    scene.add(streamlines_actor)
-    scene.add(vol_actor)
-    scene.add(vol_actor2)
-
-    window.record(scene=scene, out_path="tractogram_sfm.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+show_manager = window.ShowManager(title="tractogram_sfm", size=(800, 800), scene=scene)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
