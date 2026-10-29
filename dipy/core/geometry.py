@@ -272,23 +272,24 @@ def rodrigues_axis_rotation(r, theta):
 
     where :math:`n = r / ||r||`
 
-    In case the angle :math:`||r||` is very small, the above formula may lead
+    In case the angle :math:`\theta` is very small, the above formula may lead
     to numerical instabilities. We instead use a Taylor expansion
-    around :math:`theta=0`:
+    around :math:`\theta=0`, with the skew-symmetric matrix of
+    :math:`\theta n`:
 
     .. math::
         :nowrap:
 
-        R = I + \sin(\theta)/\theta \mathbf{S}_r +
-        (1-\cos(\theta))/\theta^2 \mathbf{S}_r^2
+        R = I + \sin(\theta)/\theta \mathbf{S}_{\theta n} +
+        (1-\cos(\theta))/\theta^2 \mathbf{S}_{\theta n}^2
 
     leading to:
 
     .. math::
         :nowrap:
 
-        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_r +
-        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_r^2
+        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_{\theta n} +
+        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_{\theta n}^2
 
     Parameters
     ----------
@@ -315,11 +316,17 @@ def rodrigues_axis_rotation(r, theta):
 
     """
     theta = np.deg2rad(theta)
-    if theta > 1e-30:
-        n = r / np.linalg.norm(r)
+    if theta == 0:
+        return np.eye(3)
+    norm = np.linalg.norm(r)
+    if norm == 0:
+        raise ValueError("Rotation axis must be non-zero")
+    n = r / norm
+    if abs(theta) > 1e-30:
         Sn = np.array([[0, -n[2], n[1]], [n[2], 0, -n[0]], [-n[1], n[0], 0]])
         R = np.eye(3) + np.sin(theta) * Sn + (1 - np.cos(theta)) * np.dot(Sn, Sn)
     else:
+        r = theta * n
         Sr = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
         theta2 = theta * theta
         R = np.eye(3) + (1 - theta2 / 6.0) * Sr + (0.5 - theta2 / 24.0) * np.dot(Sr, Sr)
