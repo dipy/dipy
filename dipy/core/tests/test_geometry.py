@@ -181,6 +181,57 @@ def test_sphere_distance():
     assert_raises(ValueError, sphere_distance, [1, 0], [0, 1], radius=2.0)
 
 
+@pytest.mark.parametrize("radius", [None, 2.0])
+def test_sphere_distance_corresponding_rows(radius):
+    pts1 = 2 * np.eye(3)
+    pts2 = [[2, 0, 0], [2, 0, 0], [0, 0, -2]]
+    distances = sphere_distance(pts1, pts2, radius=radius)
+    assert_equal(distances.shape, (3,))
+    assert_array_almost_equal(distances, [0, np.pi, 2 * np.pi])
+
+
+@pytest.mark.parametrize(
+    "function, expected",
+    [(sphere_distance, [0, np.pi / 2, np.pi / 2]), (vector_cosine, [1, 0, 0])],
+)
+@pytest.mark.parametrize("shape", [(3,), (1, 3)])
+@pytest.mark.parametrize("swap", [False, True])
+def test_vector_geometry_broadcast(function, expected, shape, swap):
+    vectors = np.eye(3)
+    vector = np.array([1, 0, 0]).reshape(shape)
+    args = (vectors, vector) if swap else (vector, vectors)
+    result = function(*args)
+    assert_equal(result.shape, (3,))
+    assert_array_almost_equal(result, expected)
+
+
+@pytest.mark.parametrize("function", [vector_cosine, sphere_distance])
+def test_vector_geometry_coordinate_mismatch(function):
+    with pytest.raises(ValueError, match="not aligned"):
+        function([np.sqrt(3)], [1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "function, kwargs",
+    [(vector_cosine, {}), (sphere_distance, {"check_radius": False})],
+)
+@pytest.mark.parametrize(
+    "vecs1, vecs2",
+    [
+        ([0, 0], [0, 0]),
+        ([0, 0], [1, 0]),
+        ([1, 0], [0, 0]),
+        ([[1, 0], [0, 0]], [1, 0]),
+    ],
+)
+def test_vector_geometry_zero_length(function, kwargs, vecs1, vecs2):
+    with (
+        np.errstate(divide="raise", invalid="raise"),
+        pytest.raises(ValueError, match="zero-length"),
+    ):
+        function(vecs1, vecs2, **kwargs)
+
+
 @set_random_number_generator()
 def test_vector_cosine(rng=None):
     a = [0, 1]
@@ -206,6 +257,15 @@ def test_vector_cosine(rng=None):
     b_dm = b - np.mean(b)
     vcos = vector_cosine(a_dm, b_dm)
     assert_array_almost_equal(cc, vcos)
+
+
+def test_vector_cosine_corresponding_rows():
+    vecs1 = [[1, 0], [2, 0], [0, 3]]
+    vecs2 = [[4, 0], [0, 5], [0, -6]]
+    cosines = vector_cosine(vecs1, vecs2)
+    assert_equal(cosines.shape, (3,))
+    assert_array_almost_equal(cosines, [1, 0, -1])
+    assert_array_almost_equal(vector_cosine(vecs1, vecs1), np.ones(3))
 
 
 def test_lambert_equal_area_projection_polar():
