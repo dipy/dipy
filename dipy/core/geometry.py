@@ -1,4 +1,4 @@
-"""Utility functions for algebra etc"""
+"""Utility functions for algebra etc."""
 
 import itertools
 import math
@@ -46,7 +46,7 @@ _TUPLE2AXES = dict({(v, k) for k, v in _AXES2TUPLE.items()})
 
 
 def sphere2cart(r, theta, phi):
-    """Spherical to Cartesian coordinates
+    """Spherical to Cartesian coordinates.
 
     This is the standard physics convention where `theta` is the
     inclination (polar) angle, and `phi` is the azimuth angle.
@@ -66,7 +66,7 @@ def sphere2cart(r, theta, phi):
     axis.
 
     Geographical nomenclature designates theta as 'co-latitude', and phi
-    as 'longitude'
+    as 'longitude'.
 
     Parameters
     ----------
