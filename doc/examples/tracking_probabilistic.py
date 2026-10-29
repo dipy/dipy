@@ -32,10 +32,7 @@ from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import probabilistic_tracking
 from dipy.tracking.utils import seeds_from_mask
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -80,14 +77,23 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_probabilistic_sf.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_probabilistic_sf.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo.
+
+show_manager = window.ShowManager(
+    title="tractogram_probabilistic_sf", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -122,14 +128,19 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_probabilistic_sh.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_probabilistic_sh.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_probabilistic_sh", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -171,14 +182,19 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_probabilistic_sh_pfm.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_probabilistic_sh_pfm.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_probabilistic_sh_pfm", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
