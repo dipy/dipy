@@ -71,12 +71,11 @@ scene = window.Scene()
 scene.add(streamlines_actor)
 
 ###############################################################################
-# Show the streamlines with an orientation gizmo and simulate a click on its
-# ``S`` label to snap the camera to the superior (axial) view.
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; click a gizmo label to snap the camera to that side.
 
 show_manager = window.ShowManager(title="tractogram_ptt", size=(800, 800), scene=scene)
-gizmo = actor.gizmo(show_manager)
-actor.click_gizmo(show_manager, gizmo, "S")
+_gizmo = actor.gizmo(show_manager)
 show_manager.start()
 
 ###############################################################################

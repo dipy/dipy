@@ -95,7 +95,7 @@ scene.add(streamlines_actor)
 show_manager = window.ShowManager(
     title="tractogram_deterministic", size=(800, 800), scene=scene
 )
-gizmo = actor.gizmo(show_manager)
+_gizmo = actor.gizmo(show_manager)
 show_manager.start()
 
 ###############################################################################
