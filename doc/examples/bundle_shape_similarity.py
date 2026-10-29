@@ -44,26 +44,18 @@ bundle2 = select_random_set_of_streamlines(cb_subj1, 60, rng=None)
 # Now, let's visualize two bundles.
 
 
-def show_both_bundles(bundles, colors=None, show=True, fname=None):
-    scene = window.Scene()
-    scene.SetBackground(1.0, 1, 1)
-    for i, bundle in enumerate(bundles):
-        color = colors[i]
-        streamtube_actor = actor.streamtube(bundle, colors=color, linewidth=0.3)
-        streamtube_actor.RotateX(-90)
-        streamtube_actor.RotateZ(90)
-        scene.add(streamtube_actor)
-    if show:
-        window.show(scene)
-    if fname is not None:
-        window.record(scene=scene, n_frames=1, out_path=fname, size=(900, 900))
+def show_both_bundles(bundles, colors, title):
+    scene = window.Scene(background=(1, 1, 1, 1))
+    for bundle, color in zip(bundles, colors):
+        scene.add(actor.streamtube(bundle, colors=color, radius=0.3))
+    show_manager = window.ShowManager(title=title, size=(900, 900), scene=scene)
+    screen = show_manager.screens[0]
+    screen.camera.show_object(screen.scene.main_scene, view_dir=(1, 0, 0), up=(0, 0, 1))
+    show_manager.start()
 
 
 show_both_bundles(
-    [bundle1, bundle2],
-    colors=[(1, 0, 0), (0, 1, 0)],
-    show=False,
-    fname="two_bundles.png",
+    [bundle1, bundle2], colors=[(1, 0, 0), (0, 1, 0)], title="two_bundles"
 )
 
 ###############################################################################

@@ -108,32 +108,25 @@ n_pts_ds2 = [len(streamline) for streamline in bundle_downsampled2]
 # Both, ``set_number_of_points`` and ``approx_polygon_track`` can be thought as
 # methods for lossy compression of streamlines.
 
-# Enables/disables interactive visualization
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(*window.colors.white)
-bundle_actor = actor.streamtube(bundle, colors=window.colors.red, linewidth=0.3)
-
+scene = window.Scene(background=(1, 1, 1, 1))
+bundle_actor = actor.streamtube(bundle, colors=(1, 0, 0), radius=0.3)
 scene.add(bundle_actor)
 
-bundle_actor2 = actor.streamtube(
-    bundle_downsampled, colors=window.colors.red, linewidth=0.3
-)
-bundle_actor2.SetPosition(0, 40, 0)
+bundle_actor2 = actor.streamtube(bundle_downsampled, colors=(1, 0, 0), radius=0.3)
+bundle_actor2.local.position = (0, 40, 0)
 
-bundle_actor3 = actor.streamtube(
-    bundle_downsampled2, colors=window.colors.red, linewidth=0.3
-)
-bundle_actor3.SetPosition(0, 80, 0)
+bundle_actor3 = actor.streamtube(bundle_downsampled2, colors=(1, 0, 0), radius=0.3)
+bundle_actor3.local.position = (0, 80, 0)
 
 scene.add(bundle_actor2)
 scene.add(bundle_actor3)
 
-scene.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
-window.record(scene=scene, out_path="simulated_cosine_bundle.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="simulated_cosine_bundle", size=(900, 900), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(screen.scene.main_scene, view_dir=(1, 0, 0), up=(0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
