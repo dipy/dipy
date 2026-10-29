@@ -60,8 +60,8 @@ def test_reslice_auto_voxsize(tmp_path, caplog):
     assert any(
         "new_vox_size not provided" in record.message for record in warning_records
     ), "Expected warning about auto-calculation"
-    assert any("vox_factor=0.14" in record.message for record in warning_records), (
-        "Expected warning to include vox_factor value"
+    assert any("preserve the original voxel" in r.message for r in warning_records), (
+        "Expected warning to explain the volume-preserving rule"
     )
 
     out_path = reslice_flow.last_generated_outputs["out_resliced"]
@@ -70,22 +70,14 @@ def test_reslice_auto_voxsize(tmp_path, caplog):
     npt.assert_equal(resliced.shape[-1], volume.shape[-1])
 
 
-def test_reslice_custom_voxfactor(tmp_path, caplog):
-    """Test ResliceFlow with custom vox_factor parameter."""
-
+def test_reslice_vox_factor_deprecated(tmp_path):
+    """Test that vox_factor triggers a deprecation warning and is ignored."""
     data_path, _, _ = get_fnames(name="small_25")
     volume = load_nifti_data(data_path)
 
-    with caplog.at_level(logging.WARNING, logger="dipy"):
+    with pytest.warns(DeprecationWarning, match="vox_factor"):
         reslice_flow = ResliceFlow()
-        custom_factor = 0.5
-        reslice_flow.run(data_path, vox_factor=custom_factor, out_dir=tmp_path)
-
-    warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
-    assert len(warning_records) > 0, "Expected WARNING level log message"
-    assert any(
-        f"vox_factor={custom_factor}" in record.message for record in warning_records
-    ), f"Expected warning to include vox_factor={custom_factor}"
+        reslice_flow.run(data_path, vox_factor=0.5, out_dir=tmp_path)
 
     out_path = reslice_flow.last_generated_outputs["out_resliced"]
     resliced = load_nifti_data(out_path)
@@ -169,53 +161,48 @@ def test_reslice_skip_returns_original_path(tmp_path, caplog):
     npt.assert_equal(resliced.shape, data.shape)
 
 
-def test_reslice_auto_scale_guard(caplog, tmp_path):
-    """Auto-calculated voxel size > 2.0mm gets halved to [1.0, 2.0)."""
-    affine = np.eye(4)
-
-    for orig_zooms, expected_divisor in [(2.5, 2), (5.0, 4), (3.9, 2)]:
-        data = np.random.rand(10, 10, 10).astype(np.float32)
-        img = nib.Nifti1Image(data, affine)
-        img.header.set_zooms([orig_zooms, orig_zooms, orig_zooms])
-        in_path = tmp_path / f"vol_{orig_zooms}.nii.gz"
-        nib.save(img, str(in_path))
-
-        with caplog.at_level(logging.WARNING, logger="dipy"):
-            caplog.clear()
-            out_dir = tmp_path / f"out_{orig_zooms}"
-            out_dir.mkdir()
-            ResliceFlow().run(str(in_path), out_dir=str(out_dir))
-
-        expected_vox = orig_zooms / expected_divisor
-        warning_messages = " ".join(
-            r.message for r in caplog.records if r.levelname == "WARNING"
-        )
-        assert f"Divided by {expected_divisor}" in warning_messages, (
-            f"Expected divisor {expected_divisor} for {orig_zooms}mm. Messages: {warning_messages}"
-        )
-        assert f"{expected_vox:.4f}" in warning_messages, (
-            f"Expected {expected_vox:.4f}mm in warning. Messages: {warning_messages}"
-        )
-
-
-def test_reslice_auto_scale_guard_no_trigger(caplog, tmp_path):
-    """Auto-calculated voxel size <= 2.0mm is not modified."""
-    affine = np.eye(4)
-    data = np.random.rand(10, 10, 10).astype(np.float32)
-    img = nib.Nifti1Image(data, affine)
-    img.header.set_zooms([2.0, 2.0, 2.0])
-    in_path = tmp_path / "vol_2mm.nii.gz"
+@pytest.mark.parametrize(
+    "orig_zooms, expected_vox",
+    [
+        ((1.0, 1.0, 3.0), 1.5),
+        ((2.0, 2.0, 2.5), 2.25),
+        ((0.9, 0.9, 4.0), 1.5),
+    ],
+)
+def test_reslice_auto_voxsize_preserves_volume(
+    caplog, tmp_path, orig_zooms, expected_vox
+):
+    """Auto voxel size matches the original voxel volume."""
+    data = np.random.rand(12, 12, 6).astype(np.float32)
+    img = nib.Nifti1Image(data, np.diag(list(orig_zooms) + [1.0]))
+    in_path = tmp_path / "vol.nii.gz"
     nib.save(img, str(in_path))
 
     with caplog.at_level(logging.WARNING, logger="dipy"):
-        ResliceFlow().run(str(in_path), out_dir=str(tmp_path / "out"))
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(str(in_path), out_dir=str(tmp_path / "out"))
 
-    warning_messages = " ".join(
-        r.message for r in caplog.records if r.levelname == "WARNING"
-    )
-    assert "Divided by" not in warning_messages, (
-        f"Should not trigger auto-scale at 2.0mm. Messages: {warning_messages}"
-    )
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    _, _, new_zooms = load_nifti(out_path, return_voxsize=True)
+    npt.assert_almost_equal(new_zooms[:3], [expected_vox] * 3)
+
+
+@pytest.mark.parametrize("orig_vox", [2.0, 2.5, 5.0])
+def test_reslice_auto_voxsize_isotropic_skipped(caplog, tmp_path, orig_vox):
+    """Isotropic input is never up- or down-sampled by the auto rule."""
+    data = np.random.rand(10, 10, 10).astype(np.float32)
+    img = nib.Nifti1Image(data, np.diag([orig_vox] * 3 + [1.0]))
+    in_path = tmp_path / "vol.nii.gz"
+    nib.save(img, str(in_path))
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(str(in_path), out_dir=str(tmp_path / "out"))
+
+    messages = " ".join(r.message for r in caplog.records)
+    assert "Skipping reslicing" in messages, messages
+    out_path = Path(reslice_flow.last_generated_outputs["out_resliced"])
+    assert out_path.resolve() == in_path.resolve()
 
 
 def test_slr_flow(tmp_path, caplog):
@@ -715,7 +702,7 @@ def test_apply_affine_transform(tmp_path):
     image_registration_flow = ImageRegistrationFlow()
     apply_trans = ApplyTransformFlow()
 
-    for i in factors.keys():
+    for i in factors:
         static, moving, static_g2w, moving_g2w, smask, mmask, M = (
             setup_random_transform(transform=regtransforms[i], rfactor=factors[i][0])
         )
