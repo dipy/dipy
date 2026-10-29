@@ -14,7 +14,7 @@ else:
     from dipy.data import get_sphere
     from dipy.reconst.shm import sh_to_sf
     from dipy.viz import actor
-    from dipy.viz.actor import _snap_camera_to_axis, _sync_gizmo
+    from dipy.viz.actor import _snap_camera_to_axis, _sync_gizmo, _taubin_smooth
 
 
 def _isotropic_coeffs(shape=(3, 3, 3)):
@@ -219,3 +219,84 @@ def test_click_gizmo_rejects_unknown_label():
             actor.click_gizmo(manager, anchor, "X")
     finally:
         manager.close()
+
+
+def _contour_vertices(contour):
+    return np.vstack([child.geometry.positions.data for child in contour.children])
+
+
+def _slab_roi():
+    roi = np.zeros((12, 20, 12), dtype=np.uint8)
+    roi[5:8, 3:17, 4:9] = 1
+    return roi
+
+
+def test_smooth_contour_from_roi_rounds_voxel_corners_without_shrinking():
+    roi = _slab_roi()
+    blocky = _contour_vertices(actor.smooth_contour_from_roi(roi, iterations=0))
+    smooth = _contour_vertices(actor.smooth_contour_from_roi(roi, iterations=20))
+
+    assert not np.allclose(smooth, blocky)
+    npt.assert_array_less(smooth.min(axis=0), blocky.min(axis=0) + 1.5)
+    npt.assert_array_less(blocky.max(axis=0) - 1.5, smooth.max(axis=0))
+    npt.assert_allclose(smooth.mean(axis=0), blocky.mean(axis=0), atol=0.2)
+
+
+def test_smooth_contour_from_roi_applies_affine():
+    roi = _slab_roi()
+    affine = np.eye(4)
+    affine[:3, 3] = (10, -5, 2)
+    plain = _contour_vertices(actor.smooth_contour_from_roi(roi))
+    moved = _contour_vertices(actor.smooth_contour_from_roi(roi, affine=affine))
+    npt.assert_allclose(moved, plain + (10, -5, 2), atol=1e-4)
+
+
+def test_smooth_contour_from_roi_one_actor_per_object():
+    roi = _slab_roi()
+    roi[0:2, 0:2, 0:2] = 1
+    assert len(actor.smooth_contour_from_roi(roi).children) == 2
+
+
+def _bumpy_grid(size=7):
+    """Flat triangulated grid in the z=0 plane with a unit bump at its center."""
+    xs, ys = np.meshgrid(np.arange(size), np.arange(size), indexing="ij")
+    vertices = np.column_stack([xs.ravel(), ys.ravel(), np.zeros(size * size)])
+    index = np.arange(size * size).reshape(size, size)
+    lower_left, lower_right = index[:-1, :-1].ravel(), index[:-1, 1:].ravel()
+    upper_left, upper_right = index[1:, :-1].ravel(), index[1:, 1:].ravel()
+    faces = np.vstack(
+        [
+            np.column_stack([lower_left, lower_right, upper_right]),
+            np.column_stack([lower_left, upper_right, upper_left]),
+        ]
+    )
+    vertices[index[size // 2, size // 2], 2] = 1.0
+    return vertices, faces
+
+
+def test_taubin_smooth_zero_iterations_returns_unchanged_copy():
+    vertices, faces = _bumpy_grid()
+    original = vertices.copy()
+    smoothed = _taubin_smooth(vertices, faces, 0)
+    npt.assert_array_equal(smoothed, original)
+    smoothed[0] += 1
+    npt.assert_array_equal(vertices, original)
+
+
+def test_taubin_smooth_flattens_bump_progressively():
+    vertices, faces = _bumpy_grid()
+    original = vertices.copy()
+    heights = [
+        np.abs(_taubin_smooth(vertices, faces, iterations)[:, 2]).max()
+        for iterations in (1, 5, 20)
+    ]
+    assert heights[0] < 1.0
+    assert heights[0] > heights[1] > heights[2]
+    npt.assert_array_equal(vertices, original)
+
+
+def test_taubin_smooth_keeps_flat_mesh_in_plane():
+    vertices, faces = _bumpy_grid()
+    vertices[:, 2] = 0
+    smoothed = _taubin_smooth(vertices, faces, 10)
+    npt.assert_allclose(smoothed[:, 2], 0, atol=1e-12)

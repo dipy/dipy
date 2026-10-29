@@ -2,7 +2,9 @@
 
 from functools import partial
 
+from nibabel.affines import apply_affine
 import numpy as np
+from scipy import sparse
 
 from dipy.data import get_sphere
 from dipy.reconst.shm import (
@@ -19,13 +21,16 @@ from dipy.viz.skyline.render.sh_slicer import SHSlicer
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.actor import *
-    from fury.actor import Group, create_axes_helper
+    from fury.actor import Group, create_axes_helper, surface
+    from fury.colormap import normalize_colors
     from fury.lib import EventType, PointerEvent
     from fury.transform import apply_transformation
+    from fury.utils import voxel_mesh_by_object
     from fury.window import update_camera
 else:
-    Group = create_axes_helper = EventType = PointerEvent = fury
-    apply_transformation = update_camera = fury
+    Group = create_axes_helper = surface = EventType = PointerEvent = fury
+    apply_transformation = update_camera = normalize_colors = fury
+    voxel_mesh_by_object = fury
 
 
 _SH_BASIS_FUNCTIONS = {
@@ -377,3 +382,82 @@ def click_gizmo(show_manager, gizmo_actor, label):
             target=gizmo_actor.endpoints[label],
         )
     )
+
+
+# TODO: Move `_taubin_smooth` and `smooth_contour_from_roi` to FURY and remove them
+# from DIPY once https://github.com/fury-gl/fury/issues/1390 is closed
+# (smooth option for `contour_from_roi` and `contour_from_label`).
+def _taubin_smooth(vertices, faces, iterations, *, lam=0.5, mu=-0.53):
+    """Smooth a triangle mesh with Taubin (shrink-free) Laplacian smoothing.
+
+    Parameters
+    ----------
+    vertices : ndarray, shape (N, 3)
+        Mesh vertices.
+    faces : ndarray, shape (M, 3)
+        Triangle vertex indices.
+    iterations : int
+        Number of smoothing passes.
+    lam : float, optional
+        Positive (shrinking) step.
+    mu : float, optional
+        Negative (inflating) step, slightly larger in magnitude than ``lam``.
+
+    Returns
+    -------
+    ndarray, shape (N, 3)
+        Smoothed vertices.
+    """
+    n_vertices = len(vertices)
+    rows = faces[:, [0, 1, 2, 1, 2, 0]].ravel()
+    cols = faces[:, [1, 2, 0, 0, 1, 2]].ravel()
+    adjacency = sparse.coo_matrix(
+        (np.ones(len(rows)), (rows, cols)), shape=(n_vertices, n_vertices)
+    ).tocsr()
+    adjacency.data[:] = 1
+    neighbor_mean = sparse.diags(1 / np.ravel(adjacency.sum(axis=1))) @ adjacency
+
+    smoothed = np.array(vertices, dtype=float)
+    for _ in range(iterations):
+        smoothed += lam * (neighbor_mean @ smoothed - smoothed)
+        smoothed += mu * (neighbor_mean @ smoothed - smoothed)
+    return smoothed
+
+
+def smooth_contour_from_roi(
+    data, *, affine=None, color=(1, 0, 0), opacity=0.5, iterations=20
+):
+    """Generate a smooth surface actor from a binary ROI.
+
+    Parameters
+    ----------
+    data : ndarray, shape (X, Y, Z)
+        ROI volume; voxels with a value above zero are displayed.
+    affine : ndarray, shape (4, 4), optional
+        Affine mapping voxel coordinates to world coordinates.
+    color : str, tuple, list or ndarray, optional
+        Contour color (hex string, RGB in [0, 1] or in [0, 255]).
+    opacity : float, optional
+        Opacity from 0 (transparent) to 1 (opaque).
+    iterations : int, optional
+        Number of smoothing passes. Use 0 to keep the blocky voxel surface.
+
+    Returns
+    -------
+    Group
+        One surface actor per connected object of the ROI.
+
+    Notes
+    -----
+    :func:`fury.actor.contour_from_roi` draws the voxel faces, which looks
+    staircased on anatomical ROIs. This function smooths that surface with
+    Taubin smoothing, which does not shrink the ROI.
+    """
+    color = normalize_colors(color)[0][:3]
+    contour = Group()
+    for mesh in voxel_mesh_by_object(data, triangulate=True).values():
+        vertices = _taubin_smooth(mesh["verts"], mesh["faces"], iterations)
+        if affine is not None:
+            vertices = apply_affine(affine, vertices)
+        contour.add(surface(vertices, mesh["faces"], colors=color, opacity=opacity))
+    return contour
