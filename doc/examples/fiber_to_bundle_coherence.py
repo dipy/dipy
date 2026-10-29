@@ -57,8 +57,6 @@ from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import probabilistic_tracking
 from dipy.viz import actor, window
 
-# Enables/disables interactive visualization
-interactive = False
 # Fix seed
 rng = np.random.default_rng(1)
 
@@ -215,31 +213,47 @@ fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(
 scene = window.Scene()
 
 # Original lines colored by LFBC
-lineactor = actor.line(fbc_sl_orig, colors=np.vstack(clrs_orig), linewidth=0.2)
+lineactor = actor.streamlines(
+    fbc_sl_orig,
+    colors=np.vstack(clrs_orig),
+    thickness=0.05,
+    outline_thickness=0.05,
+)
 scene.add(lineactor)
 
-# Horizontal (axial) slice of T1 data
-vol_actor1 = actor.slicer(t1_data, affine=affine)
-vol_actor1.display(z=20)
-scene.add(vol_actor1)
-
-# Vertical (sagittal) slice of T1 data
-vol_actor2 = actor.slicer(t1_data, affine=affine)
-vol_actor2.display(x=35)
-scene.add(vol_actor2)
+# Axial and sagittal slices of T1 data
+vol_actor = actor.volume_slicer(
+    t1_data, affine=affine, visibility=(True, False, True), depth_write=True
+)
+slice_voxel = np.array([35, 0, 20])
+actor.show_slices(vol_actor, affine[:3, :3] @ slice_voxel + affine[:3, 3])
+scene.add(vol_actor)
 
 # Show original fibers
-scene.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
-window.record(scene=scene, n_frames=1, out_path="OR_before.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+camera_view_dir = (264, -299, -146)
+show_manager = window.ShowManager(title="OR_before", size=(900, 900), scene=scene)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=(0, 0, 1)
+)
+show_manager.start()
 
 # Show thresholded fibers
-scene.rm(lineactor)
-scene.add(actor.line(fbc_sl_thres, colors=np.vstack(clrs_thres), linewidth=0.2))
-window.record(scene=scene, n_frames=1, out_path="OR_after.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+scene.remove(lineactor)
+scene.add(
+    actor.streamlines(
+        fbc_sl_thres,
+        colors=np.vstack(clrs_thres),
+        thickness=0.05,
+        outline_thickness=0.05,
+    )
+)
+show_manager = window.ShowManager(title="OR_after", size=(900, 900), scene=scene)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=(0, 0, 1)
+)
+show_manager.start()
 
 ###############################################################################
 # .. _optic_radiation_before_cleaning:

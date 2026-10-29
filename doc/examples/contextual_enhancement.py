@@ -123,11 +123,6 @@ data_noisy_small = data_noisy[
 ]
 
 ###############################################################################
-# Enables/disables interactive visualization
-
-interactive = False
-
-###############################################################################
 # Fit an initial model to the data, in this case Constrained Spherical
 # Deconvolution is used.
 
@@ -168,16 +163,20 @@ spike_shm_conv = convolve(
     sf_to_sh(spike, k.get_sphere(), sh_order_max=8), k, sh_order_max=8, test_mode=True
 )
 
-spike_sf_conv = sh_to_sf(spike_shm_conv, default_sphere, sh_order_max=8)
 model_kernel = actor.odf_slicer(
-    spike_sf_conv * 6, sphere=default_sphere, norm=False, scale=0.4
+    sh_coeffs=spike_shm_conv * 6,
+    slices=(3, 3, 3),
+    visibility=(True, False, False),
+    scale=0.4,
+    norm=False,
 )
-model_kernel.display(x=3)
 scene.add(model_kernel)
-scene.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
-window.record(scene=scene, out_path="kernel.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+
+show_manager = window.ShowManager(title="kernel", size=(900, 900), scene=scene)
+show_manager.screens[0].camera.show_object(
+    show_manager.screens[0].scene.main_scene, view_dir=(1, 0, 0), up=(0, 0, 1)
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -218,39 +217,49 @@ scene = window.Scene()
 
 # original ODF field
 fodf_spheres_org = actor.odf_slicer(
-    csd_sf_orig, sphere=default_sphere, scale=0.4, norm=False
+    sh_func=csd_sf_orig,
+    sphere=default_sphere,
+    visibility=(False, False, True),
+    scale=0.4,
+    norm=False,
 )
-fodf_spheres_org.display(z=3)
-fodf_spheres_org.SetPosition(0, 25, 0)
+fodf_spheres_org.local.position = (0, 25, 0)
 scene.add(fodf_spheres_org)
 
 # ODF field with added noise
 fodf_spheres = actor.odf_slicer(
-    csd_sf_noisy,
+    sh_func=csd_sf_noisy,
     sphere=default_sphere,
+    visibility=(False, False, True),
     scale=0.4,
     norm=False,
 )
-fodf_spheres.SetPosition(0, 0, 0)
 scene.add(fodf_spheres)
 
 # Enhancement of noisy ODF field
 fodf_spheres_enh = actor.odf_slicer(
-    csd_sf_enh, sphere=default_sphere, scale=0.4, norm=False
+    sh_func=csd_sf_enh,
+    sphere=default_sphere,
+    visibility=(False, False, True),
+    scale=0.4,
+    norm=False,
 )
-fodf_spheres_enh.SetPosition(25, 0, 0)
+fodf_spheres_enh.local.position = (25, 0, 0)
 scene.add(fodf_spheres_enh)
 
 # Additional sharpening
 fodf_spheres_enh_sharp = actor.odf_slicer(
-    csd_sf_enh_sharp, sphere=default_sphere, scale=0.4, norm=False
+    sh_func=csd_sf_enh_sharp,
+    sphere=default_sphere,
+    visibility=(False, False, True),
+    scale=0.4,
+    norm=False,
 )
-fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
+fodf_spheres_enh_sharp.local.position = (25, 25, 0)
 scene.add(fodf_spheres_enh_sharp)
 
-window.record(scene=scene, out_path="enhancements.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="enhancements", size=(900, 900), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
