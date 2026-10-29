@@ -7,13 +7,8 @@ Surface seeding is a way to generate initial position for tractography
 from cortical surfaces position :footcite:p:`StOnge2018`.
 """
 
-from fury.io import load_polydata
-from fury.utils import (
-    get_actor_from_polydata,
-    get_polydata_triangles,
-    get_polydata_vertices,
-    normals_from_v_f,
-)
+from fury.io import read_mesh
+from fury.utils import normals_from_v_f
 import numpy as np
 
 from dipy.data import get_fnames
@@ -27,29 +22,22 @@ from dipy.viz import actor, window
 # Fetch and load a surface
 
 brain_lh = get_fnames(name="fury_surface")
-polydata = load_polydata(str(brain_lh))
-
-###############################################################################
-# Extract the triangles and vertices
-
-triangles = get_polydata_triangles(polydata)
-vts = get_polydata_vertices(polydata)
+vertices, triangles, _ = read_mesh(str(brain_lh))
 
 ###############################################################################
 # Display the surface
 # ===============================================
 #
-# First, create an actor from the polydata, to display in the scene
+# First, create a surface actor from the vertices and triangles
 
+surface_actor = actor.surface(vertices, triangles)
 scene = window.Scene()
-surface_actor = get_actor_from_polydata(polydata)
-
 scene.add(surface_actor)
-scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
 
-# Uncomment the line below to show to display the window
-# window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene=scene, out_path="surface_seed1.png", size=(600, 600))
+show_manager = window.ShowManager(title="surface_seed1", size=(600, 600), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -74,21 +62,21 @@ tri_idx, trilin_co = random_coordinates_from_surface(nb_triangles, nb_seeds)
 # Get the 3d cartesian position from triangles indices and trilinear
 # coordinates
 
-seed_pts = seeds_from_surface_coordinates(triangles, vts, tri_idx, trilin_co)
+seed_pts = seeds_from_surface_coordinates(triangles, vertices, tri_idx, trilin_co)
 
 ###############################################################################
 # Compute normal and get the normal direction for each seeds
 
-normals = normals_from_v_f(vts, triangles)
+normals = normals_from_v_f(vertices, triangles)
 seed_n = seeds_from_surface_coordinates(triangles, normals, tri_idx, trilin_co)
 
 ###############################################################################
-# Create dot actor for seeds (blue)
+# Create point actor for seeds (blue)
 
-seed_actors = actor.dot(seed_pts, colors=(0, 0, 1), dot_size=4.0)
+seed_actor = actor.point(seed_pts, colors=(0, 0, 1), size=6.0)
 
 ###############################################################################
-# Create line actors for seeds normals (green outside, red inside)
+# Create streamline actors for seeds normals (green outside, red inside)
 
 normal_length = 0.5
 normal_in = np.tile(seed_pts[:, np.newaxis, :], (1, 2, 1))
@@ -96,22 +84,23 @@ normal_out = np.tile(seed_pts[:, np.newaxis, :], (1, 2, 1))
 normal_in[:, 0] -= seed_n * normal_length
 normal_out[:, 1] += seed_n * normal_length
 
-normal_in_actor = actor.line(normal_in, colors=(1, 0, 0))
-normal_out_actor = actor.line(normal_out, colors=(0, 1, 0))
+normal_in_actor = actor.streamlines(
+    normal_in, colors=(1, 0, 0), thickness=0.05, outline_thickness=0
+)
+normal_out_actor = actor.streamlines(
+    normal_out, colors=(0, 1, 0), thickness=0.05, outline_thickness=0
+)
 
 ###############################################################################
-# Visualise seeds and normals along the surface
+# Visualise seeds and normals along the surface. The orientation gizmo in the
+# bottom-left corner snaps the camera to the side of the clicked label. Here
+# the click on the ``L`` label is simulated to get a left lateral view.
 
-scene = window.Scene()
-scene.add(surface_actor)
-scene.add(seed_actors)
-scene.add(normal_in_actor)
-scene.add(normal_out_actor)
-scene.set_camera(position=(-500, 0, 0), view_up=(0.0, 0.0, 1))
-
-# Uncomment the line below to show to display the window
-# window.show(scene, size=(600, 600), reset_camera=False)
-window.record(scene=scene, out_path="surface_seed2.png", size=(600, 600))
+scene.add(seed_actor, normal_in_actor, normal_out_actor)
+show_manager = window.ShowManager(title="surface_seed2", size=(600, 600), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

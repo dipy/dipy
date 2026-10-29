@@ -18,10 +18,7 @@ from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import ptt_tracking
 from dipy.tracking.utils import seeds_from_mask
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -64,12 +61,23 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_ptt.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(scene=scene, out_path="tractogram_ptt.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo and simulate a click on its
+# ``S`` label to snap the camera to the superior (axial) view.
+
+show_manager = window.ShowManager(title="tractogram_ptt", size=(800, 800), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "S")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

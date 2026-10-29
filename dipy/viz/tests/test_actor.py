@@ -188,3 +188,34 @@ def test_gizmo_rejects_second_gizmo_on_same_screen():
             actor.gizmo(manager)
     finally:
         manager.close()
+
+
+@pytest.mark.parametrize(
+    "label, forward, up",
+    [
+        ("L", (1, 0, 0), (0, 0, 1)),
+        ("A", (0, -1, 0), (0, 0, 1)),
+        ("S", (0, 0, -1), (0, 1, 0)),
+    ],
+)
+def test_click_gizmo_snaps_camera_to_label_side(label, forward, up):
+    manager = _offscreen_manager()
+    screen = manager.screens[0]
+    try:
+        screen.scene.add(actor.box(np.zeros((1, 3))))
+        anchor = actor.gizmo(manager)
+        actor.click_gizmo(manager, anchor, label)
+        npt.assert_allclose(screen.camera.world.forward, forward, atol=1e-5)
+        npt.assert_allclose(screen.camera.world.up, up, atol=1e-5)
+    finally:
+        manager.close()
+
+
+def test_click_gizmo_rejects_unknown_label():
+    manager = _offscreen_manager()
+    try:
+        anchor = actor.gizmo(manager)
+        with pytest.raises(ValueError, match="Unknown gizmo label"):
+            actor.click_gizmo(manager, anchor, "X")
+    finally:
+        manager.close()
