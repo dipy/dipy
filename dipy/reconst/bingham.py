@@ -386,7 +386,7 @@ def k2odi(k):
 
     Returns
     -------
-    ODI: float or ndarray
+    odi: float or ndarray
         Orientation Dispersion Index
 
     Notes
