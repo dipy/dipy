@@ -149,3 +149,20 @@ def test_isotropic_voxel_size_exact_and_errors():
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0))
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 0.0, 1.0))
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0, 2.0), step=-1)
+
+
+def test_reslice_auto_new_zooms():
+    affine = np.diag([1.0, 1.0, 3.0, 1.0])
+    data = np.random.rand(30, 30, 10).astype(np.float32)
+
+    data2, affine2 = reslice(data, affine, (1.0, 1.0, 3.0), None)
+    assert_almost_equal(np.sqrt((affine2[:3, :3] ** 2).sum(0)), [1.5] * 3)
+    assert_equal(data2.shape, (20, 20, 20))
+    assert_almost_equal(np.array(data2.shape) * 1.5, np.array(data.shape) * [1, 1, 3])
+
+    data4d = np.repeat(data[..., None], 2, axis=-1)
+    data4d2, _ = reslice(data4d, affine, (1.0, 1.0, 3.0), None)
+    assert_equal(data4d2.shape, (20, 20, 20, 2))
+
+    data_l, _ = reslice(data, affine, (1.0, 1.0, 3.0), None, order="lanczos")
+    assert_equal(data_l.shape, (20, 20, 20))

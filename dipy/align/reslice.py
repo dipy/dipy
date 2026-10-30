@@ -219,8 +219,10 @@ def reslice(
         mapping from voxel coordinates to world coordinates
     zooms : tuple, shape (3,)
         voxel size for (i,j,k) dimensions
-    new_zooms : tuple, shape (3,)
-        new voxel size for (i,j,k) after resampling
+    new_zooms : tuple, shape (3,) or None
+        new voxel size for (i,j,k) after resampling. If None, an isotropic
+        voxel size preserving the original voxel volume is selected with
+        :func:`isotropic_voxel_size`.
     order : int or str
         Interpolation order. Integer 0–5 selects spline order via scipy
         (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
@@ -268,6 +270,13 @@ def reslice(
     >>> data2.shape == (77, 77, 40)
     True
 
+    With ``new_zooms=None`` the isotropic voxel size preserving the original
+    voxel volume (4 * 4 * 5 = 80) is used, here 4.25 (4.25 ** 3 = 76.8).
+
+    >>> data3, affine3 = reslice(data, affine, zooms, None)
+    >>> data3.shape == (55, 55, 28)
+    True
+
     """
     num_processes = determine_num_processes(num_processes)
 
@@ -299,6 +308,8 @@ def reslice(
     # input to scipy's affine_transform is [0, 0, 0]
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*scipy.*18.*", category=UserWarning)
+        if new_zooms is None:
+            new_zooms = (isotropic_voxel_size(zooms),) * 3
         new_zooms = np.array(new_zooms, dtype="f8")
         zooms = np.array(zooms, dtype="f8")
         scale = new_zooms / zooms
