@@ -22,7 +22,7 @@ from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines, cluster_confidence
 from dipy.tracking.tracker import eudx_tracking
 from dipy.tracking.utils import length
-from dipy.viz import actor, window
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # First, we need to generate some streamlines. For a more complete
@@ -85,32 +85,36 @@ for i, sl in enumerate(streamlines):
 
 cci = cluster_confidence(long_streamlines)
 
-# Visualize the streamlines, colored by cci
+###############################################################################
+# We color each streamline by its CCI, going from pale cyan (low) to saturated
+# red (high): hue goes from 0.5 to 1 and saturation from 0 to 1. The color bar
+# maps values to these colors. They saturate above a quarter of the maximum CCI.
+
+cci_range = (cci.min(), cci.max() / 4)
+cci_bar = actor.scalar_bar(
+    clim=cci_range,
+    hsv_range=((0.5, 1), (0, 1), (1, 1)),
+    orientation="vertical",
+    title="CCI",
+    tick_format=".1f",
+    position=(700, 250),
+)
+cci_colors = cci_bar.map_values(cci)
+
+stream_actor = actor.streamlines(
+    long_streamlines, colors=cci_colors, thickness=0.05, outline_thickness=0
+)
 scene = window.Scene()
-
-hue = [0.5, 1]
-saturation = [0.0, 1.0]
-
-lut_cmap = actor.colormap_lookup_table(
-    scale_range=(cci.min(), cci.max() / 4), hue_range=hue, saturation_range=saturation
-)
-
-bar3 = actor.scalar_bar(lookup_table=lut_cmap)
-scene.add(bar3)
-
-stream_actor = actor.line(
-    long_streamlines, colors=cci, linewidth=0.1, lookup_colormap=lut_cmap
-)
 scene.add(stream_actor)
+scene.ui_scene.add(cci_bar)
 
 ###############################################################################
-# If you set interactive to True (below), the scene will pop up in an
-# interactive window.
+# Show the streamlines from above, FURY's default camera view, with an
+# orientation gizmo.
 
-interactive = False
-if interactive:
-    window.show(scene)
-window.record(scene=scene, out_path="cci_streamlines.png", size=(800, 800))
+show_manager = window.ShowManager(title="cci_streamlines", size=(800, 800), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -151,17 +155,24 @@ for i, sl in enumerate(long_streamlines):
     if cci[i] >= 1:
         keep_streamlines.append(sl)
 
-# Visualize the streamlines we kept
+###############################################################################
+# Show the filtered streamlines from above, FURY's default camera view, with an
+# orientation gizmo.
+
+keep_streamlines_actor = actor.streamlines(
+    keep_streamlines,
+    colors=colormap.line_colors(keep_streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
 scene = window.Scene()
-
-keep_streamlines_actor = actor.line(keep_streamlines, linewidth=0.1)
-
 scene.add(keep_streamlines_actor)
 
-interactive = False
-if interactive:
-    window.show(scene)
-window.record(scene=scene, out_path="filtered_cci_streamlines.png", size=(800, 800))
+show_manager = window.ShowManager(
+    title="filtered_cci_streamlines", size=(800, 800), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
