@@ -1041,6 +1041,19 @@ def test_extract_b0():
     npt.assert_almost_equal(result_grouped[..., 0], result_first)
     npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 2:4].mean(axis=-1))
 
+    # Contiguous grouping when the first volume is not a b0
+    late_b0_mask = np.array([False, True, True, False, True])
+    result_grouped = extract_b0(
+        dwi, late_b0_mask, group_contiguous_b0=True, strategy="mean"
+    )
+    npt.assert_almost_equal(result_grouped[..., 0], dwi[..., 1:3].mean(axis=-1))
+    npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 4])
+    result_grouped = extract_b0(
+        dwi, late_b0_mask, group_contiguous_b0=True, strategy="first"
+    )
+    npt.assert_array_equal(result_grouped[..., 0], dwi[..., 1])
+    npt.assert_array_equal(result_grouped[..., 1], dwi[..., 4])
+
     npt.assert_raises(ValueError, extract_b0, dwi, b0_mask, strategy="max")
     npt.assert_raises(ValueError, extract_b0, dwi[..., 0], b0_mask)
     npt.assert_raises(ValueError, extract_b0, dwi, b0_mask[:, None])
