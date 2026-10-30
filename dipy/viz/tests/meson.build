@@ -5,6 +5,7 @@ python_sources = [
   'test_horizon.py',
   'test_plotting.py',
   'test_regtools.py',
+  'test_streamline.py',
   ]
 
 
