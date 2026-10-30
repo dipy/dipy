@@ -1,17 +1,62 @@
+from pathlib import Path
 import warnings
+
+import numpy as np
 
 from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-plt, have_plt, _ = optional_package("matplotlib.pyplot")
-fury, has_fury, _ = optional_package("fury", min_version="0.10.0", max_version="1.0.0")
+fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
-    from dipy.viz import actor, window
+    from fury import window
+    from fury.colormap import line_colors
+
+    from dipy.viz import actor
 
 sagittal_deprecation_warning_msg = (
     "The view argument value `sagital` is deprecated and "  # codespell:ignore sagital
     "its support will be removed in a future version. Please, use `sagittal` instead."
 )
+
+_VIEW_LABELS = {"sagittal": "L", "axial": "S", "coronal": "A"}
+
+
+def _show_scene(scene, *, view_label, size, fname=None, interactive=False):
+    """Save a scene to a png and/or display it in an interactive window.
+
+    Parameters
+    ----------
+    scene : fury.window.Scene
+        Scene to be rendered.
+    view_label : str
+        Gizmo label clicked to orient the camera: 'L' (sagittal), 'S' (axial) or
+        'A' (coronal).
+    size : tuple of int
+        Window size in pixels as ``(width, height)``.
+    fname : str or Path, optional
+        If not None, the scene is rendered offscreen into a png with that name.
+    interactive : bool, optional
+        If True, a 3D interactive window is opened after saving.
+    """
+    if fname is not None:
+        manager = window.ShowManager(
+            scene=scene, window_type="offscreen", size=size, pixel_ratio=1.0
+        )
+        gizmo = actor.gizmo(manager)
+        actor.click_gizmo(manager, gizmo, view_label)
+        try:
+            manager.render()
+            manager.window.draw()
+            manager.snapshot(fname=str(fname))
+        finally:
+            manager.window.close()
+            scene.ui_scene.remove(gizmo)
+
+    if interactive:
+        title = "DIPY" if fname is None else Path(fname).stem
+        manager = window.ShowManager(scene=scene, title=title, size=size)
+        actor.click_gizmo(manager, actor.gizmo(manager), view_label)
+        manager.start()
 
 
 @warning_for_keywords()
@@ -26,25 +71,24 @@ def show_bundles(
 ):
     """Render bundles to visualize them interactively or save them into a png.
 
-    The function allows to just render the bundles in an interactive plot or
+    The function allows to just render the bundles in an interactive window or
     to export them into a png file.
 
     Parameters
     ----------
     bundles : list
         Bundles to be rendered.
-    interactive : boolean, optional
-        If True a 3D interactive rendering is created. Default is True.
+    interactive : bool, optional
+        If True a 3D interactive window is opened.
     view : str, optional
         Viewing angle. Supported options: 'sagittal', 'axial' and 'coronal'.
     colors : list, optional
-       Colors to be used for each bundle. If None default colors are used.
+        Colors to be used for each bundle. If None, colors are derived from the
+        orientation of each streamline segment.
     linewidth : float, optional
-        Width of each rendered streamline. Default is 0.3.
+        Thickness of each rendered streamline.
     save_as : str or Path, optional
-        If not None rendered scene is stored in a png file with that name.
-        Default is None.
-
+        If not None, the rendered scene is stored in a png file with that name.
     """
 
     if view == "sagital":  # codespell:ignore sagital
@@ -55,40 +99,35 @@ def show_bundles(
         )
         view = "sagittal"
 
-    scene = window.Scene()
-    scene.SetBackground(1.0, 1, 1)
+    if view not in _VIEW_LABELS:
+        raise ValueError(
+            "Invalid view argument value. Use 'sagittal', 'axial' or 'coronal'."
+        )
 
+    scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
     for i, bundle in enumerate(bundles):
-        if colors is None:
-            lines_actor = actor.streamtube(bundle, linewidth=linewidth)
-        else:
-            lines_actor = actor.streamtube(
-                bundle, linewidth=linewidth, colors=colors[i]
+        bundle_colors = line_colors(bundle) if colors is None else colors[i]
+        scene.add(
+            actor.streamlines(
+                bundle,
+                colors=bundle_colors,
+                thickness=linewidth,
+                outline_thickness=0,
             )
-        if view == "sagittal":
-            lines_actor.RotateX(-90)
-            lines_actor.RotateZ(90)
-        elif view == "axial":
-            pass
-        elif view == "coronal":
-            lines_actor.RotateX(-90)
-        else:
-            raise ValueError(
-                "Invalid view argument value. Use 'sagittal', 'axial' or 'coronal'."
-            )
+        )
 
-        scene.add(lines_actor)
-
-    if interactive:
-        window.show(scene)
-
-    if save_as is not None:
-        window.record(scene=scene, n_frames=1, out_path=save_as, size=(900, 900))
+    _show_scene(
+        scene,
+        view_label=_VIEW_LABELS[view],
+        size=(900, 900),
+        fname=save_as,
+        interactive=interactive,
+    )
 
 
 @warning_for_keywords()
 def viz_two_bundles(b1, b2, fname, *, c1=(1, 0, 0), c2=(0, 1, 0), interactive=False):
-    """Render and plot two bundles to visualize them.
+    """Render two bundles and save the scene into a png.
 
     Parameters
     ----------
@@ -96,47 +135,26 @@ def viz_two_bundles(b1, b2, fname, *, c1=(1, 0, 0), c2=(0, 1, 0), interactive=Fa
         Bundle one to be rendered.
     b2 : Streamlines
         Bundle two to be rendered.
-    fname: str or Path
+    fname : str or Path
         Rendered scene is stored in a png file with that name.
-    C1 : tuple, optional
-        Color to be used for first bundle. Default red.
-    C2 : tuple, optional
-        Color to be used for second bundle. Default green.
-    interactive : boolean, optional
-        If True a 3D interactive rendering is created. Default is True.
-
+    c1 : tuple, optional
+        Color to be used for first bundle.
+    c2 : tuple, optional
+        Color to be used for second bundle.
+    interactive : bool, optional
+        If True a 3D interactive window is opened.
     """
-    ren = window.Scene()
-    ren.SetBackground(1, 1, 1)
+    scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    scene.add(actor.streamlines(b1, colors=c1, thickness=0.3, outline_thickness=0))
+    scene.add(actor.streamlines(b2, colors=c2, thickness=0.3, outline_thickness=0))
 
-    actor1 = actor.line(b1, colors=c1)
-    actor1.GetProperty().SetEdgeVisibility(1)
-    actor1.GetProperty().SetRenderLinesAsTubes(1)
-    actor1.GetProperty().SetLineWidth(6)
-    actor1.GetProperty().SetOpacity(1)
-    actor1.RotateX(-70)
-    actor1.RotateZ(90)
-
-    ren.add(actor1)
-
-    actor2 = actor.line(b2, colors=c2)
-    actor2.GetProperty().SetEdgeVisibility(1)
-    actor2.GetProperty().SetRenderLinesAsTubes(1)
-    actor2.GetProperty().SetLineWidth(6)
-    actor2.GetProperty().SetOpacity(1)
-    actor2.RotateX(-70)
-    actor2.RotateZ(90)
-
-    ren.add(actor2)
-
-    if interactive:
-        window.show(ren)
-
-    window.record(scene=ren, n_frames=1, out_path=fname, size=(1200, 1200))
-    if interactive:
-        im = plt.imread(fname)
-        plt.figure(figsize=(10, 10))
-        plt.imshow(im)
+    _show_scene(
+        scene,
+        view_label="L",
+        size=(1200, 1200),
+        fname=fname,
+        interactive=interactive,
+    )
 
 
 @warning_for_keywords()
@@ -150,93 +168,102 @@ def viz_vector_field(
     bundle=None,
     interactive=False,
 ):
-    """Render and plot vector field.
+    """Render a vector field and save the scene into a png.
 
     Parameters
     ----------
-    points_aligned : List
-        List containing starting positions of vectors.
-    directions : List
-        List containing unitary directions of vectors.
-    colors : List
-        List containing colors for each vector.
-    offsets : List
-        List containing vector field modules.
-    fname: str
+    points_aligned : array-like
+        Starting positions of the vectors.
+    directions : array-like
+        Unitary directions of the vectors.
+    colors : array-like
+        Colors for each vector.
+    offsets : array-like
+        Vector field magnitudes, used as the scale of each arrow.
+    fname : str or Path
         Rendered scene is stored in a png file with that name.
     bundle : Streamlines, optional
-        Bundle to be rendered with vector field (Default None).
-    interactive : boolean, optional
-        If True a 3D interactive rendering is created. Default is True.
+        Bundle to be rendered together with the vector field.
+    interactive : bool, optional
+        If True a 3D interactive window is opened.
 
+    Notes
+    -----
+    Arrows are colored by the absolute value of their direction components,
+    since the direction colors may be negative.
     """
-    scene = window.Scene()
-    scene.SetBackground(1.0, 1, 1)
-    arrows = actor.arrow(points_aligned, directions, colors, scales=offsets)
-    arrows.RotateX(-70)
-    arrows.RotateZ(90)
-    scene.add(arrows)
+    scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    scene.add(
+        actor.arrow(
+            np.asarray(points_aligned),
+            directions=np.asarray(directions),
+            colors=np.abs(np.asarray(colors)),
+            scales=np.repeat(np.asarray(offsets)[:, np.newaxis], 3, axis=1),
+        )
+    )
 
-    if bundle:
-        actor1 = actor.line(bundle, colors=(0, 0, 1))
-        actor1.RotateX(-70)
-        actor1.RotateZ(90)
-        scene.add(actor1)
+    if bundle is not None:
+        scene.add(
+            actor.streamlines(
+                bundle, colors=(0, 0, 1), thickness=0.3, outline_thickness=0
+            )
+        )
 
-    if interactive:
-        window.show(scene)
-
-    window.record(scene=scene, n_frames=1, out_path=fname, size=(1200, 1200))
-    if interactive:
-        im = plt.imread(fname)
-        plt.figure(figsize=(10, 10))
-        plt.imshow(im)
+    _show_scene(
+        scene,
+        view_label="L",
+        size=(1200, 1200),
+        fname=fname,
+        interactive=interactive,
+    )
 
 
 @warning_for_keywords()
 def viz_displacement_mag(bundle, offsets, fname, *, interactive=False):
-    """Render and plot displacement magnitude over the bundle.
+    """Render the displacement magnitude over a bundle and save it into a png.
 
     Parameters
     ----------
-    bundle : Streamlines,
+    bundle : Streamlines
         Bundle to be rendered.
-    offsets : List
-        List containing displacement magnitdues per point on the bundle.
-    fname: str
+    offsets : array-like
+        Displacement magnitudes, one value per point of ``bundle``.
+    fname : str or Path
         Rendered scene is stored in a png file with that name.
-    interactive : boolean, optional
-        If True a 3D interactive rendering is created. Default is True.
+    interactive : bool, optional
+        If True a 3D interactive window is opened.
 
+    Notes
+    -----
+    Colors run linearly from pink (smallest offset) to green (largest offset),
+    as shown by the color bar at the bottom of the image. ``offsets`` must not
+    be constant, since the color bar needs a non-empty range.
     """
-    scene = window.Scene()
-    hue = (0.1, 0.9)
-    hue = (0.9, 0.3)
-    saturation = (0.5, 1)
-    scene.background((1, 1, 1))
-    lut_cmap = actor.colormap_lookup_table(
-        scale_range=(offsets.min(), offsets.max()),
-        hue_range=hue,
-        saturation_range=saturation,
+    offsets = np.asarray(offsets)
+    bar = actor.scalar_bar(
+        clim=(offsets.min(), offsets.max()),
+        hsv_range=((0.9, 0.3), (0.5, 1.0), (0.8, 0.8)),
+        title="Displacement (mm)",
+        tick_format=".1f",
+        length=600,
+        thickness=30,
+        font_size=28,
+        color=(0.0, 0.0, 0.0),
+        position=(1300, 100),
     )
 
-    stream_actor = actor.line(
-        bundle, colors=offsets, linewidth=7, lookup_colormap=lut_cmap
+    scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    scene.add(
+        actor.streamlines(
+            bundle, colors=bar.map_values(offsets), thickness=0.3, outline_thickness=0
+        )
     )
+    scene.ui_scene.add(bar)
 
-    stream_actor.RotateX(-70)
-    stream_actor.RotateZ(90)
-
-    scene.add(stream_actor)
-    bar = actor.scalar_bar(lookup_table=lut_cmap)
-
-    scene.add(bar)
-
-    if interactive:
-        window.show(scene)
-
-    window.record(scene=scene, n_frames=1, out_path=fname, size=(2000, 1500))
-    if interactive:
-        im = plt.imread(fname)
-        plt.figure(figsize=(10, 10))
-        plt.imshow(im)
+    _show_scene(
+        scene,
+        view_label="L",
+        size=(2000, 1500),
+        fname=fname,
+        interactive=interactive,
+    )
