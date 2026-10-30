@@ -1,7 +1,21 @@
+from pathlib import Path
+
+import numpy as np
+from scipy.ndimage import map_coordinates
+
+from dipy.data import read_mni_template
+from dipy.io.image import load_nifti
+from dipy.io.streamline import load_tractogram
+from dipy.io.surface import load_gifti
 from dipy.io.utils import split_filename_extension
+from dipy.stats.analysis import SpectraGrid
+from dipy.tracking.streamline import Streamlines, transform_streamlines
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
+
+matplotlib, have_matplotlib, _ = optional_package("matplotlib")
+plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 fury_pckg_msg = (
     "Skyline requires FURY version 2.1.0 or higher. "
@@ -11,7 +25,7 @@ fury, has_fury, _ = optional_package(
     "fury", trip_msg=fury_pckg_msg, min_version="2.1.0"
 )
 if has_fury:
-    from dipy.viz import skyline_from_files
+    from dipy.viz import actor, skyline_from_files, window
 else:
     skyline_from_files = fury
 
@@ -307,3 +321,426 @@ class HorizonFlow(SkylineFlow):
             out_dir=out_dir,
             out_stealth_png=out_stealth_png,
         )
+
+
+def _grid_values_to_points(values, grid_shape, s_index, r_index):
+    """Values of a SPECTRA grid, shape (ns,) or (ns, nr), at each point."""
+    values = np.asarray(values, dtype=float).squeeze()
+    n_segments, n_radial = grid_shape
+    if values.shape not in ((n_segments,), (n_segments, n_radial)):
+        raise ValueError(
+            f"Grid values of shape {values.shape} do not match the grid of "
+            f"{n_segments} segments and {n_radial} radial bins"
+        )
+    if values.ndim == 1:
+        return values[s_index]
+    return values[s_index, r_index]
+
+
+def _values_to_colors(
+    values,
+    valid,
+    *,
+    cmap="YlOrBr_r",
+    vmin=None,
+    vmax=None,
+    vcenter=None,
+    colorbar_file=None,
+    colorbar_title="values",
+):
+    """Colors of point values with a matplotlib colormap, gray if invalid."""
+    values = np.asarray(values, dtype=float)
+    finite = np.isfinite(values)
+    colors = np.full((len(values), 3), 0.5)
+    if not finite.any():
+        return colors
+
+    # As in SPECTRA, the default range is the 5th to 95th percentile of the
+    # values of all the points
+    if vmin is None:
+        vmin = np.percentile(values[finite], 5)
+    if vmax is None:
+        vmax = np.percentile(values[finite], 95)
+    if vcenter is not None and vmin < vcenter < vmax:
+        norm = matplotlib.colors.TwoSlopeNorm(vcenter, vmin=vmin, vmax=vmax)
+    else:
+        norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
+    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+    shown = finite & valid
+    colors[shown] = mapper.to_rgba(values[shown])[:, :3]
+
+    if colorbar_file is not None:
+        fig, ax = plt.subplots(figsize=(8, 1))
+        fig.subplots_adjust(bottom=0.5)
+        colorbar = fig.colorbar(mapper, cax=ax, orientation="horizontal")
+        colorbar.set_label(colorbar_title, size=20)
+        ax.tick_params(labelsize=18)
+        fig.savefig(colorbar_file, bbox_inches="tight")
+        plt.close(fig)
+        logger.info(f"Colorbar saved as {colorbar_file}")
+    return colors
+
+
+def _alternating_colors(s_index, r_index, valid):
+    """Alternating colors of the SPECTRA cells (r_index None along the tract)."""
+    tab20 = matplotlib.colormaps["tab20"].colors
+    if r_index is None:
+        return np.array([tab20[s % len(tab20)] for s in s_index])
+    pattern = [tab20[0:2], tab20[2:4]]
+    colors = np.array([pattern[s % 2][r % 2] for s, r in zip(s_index, r_index)])
+    colors[~valid] = matplotlib.colors.to_rgb("gray")
+    return colors
+
+
+def _direction_colors(lines):
+    """Colors of the points from the local direction of their streamline."""
+    colors = []
+    for line in lines:
+        direction = np.abs(np.gradient(np.asarray(line, dtype=float), axis=0))
+        norm = np.linalg.norm(direction, axis=1, keepdims=True)
+        colors.append(direction / np.where(norm > 0, norm, 1))
+    return np.concatenate(colors)
+
+
+def _autocrop(fname, *, border=20):
+    """Crop the white border of an image, as in SPECTRA."""
+    image = plt.imread(fname)
+    content = np.any(image[..., :3] < 1.0, axis=-1)
+    if not content.any():
+        return
+    rows, cols = np.nonzero(content)
+    top, left = max(rows.min() - border, 0), max(cols.min() - border, 0)
+    bottom = min(rows.max() + border, image.shape[0] - 1)
+    right = min(cols.max() + border, image.shape[1] - 1)
+    plt.imsave(fname, image[top : bottom + 1, left : right + 1])
+
+
+def _contour(data, affine, color, opacity):
+    """Contour of a mask, shown with the given opacity."""
+    contour = actor.contour_from_roi(data, affine=affine, color=color, opacity=opacity)
+    # FURY also puts the opacity in the color of the contours, which would
+    # apply it twice
+    for surface in contour.children:
+        surface.material.color = (*color, 1)
+    return contour
+
+
+class SpectraVizFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "spectra_viz"
+
+    def run(
+        self,
+        bundle_files,
+        *,
+        ref_bundle=None,
+        bundle_color=None,
+        color_mask=None,
+        segment_length=5.0,
+        radial_length=5.0,
+        n_segments=None,
+        n_radial=None,
+        robust_method="linear",
+        cmap="YlOrBr_r",
+        cmap_title="values",
+        vmin=None,
+        vmax=None,
+        vcenter=None,
+        glass_brain=None,
+        masks=None,
+        mask_colors=None,
+        mask_opacity=0.3,
+        cam_settings=("Axial",),
+        centroid_only=False,
+        centroid_with_bundle=False,
+        as_points=False,
+        linewidth=4.0,
+        opacity=1.0,
+        no_tube=False,
+        auto_crop=False,
+        show_bundle=False,
+        out_dir="",
+        out_image="spectra_bundle.png",
+        out_cbar=None,
+    ):
+        """Workflow of SPECTRA bundle visualization.
+
+        Renders bundles colored by a SPECTRA grid: grid values such as a
+        profile or the statistics of each cell, the values of a volume at
+        each point, or alternating colors of the grid cells. The grid is
+        built from ``ref_bundle`` (e.g. the model bundle), or from each
+        bundle if it is not given (see
+        :class:`dipy.stats.analysis.SpectraGrid`). A snapshot is saved for
+        each camera view.
+
+        See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+        Parameters
+        ----------
+        bundle_files : variable string
+            Bundle files to render.
+        ref_bundle : string, optional
+            Reference (atlas) bundle of the grid. The points of the bundles in
+            sparse grid cells are then shown in gray.
+        bundle_color : variable string, optional
+            Colors of the bundles: one matplotlib color name or one grid
+            values file (.npy or .txt with shape (ns,) or (ns, nr)) per
+            bundle, a volume (.nii or .nii.gz) sampled at the points, or
+            "alternate_1d" or "alternate_2d" for the grid cells. By default
+            the bundles are colored by their direction.
+        color_mask : string, optional
+            Grid mask (.npy with shape (ns,) or (ns, nr)). The cells that are
+            False are shown in gray, e.g. the cells that were not tested.
+        segment_length : float, optional
+            Desired along-tract segment length in millimeters.
+        radial_length : float, optional
+            Desired radial bin width in millimeters.
+        n_segments : int, optional
+            Number of along-tract segments, instead of ``segment_length``.
+        n_radial : int, optional
+            Number of radial bins, instead of ``radial_length``.
+        robust_method : string, optional
+            Extension of the centroid to the bundle endpoints: "linear",
+            "spline", or "none" to use the QuickBundles centroid.
+        cmap : string, optional
+            Matplotlib colormap of the values.
+        cmap_title : string, optional
+            Title of the colorbar.
+        vmin : float, optional
+            Lowest value of the colormap. By default the 5th percentile.
+        vmax : float, optional
+            Highest value of the colormap. By default the 95th percentile.
+        vcenter : float, optional
+            Center value of a diverging colormap.
+        glass_brain : variable string, optional
+            Brain shown in transparency: NIfTI masks, GIfTI surfaces, or
+            "default_glass" for the MNI brain mask of DIPY.
+        masks : variable string, optional
+            Region masks (NIfTI) shown as contours.
+        mask_colors : variable string, optional
+            Matplotlib color name of each region mask.
+        mask_opacity : float, optional
+            Opacity of the region masks.
+        cam_settings : variable string, optional
+            Camera views: Axial, Sagittal_L, Sagittal_R, Coronal_A, Coronal_P.
+        centroid_only : bool, optional
+            Show only the centroid of the grid, colored like the bundle.
+        centroid_with_bundle : bool, optional
+            Show the colored centroid over the bundle in light gray.
+        as_points : bool, optional
+            Show the points of the bundles instead of lines.
+        linewidth : float, optional
+            Thickness of the streamlines.
+        opacity : float, optional
+            Opacity of the bundles.
+        no_tube : bool, optional
+            Show thin lines instead of tubes.
+        auto_crop : bool, optional
+            Crop the white border of the snapshots.
+        show_bundle : bool, optional
+            Show the scene in an interactive window.
+        out_dir : string or Path, optional
+            Output directory.
+        out_image : string, optional
+            Name of the snapshot. With several cameras, ``_cam01``,
+            ``_cam02``, ... is added to the name.
+        out_cbar : string, optional
+            Name of the colorbar image of the values.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        if not has_fury:
+            raise ImportError("dipy_spectra_viz requires FURY 2.0.0 or higher")
+        if centroid_only and centroid_with_bundle:
+            raise ValueError("Use centroid_only or centroid_with_bundle, not both")
+        # Direction and up vector of each camera, as in SPECTRA
+        cameras = {
+            "Axial": ((0, 0, -1), (0, 1, 0)),
+            "Sagittal_L": ((1, 0, 0), (0, 0, 1)),
+            "Sagittal_R": ((-1, 0, 0), (0, 0, 1)),
+            "Coronal_A": ((0, -1, 0), (0, 0, 1)),
+            "Coronal_P": ((0, 1, 0), (0, 0, 1)),
+        }
+        unknown = [c for c in cam_settings if c not in cameras]
+        if unknown:
+            raise ValueError(f"Unknown camera(s) {unknown}, use {list(cameras)}")
+
+        bundle_color = list(bundle_color or [])
+        spec = bundle_color[0].lower() if bundle_color else ""
+        is_values = spec.endswith((".npy", ".txt"))
+        is_volume = spec.endswith((".nii", ".nii.gz"))
+        is_alternate = spec in ("alternate_1d", "alternate_2d")
+        needs_grid = is_values or is_alternate or centroid_only or centroid_with_bundle
+
+        grid_options = {
+            "segment_length": segment_length,
+            "radial_length": radial_length,
+            "n_segments": n_segments,
+            "n_radial": n_radial,
+            "use_robust_centroid": robust_method != "none",
+            "robust_method": robust_method,
+        }
+        ref_grid = None
+        if ref_bundle is not None:
+            ref_lines = load_tractogram(
+                ref_bundle, reference="same", bbox_valid_check=False
+            ).streamlines
+            ref_grid = SpectraGrid(ref_lines, **grid_options)
+        grid_mask = None if color_mask is None else np.load(color_mask)
+        colormap_options = {
+            "cmap": cmap,
+            "vmin": vmin,
+            "vmax": vmax,
+            "vcenter": vcenter,
+            "colorbar_file": None if out_cbar is None else Path(out_dir) / out_cbar,
+            "colorbar_title": cmap_title,
+        }
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+
+        scene = window.Scene(background=(1, 1, 1))
+        for i, bundle_file in enumerate(bundle_files):
+            lines = load_tractogram(
+                bundle_file, reference="same", bbox_valid_check=False
+            ).streamlines
+            logger.info(f"Loaded {len(lines)} streamlines from {bundle_file}")
+
+            # Position of each point in the grid
+            if needs_grid:
+                grid = ref_grid or SpectraGrid(lines, **grid_options)
+                s_index, r_index, _, valid, _ = grid.assign(lines)
+                if ref_grid is None:
+                    valid = np.ones(len(s_index), dtype=bool)
+                if centroid_only or centroid_with_bundle:
+                    lines = Streamlines([grid.centroid])
+                    s_index = np.arange(grid.n_segments)
+                    r_index = np.zeros(grid.n_segments, dtype=int)
+                    valid = np.ones(grid.n_segments, dtype=bool)
+                grid_shape = (grid.n_segments, grid.n_radial)
+                if grid_mask is not None:
+                    valid = (
+                        _grid_values_to_points(grid_mask, grid_shape, s_index, r_index)
+                        > 0
+                    )
+
+            # Colors of the points
+            if is_values:
+                values = (
+                    np.load(bundle_color[i])
+                    if bundle_color[i].endswith(".npy")
+                    else np.loadtxt(bundle_color[i])
+                )
+                point_values = _grid_values_to_points(
+                    values, grid_shape, s_index, r_index
+                )
+                colors = _values_to_colors(point_values, valid, **colormap_options)
+            elif is_volume:
+                volume, affine = load_nifti(bundle_color[0])
+                points = transform_streamlines(lines, np.linalg.inv(affine))
+                point_values = map_coordinates(
+                    volume, Streamlines(points).get_data().T, order=1
+                )
+                colors = _values_to_colors(
+                    point_values,
+                    np.ones(len(point_values), dtype=bool),
+                    **colormap_options,
+                )
+            elif is_alternate:
+                along_only = spec == "alternate_1d"
+                colors = _alternating_colors(
+                    s_index, None if along_only else r_index, valid
+                )
+            elif bundle_color:
+                colors = matplotlib.colors.to_rgb(bundle_color[i])
+            else:
+                colors = _direction_colors(lines)
+
+            if centroid_with_bundle:
+                bundle_lines = load_tractogram(
+                    bundle_file, reference="same", bbox_valid_check=False
+                ).streamlines
+                background = actor.streamlines(
+                    bundle_lines, colors=(0.83, 0.83, 0.83), opacity=0.1
+                )
+                # The transparent bundle must not hide the centroid
+                background.material.depth_write = False
+                scene.add(background)
+
+            colors = np.asarray(colors, dtype=np.float32)
+            if as_points:
+                points = lines.get_data().astype(np.float32)
+                scene.add(actor.point(points, colors=colors))
+            elif no_tube:
+                line_actor = actor.line(lines, colors=colors)
+                # FURY lines with a color per point do not use their opacity
+                line_actor.material.opacity = opacity
+                scene.add(line_actor)
+            else:
+                thickness = linewidth
+                if centroid_only or centroid_with_bundle:
+                    thickness = 35 if centroid_only else 30
+                scene.add(
+                    actor.streamlines(
+                        lines, colors=colors, thickness=thickness, opacity=opacity
+                    )
+                )
+
+        for name in glass_brain or []:
+            if name == "default_glass":
+                template = read_mni_template(version="c", contrast="mask")
+                data, affine = np.asarray(template.dataobj), template.affine
+                scene.add(_contour(data, affine, (0, 0, 0), 0.04))
+            elif name.endswith((".nii", ".nii.gz")):
+                data, affine = load_nifti(name)
+                scene.add(_contour(data, affine, (0, 0, 0), 0.04))
+            elif name.endswith((".gii", ".gii.gz")):
+                vertices, faces = load_gifti(name)
+                scene.add(
+                    actor.surface(
+                        np.asarray(vertices, dtype=np.float32),
+                        np.asarray(faces, dtype=np.int32),
+                        colors=np.zeros((len(vertices), 3), dtype=np.float32),
+                        opacity=0.05,
+                    )
+                )
+            else:
+                raise ValueError(f"Unknown glass brain {name}")
+
+        mask_colors = list(mask_colors or [])
+        for j, mask_file in enumerate(masks or []):
+            color = (
+                matplotlib.colors.to_rgb(mask_colors[j])
+                if j < len(mask_colors)
+                else (0, 0, 0)
+            )
+            data, affine = load_nifti(mask_file)
+            scene.add(_contour(data, affine, color, mask_opacity))
+
+        if show_bundle:
+            show_m = window.ShowManager(scene=scene, size=(1200, 1200), title="SPECTRA")
+            view_dir, up = cameras[cam_settings[0]]
+            show_m.screens[0].camera.show_object(
+                scene.main_scene, view_dir=view_dir, up=up
+            )
+            show_m.start()
+
+        show_m = window.ShowManager(
+            scene=scene, size=(1600, 1600), window_type="offscreen"
+        )
+        for k, name in enumerate(cam_settings):
+            view_dir, up = cameras[name]
+            show_m.screens[0].camera.show_object(
+                scene.main_scene, view_dir=view_dir, up=up
+            )
+            show_m.render()
+            show_m.window.draw()
+            fname = Path(out_dir) / out_image
+            if len(cam_settings) > 1:
+                fname = fname.with_name(f"{fname.stem}_cam{k + 1:02d}{fname.suffix}")
+            show_m.snapshot(fname=str(fname))
+            if auto_crop:
+                _autocrop(fname)
+            logger.info(f"Snapshot saved as {fname}")

@@ -1,8 +1,11 @@
 from pathlib import Path
+import warnings
 
 import numpy as np
-from scipy.interpolate import splev, splprep
-from scipy.ndimage import gaussian_filter1d, map_coordinates
+from scipy import integrate, stats
+from scipy.interpolate import UnivariateSpline, splev, splprep
+from scipy.ndimage import gaussian_filter1d, label, map_coordinates
+from scipy.optimize import minimize
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import mahalanobis
 
@@ -18,6 +21,11 @@ from dipy.tracking.streamline import (
     values_from_volume,
 )
 from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
+
+pd, have_pd, _ = optional_package("pandas")
+smf, have_smf, _ = optional_package("statsmodels.formula.api")
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):
@@ -837,6 +845,92 @@ class SpectraGrid:
             affine,
         )
 
+    def profile_1d_adaptive_buan(
+        self,
+        bundle,
+        orig_bundle,
+        metric,
+        affine,
+        *,
+        mask_threshold=0.2,
+        min_count=50,
+        max_count=200,
+    ):
+        """Create a one-dimensional profile of a subject bundle, adapted from BUAN.
+
+        The value of a segment is the mean of the metric at its points,
+        weighted by the inverse of their distance to the centroid, as in
+        :func:`dipy.stats.analysis.buan_profile`. The segments are the ones of
+        this grid, so they are the same as in :meth:`profile`, instead of the
+        ones that ``buan_profile`` builds from a model bundle. Segments with
+        too few points are NaN.
+
+        See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+        Parameters
+        ----------
+        bundle : Streamlines
+            Subject bundle in the atlas space. Used for grid assignment.
+        orig_bundle : Streamlines
+            Corresponding subject bundle in native/world space. Must
+            correspond point-for-point to ``bundle``.
+        metric : ndarray
+            3D scalar volume sampled along ``orig_bundle``.
+        affine : ndarray, shape (4, 4)
+            Voxel-to-world affine of ``metric``.
+        mask_threshold : float, optional
+            Fraction of the median non-empty segment count below which a
+            segment is masked.
+        min_count : int, optional
+            Lower bound of the sparse-segment count cutoff.
+        max_count : int, optional
+            Upper bound of the sparse-segment count cutoff.
+
+        Returns
+        -------
+        profile : ndarray, shape (n_segments,)
+            Weighted mean metric value of each segment, NaN in the masked
+            segments.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        bundle = _as_streamlines(bundle)
+        orig_bundle = _as_streamlines(orig_bundle)
+        if len(bundle) == 0 or len(orig_bundle) == 0:
+            raise ValueError("One of the bundles contains no streamlines")
+
+        s_index, _, s_distance, _, counts = self.assign(bundle)
+
+        # Mask the segments with too few points
+        segment_counts = counts.sum(axis=1)
+        nonzero = segment_counts[segment_counts > 0]
+        threshold = 0
+        if nonzero.size:
+            threshold = np.clip(
+                np.median(nonzero) * mask_threshold, min_count, max_count
+            )
+
+        affine_r = np.linalg.inv(affine)
+        orig_points = Streamlines(transform_streamlines(orig_bundle, affine_r))
+        values = map_coordinates(metric, orig_points.get_data().T, order=1)
+
+        valid = np.isfinite(values)
+        weights = 1 / (s_distance[valid] + 1e-8)
+        weighted_sum = np.bincount(
+            s_index[valid], weights=weights * values[valid], minlength=self.n_segments
+        )
+        weight_total = np.bincount(
+            s_index[valid], weights=weights, minlength=self.n_segments
+        )
+
+        profile = np.full(self.n_segments, np.nan)
+        keep = (segment_counts >= threshold) & (weight_total > 0)
+        profile[keep] = weighted_sum[keep] / weight_total[keep]
+        return profile
+
 
 def spectra_assignment_map(
     target_bundle,
@@ -1213,3 +1307,892 @@ def afq_profile(
         return profile_stat(values, weights=weights, axis=0)
     else:
         return profile_stat(values, axis=0)
+
+
+# SPECTRA statistics
+#
+# Cell-wise linear mixed models, spatial correlation of the residuals and
+# hierarchical FDR for SPECTRA profiles, following the SPECTRA implementation
+# of Feng et al. 2026 (Feng2026SPECTRA in doc/references.bib).
+
+
+def _standardize(values):
+    """Z-score the non-NaN values of an array, keeping NaN values in place."""
+    values = np.asarray(values, dtype=float)
+    std = np.nanstd(values)
+    return (values - np.nanmean(values)) / (std if std > 0 else 1.0)
+
+
+def _remove_small_regions(mask, min_size):
+    """Remove the connected regions of a mask with fewer than min_size cells."""
+    labels, _ = label(mask)
+    sizes = np.bincount(labels.ravel())
+    keep = sizes >= min_size
+    keep[0] = False
+    return keep[labels]
+
+
+def _has_fitted_neighbors(mask):
+    """Cells of a mask with a neighbor along the tract and across the radial bins."""
+    padded = np.pad(mask, 1)
+    along = padded[:-2, 1:-1] | padded[2:, 1:-1]
+    if mask.shape[1] == 1:
+        return mask & along
+    across = padded[1:-1, :-2] | padded[1:-1, 2:]
+    return mask & along & across
+
+
+def _cohen_d(case_values, control_values):
+    """Cohen's d with the pooled standard deviation, ignoring NaN values."""
+    case = case_values[~np.isnan(case_values)]
+    control = control_values[~np.isnan(control_values)]
+    n_case, n_control = len(case), len(control)
+    if n_case < 2 or n_control < 2:
+        return np.nan
+
+    pooled_var = (
+        (n_case - 1) * np.var(case, ddof=1) + (n_control - 1) * np.var(control, ddof=1)
+    ) / (n_case + n_control - 2)
+    if pooled_var <= 0:
+        return np.nan
+    return (case.mean() - control.mean()) / np.sqrt(pooled_var)
+
+
+def _fit_cell_model(df, formula, groups):
+    """Fit a mixed model with a random intercept, or OLS without groups.
+
+    Returns None if the model cannot be fitted.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            if groups is not None and df[groups].nunique() > 1:
+                return smf.mixedlm(formula, df, groups=df[groups]).fit(reml=True)
+            return smf.ols(formula, df).fit()
+        except Exception:
+            # e.g. a singular design in a cell with few subjects
+            return None
+
+
+def fit_grid_lmm(
+    profiles,
+    data,
+    target,
+    *,
+    covariates=None,
+    groups=None,
+    continuous=None,
+    case_group=None,
+    ref_group=None,
+    mask=None,
+    min_prop=0.3,
+    min_subjects=20,
+    min_component_size=8,
+    fit_reduced=False,
+):
+    """Fit a linear mixed model in each cell of a SPECTRA grid.
+
+    In each cell, the measure is regressed on the target variable and the
+    covariates, with a random intercept for each level of ``groups``, e.g. the
+    acquisition site::
+
+        metric ~ target + covariates + (1 | groups)
+
+    Without ``groups``, or if a cell has a single level of ``groups``, the
+    model is fitted by ordinary least squares.
+
+    Missing cells must be NaN, as returned by :meth:`SpectraGrid.profile`.
+    They are dropped from the fit and from the standardization of the
+    measure, and are never used as a measurement. Do not encode them as 0.
+
+    See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+    Parameters
+    ----------
+    profiles : ndarray, shape (n_subjects, n_segments, n_radial)
+        SPECTRA profile of each subject, all computed with the same
+        :class:`SpectraGrid` (see :meth:`SpectraGrid.profile`). A 1D profile
+        with shape ``(n_subjects, n_segments)`` is also accepted.
+    data : pandas.DataFrame
+        Variables of the subjects, one row per subject, in the same order as
+        ``profiles``.
+    target : str
+        Column of ``data`` with the variable of interest.
+    covariates : list of str, optional
+        Columns of ``data`` used as covariates.
+    groups : str, optional
+        Column of ``data`` used for the random intercept.
+    continuous : list of str, optional
+        Columns among ``target`` and ``covariates`` that are standardized
+        before fitting.
+    case_group, ref_group : optional
+        Values of a categorical ``target`` to compare. The target is coded 1
+        for ``case_group`` and 0 for ``ref_group``, and the other subjects are
+        excluded. Required if ``target`` is not numeric.
+    mask : ndarray, shape (n_segments, n_radial), optional
+        Cells to fit. By default all the cells with enough subjects.
+    min_prop : float, optional
+        Minimum proportion of subjects with a valid measure in a cell.
+    min_subjects : int, optional
+        Minimum number of subjects with a valid measure in a cell.
+    min_component_size : int, optional
+        Cells with enough subjects are not fitted if they form a connected
+        region with fewer cells than this.
+    fit_reduced : bool, optional
+        If True, also fit the model without the target. Its residuals are used
+        to estimate the spatial correlation with
+        :func:`estimate_length_scales`.
+
+    Returns
+    -------
+    results : dict
+        Arrays with shape ``(n_segments, n_radial)``, NaN in the cells that
+        are not fitted: ``"t"``, ``"p"`` (two-sided), ``"beta"``, ``"se"``,
+        ``"dof"``, ``"ci_lower"``, ``"ci_upper"`` (95% Wald confidence
+        interval, as in SPECTRA),
+        ``"r2_partial"`` and, if ``case_group`` is given, ``"d_cohen"``. Also:
+
+        - ``"n_subjects"``: number of subjects with a valid measure per cell.
+        - ``"mask"``: cells that were fitted and tested.
+        - ``"residuals"``: shape ``(n_segments, n_radial, n_subjects)``,
+          residuals of the model.
+        - ``"residuals_reduced"``: residuals of the model without the target,
+          only if ``fit_reduced`` is True.
+
+    Notes
+    -----
+    As in SPECTRA, a fitted cell is only tested if it has a fitted neighbor
+    along the tract and across the radial bins, where the local smoothness of
+    the residuals is defined. The statistics of the other fitted cells are
+    NaN, but their residuals are kept.
+
+    The degrees of freedom of the mixed models are approximated by the number
+    of subjects minus the number of fixed effects.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    if not have_pd or not have_smf:
+        raise ImportError("fit_grid_lmm requires pandas and statsmodels")
+
+    profiles = np.array(profiles, dtype=float)
+    if profiles.ndim == 2:
+        profiles = profiles[:, :, np.newaxis]
+    if profiles.ndim != 3:
+        raise ValueError("profiles must have shape (n_subjects, n_segments, n_radial)")
+    n_subjects, n_segments, n_radial = profiles.shape
+    if len(data) != n_subjects:
+        raise ValueError("data must have one row per subject in profiles")
+    if (case_group is None) != (ref_group is None):
+        raise ValueError("case_group and ref_group must be given together")
+
+    covariates = list(covariates or [])
+    columns = [target] + covariates + ([groups] if groups else [])
+    continuous = list(continuous or [])
+    missing_columns = [c for c in columns + continuous if c not in data.columns]
+    if missing_columns:
+        raise ValueError(f"Columns not found in data: {missing_columns}")
+
+    df = data.reset_index(drop=True).copy()
+    for col in continuous:
+        df[col] = _standardize(df[col])
+
+    # Subjects used in the fit: those with all the model variables, and only
+    # the two compared groups for a categorical target
+    use_subject = df[columns].notna().all(axis=1).to_numpy()
+    if case_group is not None:
+        use_subject = use_subject & df[target].isin([case_group, ref_group]).to_numpy()
+        df[target] = (df[target] == case_group).astype(float)
+        if df.loc[use_subject, target].nunique() < 2:
+            raise ValueError("Both case_group and ref_group must be in data")
+    elif not pd.api.types.is_numeric_dtype(df[target]):
+        raise ValueError("Give case_group and ref_group for a categorical target")
+    elif df.loc[use_subject, target].nunique() < 2:
+        raise ValueError("The target variable has a single value")
+
+    # Missing cells (NaN) are dropped. Setting them to 0 would bias the
+    # statistics and underestimate the radial length scale.
+    valid = np.isfinite(profiles) & use_subject[:, np.newaxis, np.newaxis]
+    n_valid = valid.sum(axis=0)
+    # Cells with enough subjects, without the small isolated regions
+    enough = n_valid >= min_prop * use_subject.sum()
+    cell_mask = _remove_small_regions(enough, min_component_size)
+    cell_mask &= n_valid >= min_subjects
+    if mask is not None:
+        cell_mask &= np.asarray(mask, dtype=bool).reshape(cell_mask.shape)
+
+    # Standardize the measure with the valid values of the cells to fit
+    metric = np.where(valid & cell_mask, profiles, np.nan)
+    if cell_mask.any():
+        metric = _standardize(metric)
+
+    formula = "metric ~ " + " + ".join([target] + covariates)
+    formula_reduced = "metric ~ " + (" + ".join(covariates) if covariates else "1")
+
+    shape = (n_segments, n_radial)
+    stat_names = ["t", "p", "beta", "se", "dof", "ci_lower", "ci_upper", "r2_partial"]
+    if case_group is not None:
+        stat_names.append("d_cohen")
+    results = {name: np.full(shape, np.nan) for name in stat_names}
+    residuals = np.full(shape + (n_subjects,), np.nan)
+    residuals_reduced = np.full(shape + (n_subjects,), np.nan)
+
+    for s, r in zip(*np.nonzero(cell_mask)):
+        rows = np.flatnonzero(~np.isnan(metric[:, s, r]))
+        df_cell = df.iloc[rows].copy()
+        df_cell["metric"] = metric[rows, s, r]
+
+        fit = _fit_cell_model(df_cell, formula, groups)
+        if fit is None:
+            continue
+
+        beta = fit.params[target]
+        se = fit.bse[target]
+        dof = len(rows) - fit.model.exog.shape[1]
+        if not (np.isfinite(beta) and np.isfinite(se) and se > 0 and dof > 0):
+            continue
+
+        t = beta / se
+        margin = stats.norm.ppf(0.975) * se
+        results["t"][s, r] = t
+        results["p"][s, r] = 2 * stats.t.sf(abs(t), dof)
+        results["beta"][s, r] = beta
+        results["se"][s, r] = se
+        results["dof"][s, r] = dof
+        results["ci_lower"][s, r] = beta - margin
+        results["ci_upper"][s, r] = beta + margin
+        results["r2_partial"][s, r] = t**2 / (t**2 + dof)
+        residuals[s, r, rows] = np.asarray(fit.resid)
+
+        if case_group is not None:
+            is_case = df_cell[target].to_numpy() == 1
+            y = df_cell["metric"].to_numpy()
+            results["d_cohen"][s, r] = _cohen_d(y[is_case], y[~is_case])
+
+        if fit_reduced:
+            fit_reduced_model = _fit_cell_model(df_cell, formula_reduced, groups)
+            if fit_reduced_model is not None:
+                residuals_reduced[s, r, rows] = np.asarray(fit_reduced_model.resid)
+
+    # Test only the cells with a fitted neighbor in both directions
+    tested = _has_fitted_neighbors(~np.isnan(results["t"]))
+    for name in stat_names:
+        results[name][~tested] = np.nan
+
+    results["n_subjects"] = n_valid
+    results["mask"] = tested
+    results["residuals"] = residuals
+    if fit_reduced:
+        results["residuals_reduced"] = residuals_reduced
+    return results
+
+
+def matern_correlation(distance, length_scale, *, nu=0.5):
+    """Compute the Matern correlation at the given distances.
+
+    Parameters
+    ----------
+    distance : array_like
+        Distances between locations.
+    length_scale : float
+        Length scale of the correlation, in the units of ``distance``.
+    nu : {0.5, 1.5, 2.5}, optional
+        Smoothness of the correlation. ``nu=0.5`` is the exponential
+        correlation used by SPECTRA.
+
+    Returns
+    -------
+    correlation : ndarray
+        Correlation at each distance.
+
+    """
+    d = np.asarray(distance, dtype=float) / length_scale
+    if nu == 0.5:
+        return np.exp(-d)
+    if nu == 1.5:
+        return (1 + np.sqrt(3) * d) * np.exp(-np.sqrt(3) * d)
+    if nu == 2.5:
+        return (1 + np.sqrt(5) * d + 5 * d**2 / 3) * np.exp(-np.sqrt(5) * d)
+    raise ValueError("nu must be 0.5, 1.5 or 2.5")
+
+
+def empirical_correlation(residuals, *, axis=0, max_lag=20):
+    """Compute the spatial correlation of residuals along one grid axis.
+
+    The residuals of each cell are centered across subjects. The correlation
+    at lag ``m`` is the mean product of the residuals of cells ``m`` steps
+    apart, divided by the mean squared residual. NaN values are ignored.
+
+    Parameters
+    ----------
+    residuals : ndarray, shape (n_segments, n_radial, n_subjects)
+        Residuals of a model fitted in each cell, NaN where missing.
+    axis : {0, 1}, optional
+        0 for the along-tract direction, 1 for the radial direction.
+    max_lag : int, optional
+        Largest lag, in grid cells.
+
+    Returns
+    -------
+    lags : ndarray
+        Lags ``0, 1, ..., max_lag``.
+    rho : ndarray
+        Correlation at each lag.
+    n_pairs : ndarray
+        Number of pairs of values at each lag.
+
+    """
+    if axis not in (0, 1):
+        raise ValueError("axis must be 0 or 1")
+
+    resid = np.ma.masked_invalid(residuals)
+    resid = resid - resid.mean(axis=2, keepdims=True)
+    n_cells = resid.shape[axis]
+
+    max_lag = min(max_lag, n_cells - 1)
+    lags = np.arange(max_lag + 1)
+    cov = np.full(max_lag + 1, np.nan)
+    n_pairs = np.zeros(max_lag + 1, dtype=int)
+    for m in lags:
+        if axis == 0:
+            prod = resid[: n_cells - m] * resid[m:]
+        else:
+            prod = resid[:, : n_cells - m] * resid[:, m:]
+        n_pairs[m] = prod.count()
+        if n_pairs[m] > 0:
+            cov[m] = prod.mean()
+
+    return lags, cov / cov[0], n_pairs
+
+
+def fit_matern(
+    lags, rho, n_pairs, spacing, *, nu=0.5, rho_thresh=0.2, max_lag=12, min_pairs=20
+):
+    """Fit a Matern correlation to an empirical spatial correlation.
+
+    Only the first lags are used, up to the lag where the correlation falls
+    below ``rho_thresh``, to avoid fitting the noisy tail. Each lag is weighted
+    by its number of pairs.
+
+    Parameters
+    ----------
+    lags, rho, n_pairs : ndarray
+        Lags, correlation and number of pairs, as returned by
+        :func:`empirical_correlation`.
+    spacing : float
+        Grid spacing along the axis of the correlation (mm).
+    nu : {0.5, 1.5, 2.5}, optional
+        Smoothness of the Matern correlation.
+    rho_thresh : float, optional
+        Correlation below which the lags are not used.
+    max_lag : int, optional
+        Largest number of lags used.
+    min_pairs : int, optional
+        Minimum number of pairs for a lag to be used.
+
+    Returns
+    -------
+    length_scale : float
+        Fitted length scale (mm).
+
+    """
+    lags = np.asarray(lags)
+    rho = np.asarray(rho, dtype=float)
+    n_pairs = np.asarray(n_pairs)
+
+    # Use the lags before the correlation first falls below rho_thresh
+    below = np.flatnonzero(rho < rho_thresh)
+    n_lags = below[0] if len(below) > 0 else np.nanargmin(rho)
+    n_lags = int(np.clip(n_lags, 3, max_lag))
+    lags, rho, n_pairs = lags[:n_lags], rho[:n_lags], n_pairs[:n_lags]
+
+    keep = (lags >= 1) & (rho > 0) & (n_pairs > min_pairs)
+    if not np.any(keep):
+        raise ValueError("Not enough lags with a positive correlation to fit")
+    distance = lags[keep] * spacing
+    rho = rho[keep]
+    weights = n_pairs[keep]
+
+    # Starting point: squared exponential exp(-d**2 / (2 * l**2)), fitted by
+    # weighted least squares on -2 * log(rho) = d**2 / l**2
+    x = distance**2
+    y = -2 * np.log(rho)
+    slope = np.sum(weights * x * y) / np.sum(weights * x * x)
+    length_start = 1 / np.sqrt(slope)
+
+    def weighted_error(params):
+        rho_fit = matern_correlation(distance, params[0], nu=nu)
+        return np.sum(weights * (rho - rho_fit) ** 2)
+
+    result = minimize(
+        weighted_error,
+        [length_start],
+        method="L-BFGS-B",
+        bounds=[(0.1 * length_start, 10 * length_start)],
+    )
+    if not result.success:
+        logger.warning(f"Matern fit did not converge: {result.message}")
+    return float(result.x[0])
+
+
+def estimate_length_scales(residuals, grid, *, nu=0.5, rho_thresh=0.2):
+    """Estimate the spatial correlation length scales of residuals.
+
+    A Matern correlation is fitted to the correlation of the residuals along
+    the tract and across the radial bins of a SPECTRA grid. Use the residuals
+    of a model without the target variable (``"residuals_reduced"`` of
+    :func:`fit_grid_lmm`), so that the estimate does not depend on the effect
+    being tested.
+
+    See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+    Parameters
+    ----------
+    residuals : ndarray, shape (n_segments, n_radial, n_subjects)
+        Residuals of a model fitted in each cell of ``grid``, NaN where
+        missing. For 1D profiles (see :meth:`SpectraGrid.profile_1d_adaptive_buan`),
+        ``n_radial`` is 1.
+    grid : SpectraGrid
+        Grid of the profiles. Its ``segment_length_actual`` and
+        ``radial_length_actual`` give the length scales in millimeters.
+    nu : {0.5, 1.5, 2.5}, optional
+        Smoothness of the Matern correlation.
+    rho_thresh : float, optional
+        Correlation below which the lags are not used in the fit.
+
+    Returns
+    -------
+    l_s : float
+        Length scale along the tract (mm).
+    l_r : float or None
+        Length scale across the radial bins (mm). None if the grid has a
+        single radial bin.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    n_segments, n_radial, _ = residuals.shape
+    if n_segments != grid.n_segments or n_radial not in (1, grid.n_radial):
+        raise ValueError("residuals do not have the shape of the grid")
+
+    lags, rho, n_pairs = empirical_correlation(
+        residuals, axis=0, max_lag=n_segments - 1
+    )
+    l_s = fit_matern(
+        lags, rho, n_pairs, grid.segment_length_actual, nu=nu, rho_thresh=rho_thresh
+    )
+
+    l_r = None
+    if n_radial > 1:
+        lags, rho, n_pairs = empirical_correlation(
+            residuals, axis=1, max_lag=n_radial - 1
+        )
+        l_r = fit_matern(
+            lags, rho, n_pairs, grid.radial_length_actual, nu=nu, rho_thresh=rho_thresh
+        )
+    return l_s, l_r
+
+
+def _storey_pi0(p_values):
+    """Storey's estimate of the proportion of true null hypotheses."""
+    lambdas = np.arange(0.05, 0.95, 0.05)
+    pi0_lambda = np.array([np.mean(p_values > lam) / (1 - lam) for lam in lambdas])
+    # Smooth with a cubic spline and extrapolate to lambda = 1
+    pi0 = float(UnivariateSpline(lambdas, pi0_lambda, k=3)(1.0))
+    return min(max(np.clip(pi0, 1e-3, 1.0), pi0_lambda.min()), 1.0)
+
+
+def fdr_correction(p_values, *, adaptive=False):
+    """Adjust p-values for the false discovery rate (FDR).
+
+    Benjamini-Hochberg procedure. If ``adaptive`` is True, the adjusted
+    p-values are multiplied by Storey's estimate of the proportion of true
+    null hypotheses, and are not allowed to be smaller than the uncorrected
+    p-values.
+
+    See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+    Parameters
+    ----------
+    p_values : array_like
+        Uncorrected p-values. NaN values are ignored.
+    adaptive : bool, optional
+        If True, use the adaptive procedure.
+
+    Returns
+    -------
+    p_corr : ndarray
+        Adjusted p-values, with the shape of ``p_values``. The hypotheses
+        with ``p_corr < alpha`` are rejected at FDR level ``alpha``.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    p_values = np.asarray(p_values, dtype=float)
+    p_corr = np.full(p_values.shape, np.nan)
+    valid = ~np.isnan(p_values)
+    p = p_values[valid]
+    m = len(p)
+    if m == 0:
+        return p_corr
+
+    pi0 = _storey_pi0(p) if adaptive else 1.0
+
+    order = np.argsort(p)
+    adjusted = p[order] * m * pi0 / np.arange(1, m + 1)
+    # Make the adjusted p-values increase with the uncorrected p-values
+    adjusted = np.minimum.accumulate(adjusted[::-1])[::-1]
+
+    q = np.empty(m)
+    q[order] = np.minimum(adjusted, 1.0)
+    if adaptive:
+        q = np.maximum(q, p)
+    p_corr[valid] = q
+    return p_corr
+
+
+def simes_combine(p_values, z_values):
+    """Combine the p-values of a block of cells with Simes' test.
+
+    For ``n`` cells the combined p-value is ``min(n * p_(k) / k)`` over the
+    sorted p-values ``p_(1) <= ... <= p_(n)``.
+
+    See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+    Parameters
+    ----------
+    p_values : ndarray
+        Two-sided uncorrected p-values of the cells.
+    z_values : ndarray
+        Signed z-scores of the cells. Only used to give the combined z-score
+        the sign of the most significant cell.
+
+    Returns
+    -------
+    z : float
+        Signed z-score of the combined p-value.
+    p : float
+        Combined p-value.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    p_values = np.asarray(p_values, dtype=float)
+    n = len(p_values)
+    order = np.argsort(p_values)
+    p = min(1.0, float(np.min(n * p_values[order] / np.arange(1, n + 1))))
+    sign = 1.0 if z_values[order[0]] >= 0 else -1.0
+    return sign * stats.norm.ppf(1 - p / 2), p
+
+
+def stouffer_combine(z_values, *, correlation=None):
+    """Combine the z-scores of a block of cells with Stouffer's method.
+
+    The sum of the z-scores is divided by its standard deviation, which is
+    ``sqrt(n)`` for independent cells, or the square root of the sum of the
+    correlation matrix for correlated cells.
+
+    Parameters
+    ----------
+    z_values : ndarray
+        Signed z-scores of the cells.
+    correlation : ndarray, shape (n, n), optional
+        Correlation between the cells. By default the cells are independent.
+
+    Returns
+    -------
+    z : float
+        Combined z-score.
+    p : float
+        Two-sided p-value of the combined z-score.
+
+    """
+    z_values = np.asarray(z_values, dtype=float)
+    variance = len(z_values) if correlation is None else np.sum(correlation)
+    z = np.sum(z_values) / np.sqrt(variance)
+    return float(z), float(2 * stats.norm.sf(abs(z)))
+
+
+def conditional_pvalue(z, threshold, rho):
+    """Compute the conditional p-value of a cell in a rejected block.
+
+    Two-sided p-value of the cell z-score, given that the block z-score
+    passed the Stage 1 threshold. The block is assumed to be null, which gives
+    the conservative bound of the hierarchical FDR procedure of Benjamini and
+    Heller.
+
+    See :footcite:p:`Feng2026SPECTRA` for further details about the method.
+
+    Parameters
+    ----------
+    z : float
+        Signed z-score of the cell.
+    threshold : float
+        Stage 1 threshold: the largest uncorrected p-value of the rejected
+        blocks.
+    rho : float
+        Correlation between the cell z-score and the block z-score.
+
+    Returns
+    -------
+    p_cond : float
+        Conditional p-value.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    z = abs(z)
+    if abs(rho) < 1e-10:
+        return float(2 * stats.norm.sf(z))
+
+    z_block = stats.norm.ppf(1 - threshold / 2)
+    scale = np.sqrt(max(1 - rho**2, 0.0))
+
+    def tail_given_block(u):
+        # P(|cell z| >= z | block z = u) times the density of the block z
+        mean = rho * u
+        tail = stats.norm.sf((z - mean) / scale) + stats.norm.cdf((-z - mean) / scale)
+        return tail * stats.norm.pdf(u)
+
+    upper, _ = integrate.quad(tail_given_block, z_block, np.inf)
+    lower, _ = integrate.quad(tail_given_block, -np.inf, -z_block)
+    p_block = 2 * stats.norm.sf(z_block)
+    if p_block < 1e-15:
+        return float(2 * stats.norm.sf(z))
+    return float(np.clip((upper + lower) / p_block, 0.0, 1.0))
+
+
+def partition_bundle_into_blocks(mask, grid, l_s, *, l_r=None, min_cells=3):
+    """Split the cells of a SPECTRA grid into blocks of about one RESEL.
+
+    The blocks are rectangles whose sides are the full width at half maximum
+    (FWHM) of the spatial correlation, which is the size of a resolution
+    element (RESEL). Blocks with fewer than
+    ``min_cells`` cells are merged with their smallest neighbor.
+
+    Parameters
+    ----------
+    mask : ndarray, shape (n_segments, n_radial)
+        Cells of ``grid`` to include in the blocks.
+    grid : SpectraGrid
+        Grid of the bundle, used for the segment length and the radial bin
+        width.
+    l_s : float
+        Correlation length scale along the tract (mm).
+    l_r : float, optional
+        Correlation length scale across the radial bins (mm). If None, a
+        block spans all the radial bins.
+    min_cells : int, optional
+        Minimum number of cells in a block.
+
+    Returns
+    -------
+    blocks : list of list of tuple
+        ``(segment, radial)`` indices of the cells of each block.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    # Factor between the Matern length scale and the FWHM of the correlation,
+    # 2 * sqrt(2 * log(2)) ~= 2.355. The FWHM defines the size of a RESEL. The
+    # rounded value matches the SPECTRA implementation of Feng et al. 2026
+    # (Feng2026SPECTRA in doc/references.bib).
+    fwhm_factor = 2.355
+
+    mask = np.asarray(mask, dtype=bool)
+    n_segments, n_radial = mask.shape
+    size_s = max(2, round(fwhm_factor * l_s / grid.segment_length_actual))
+    if l_r is None:
+        size_r = n_radial
+    else:
+        size_r = max(2, round(fwhm_factor * l_r / grid.radial_length_actual))
+
+    blocks = []
+    for s0 in range(0, n_segments, size_s):
+        for r0 in range(0, n_radial, size_r):
+            cells = [
+                (s, r)
+                for s in range(s0, min(s0 + size_s, n_segments))
+                for r in range(r0, min(r0 + size_r, n_radial))
+                if mask[s, r]
+            ]
+            if cells:
+                blocks.append(cells)
+
+    # Merge the smallest block with its smallest neighbor until all the blocks
+    # are large enough
+    while len(blocks) > 1:
+        sizes = [len(block) for block in blocks]
+        i = int(np.argmin(sizes))
+        if sizes[i] >= min_cells:
+            break
+        neighbors = [j for j in (i - 1, i + 1) if 0 <= j < len(blocks)]
+        j = min(neighbors, key=lambda k: sizes[k])
+        first, second = min(i, j), max(i, j)
+        blocks[first] = blocks[first] + blocks[second]
+        del blocks[second]
+
+    return blocks
+
+
+def _block_correlation(cells, grid, l_s, l_r):
+    """Exponential correlation between the cells of a block."""
+    cells = np.asarray(cells)
+    ds = np.abs(cells[:, np.newaxis, 0] - cells[np.newaxis, :, 0])
+    correlation = np.exp(-ds * grid.segment_length_actual / l_s)
+    if l_r is not None:
+        dr = np.abs(cells[:, np.newaxis, 1] - cells[np.newaxis, :, 1])
+        correlation *= np.exp(-dr * grid.radial_length_actual / l_r)
+    return correlation
+
+
+def hierarchical_fdr(
+    bundles,
+    *,
+    alpha_block=0.05,
+    use_resel_blocks=True,
+    combination_method="simes",
+):
+    """Correct SPECTRA statistics with the hierarchical FDR procedure.
+
+    Two-stage procedure of Benjamini and Heller for spatial signals, as used
+    in SPECTRA. See :footcite:p:`Feng2026SPECTRA` for further details about
+    the method.
+
+    Stage 1 splits each bundle into blocks of about one RESEL (see
+    :func:`partition_bundle_into_blocks`) and combines the cells of each block
+    into a block p-value, with Simes' test or Stouffer's method. The
+    Benjamini-Hochberg procedure is applied to the blocks of all the bundles at
+    level ``alpha_block``. Stage 2 computes a conditional p-value for each cell
+    of the rejected blocks, and applies the Benjamini-Hochberg procedure within
+    each rejected block.
+
+    Parameters
+    ----------
+    bundles : dict
+        For each bundle name, a dictionary with:
+
+        - ``"grid"``: SpectraGrid of the bundle.
+        - ``"t"``: ndarray, shape (n_segments, n_radial), test statistic of
+          each cell of the grid, e.g. ``"t"`` of :func:`fit_grid_lmm`.
+          ``n_radial`` is 1 for 1D profiles.
+        - ``"p"``: ndarray, shape (n_segments, n_radial), two-sided
+          uncorrected p-value of each cell. Cells with a NaN p-value are not
+          tested.
+        - ``"l_s"``, ``"l_r"``: float, optional, correlation length scales
+          along the tract and across the radial bins, see
+          :func:`estimate_length_scales`.
+        - ``"z"``: ndarray, optional, signed z-score of each cell. By default
+          it is computed from ``"t"`` and ``"p"``.
+    alpha_block : float, optional
+        FDR level of Stage 1.
+    use_resel_blocks : bool, optional
+        If True, split each bundle into RESEL blocks. If False, or if a bundle
+        has no ``"l_s"``, the whole bundle is a single block.
+    combination_method : {"simes", "stouffer"}, optional
+        Method used to combine the cells of a block.
+
+    Returns
+    -------
+    p_hfdr : dict
+        For each bundle, Stage 2 adjusted p-value of each cell, NaN outside
+        the rejected blocks. The cells with ``p_hfdr < alpha_cell`` are
+        significant. SPECTRA uses ``alpha_cell=0.15`` by default.
+    blocks : list of dict
+        Stage 1 blocks, with keys ``"bundle"``, ``"cells"`` (list of
+        ``(segment, radial)`` indices), ``"z"``, ``"p"``, ``"p_adj"``,
+        ``"significant"`` and ``"p_cond"``, the conditional p-values of the
+        cells (None if the block is not rejected).
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+    if combination_method not in ("simes", "stouffer"):
+        raise ValueError("combination_method must be 'simes' or 'stouffer'")
+
+    # Stage 1: combine the cells of each block
+    blocks = []
+    cell_z_rho = []
+    for name, bundle in bundles.items():
+        grid = bundle["grid"]
+        p = np.asarray(bundle["p"], dtype=float)
+        if p.shape not in ((grid.n_segments, grid.n_radial), (grid.n_segments, 1)):
+            raise ValueError(f"The statistics of {name} do not have the grid shape")
+        valid = ~np.isnan(p)
+        if not valid.any():
+            continue
+        z = bundle.get("z")
+        if z is None:
+            # Signed z-scores, clipped to keep very small p-values finite
+            z = np.clip(np.sign(bundle["t"]) * stats.norm.ppf(1 - p / 2), -10, 10)
+        l_s = bundle.get("l_s")
+        l_r = bundle.get("l_r")
+
+        if use_resel_blocks and l_s is not None:
+            cell_blocks = partition_bundle_into_blocks(valid, grid, l_s, l_r=l_r)
+        else:
+            cell_blocks = [[(int(s), int(r)) for s, r in zip(*np.nonzero(valid))]]
+
+        for cells in cell_blocks:
+            s_idx, r_idx = np.array(cells).T
+            z_cells = z[s_idx, r_idx]
+
+            correlation = None
+            if combination_method == "simes":
+                z_block, p_block = simes_combine(p[s_idx, r_idx], z_cells)
+            else:
+                if l_s is not None:
+                    correlation = _block_correlation(cells, grid, l_s, l_r)
+                z_block, p_block = stouffer_combine(z_cells, correlation=correlation)
+
+            # Correlation between each cell z-score and the block z-score
+            if correlation is None:
+                rho = np.full(len(cells), 1 / np.sqrt(len(cells)))
+            else:
+                rho = correlation.sum(axis=1) / np.sqrt(correlation.sum())
+
+            blocks.append({"bundle": name, "cells": cells, "z": z_block, "p": p_block})
+            cell_z_rho.append((z_cells, rho))
+
+    if not blocks:
+        raise ValueError("No cell has a valid p-value")
+
+    # Stage 1: Benjamini-Hochberg across the blocks of all the bundles
+    p_blocks = np.array([block["p"] for block in blocks])
+    p_adj = fdr_correction(p_blocks)
+    rejected = p_adj < alpha_block
+    threshold = p_blocks[rejected].max() if rejected.any() else alpha_block
+
+    # Stage 2: conditional p-values, corrected within each rejected block
+    p_hfdr = {name: np.full(np.shape(b["p"]), np.nan) for name, b in bundles.items()}
+    for block, block_p_adj, is_rejected, (z_cells, rho) in zip(
+        blocks, p_adj, rejected, cell_z_rho
+    ):
+        block["p_adj"] = float(block_p_adj)
+        block["significant"] = bool(is_rejected)
+        block["p_cond"] = None
+        if not is_rejected:
+            continue
+
+        p_cond = np.array(
+            [conditional_pvalue(zc, threshold, rc) for zc, rc in zip(z_cells, rho)]
+        )
+        block["p_cond"] = p_cond
+        s_idx, r_idx = np.array(block["cells"]).T
+        p_hfdr[block["bundle"]][s_idx, r_idx] = fdr_correction(p_cond)
+
+    return p_hfdr, blocks
