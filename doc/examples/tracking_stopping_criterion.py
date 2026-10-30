@@ -44,10 +44,7 @@ from dipy.tracking.stopping_criterion import (
 )
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import deterministic_tracking
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -134,14 +131,24 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_probabilistic_thresh_all.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_deterministic_thresh_all.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; click a gizmo label to snap the camera to that side.
+
+show_manager = window.ShowManager(
+    title="tractogram_deterministic_thresh_all", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -209,14 +216,24 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_deterministic_binary_all.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_deterministic_binary_all.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; click a gizmo label to snap the camera to that side.
+
+show_manager = window.ShowManager(
+    title="tractogram_deterministic_binary_all", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -314,14 +331,24 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_deterministic_act_all.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_deterministic_act_all.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; click a gizmo label to snap the camera to that side.
+
+show_manager = window.ShowManager(
+    title="tractogram_deterministic_act_all", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -343,14 +370,24 @@ streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_deterministic_act_valid.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_deterministic_act_valid.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; click a gizmo label to snap the camera to that side.
+
+show_manager = window.ShowManager(
+    title="tractogram_deterministic_act_valid", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
