@@ -5,12 +5,15 @@ import random
 
 import numpy as np
 from numpy.testing import (
+    assert_allclose,
     assert_almost_equal,
     assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
 )
+import pytest
+from scipy.spatial.transform import Rotation
 
 from dipy.core.geometry import (
     cart2sphere,
@@ -24,6 +27,7 @@ from dipy.core.geometry import (
     lambert_equal_area_projection_polar,
     nearest_pos_semi_def,
     perpendicular_directions,
+    rodrigues_axis_rotation,
     sphere2cart,
     sphere_distance,
     vec2vec_rotmat,
@@ -83,6 +87,34 @@ def test_invert_transform():
 
     assert_array_almost_equal(theta, new_theta)
     assert_array_almost_equal(phi, new_phi)
+
+
+@pytest.mark.parametrize("axis", [[0, 0, 1], [0, 0, 4], [1, 2, 3]])
+@pytest.mark.parametrize("angle", [0, -90, -30, -1e-32, 1e-32, 30, 90])
+def test_rodrigues_axis_rotation(axis, angle):
+    unit_axis = np.asarray(axis) / np.linalg.norm(axis)
+    expected = Rotation.from_rotvec(unit_axis * np.deg2rad(angle)).as_matrix()
+    actual = rodrigues_axis_rotation(axis, angle)
+
+    assert_allclose(actual, expected, atol=1e-14)
+    assert_allclose(actual.T @ actual, np.eye(3), atol=1e-14)
+    assert_allclose(np.linalg.det(actual), 1, atol=1e-14)
+
+
+@pytest.mark.parametrize("angle", [-1e-32, 1e-32])
+def test_rodrigues_axis_rotation_small_angle(angle):
+    actual = rodrigues_axis_rotation([0, 0, 4], angle)
+    theta = np.deg2rad(angle)
+
+    # Retain the first-order rotation rather than rounding to the identity.
+    assert_allclose(actual[1, 0], theta, atol=0)
+    assert_allclose(actual[0, 1], -theta, atol=0)
+
+
+@pytest.mark.parametrize("angle", [-90, 90, -1e-32, 1e-32])
+def test_rodrigues_axis_rotation_zero_axis(angle):
+    with pytest.raises(ValueError, match="non-zero"):
+        rodrigues_axis_rotation([0, 0, 0], angle)
 
 
 def test_nearest_pos_semi_def():
