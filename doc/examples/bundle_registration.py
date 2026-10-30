@@ -12,12 +12,10 @@ used here is called Streamline-based Linear Registration (SLR)
 :footcite:p:`Garyfallidis2015`.
 """
 
-from time import sleep
-
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.data import two_cingulum_bundles
 from dipy.tracking.streamline import set_number_of_points
-from dipy.viz import actor, window
+from dipy.viz.streamline import show_bundles
 
 ###############################################################################
 # Let's download and load the two bundles.
@@ -49,27 +47,16 @@ srm = srr.optimize(static=cb_subj1, moving=cb_subj2)
 cb_subj2_aligned = srm.transform(cb_subj2)
 
 
-def show_both_bundles(bundles, colors=None, show=True, fname=None):
-    scene = window.Scene()
-    scene.SetBackground(1.0, 1, 1)
-    for i, bundle in enumerate(bundles):
-        color = colors[i]
-        lines_actor = actor.streamtube(bundle, colors=color, linewidth=0.3)
-        lines_actor.RotateX(-90)
-        lines_actor.RotateZ(90)
-        scene.add(lines_actor)
-    if show:
-        window.show(scene)
-    if fname is not None:
-        sleep(1)
-        window.record(scene=scene, n_frames=1, out_path=fname, size=(900, 900))
+###############################################################################
+# The orange bundle is the static subject (``cb_subj1``) and the red bundle is
+# the moving subject (``cb_subj2``). Setting ``interactive=True`` opens a FURY
+# window instead of only saving the image.
 
-
-show_both_bundles(
+show_bundles(
     [cb_subj1, cb_subj2],
-    colors=[window.colors.orange, window.colors.red],
-    show=False,
-    fname="before_registration.png",
+    colors=[(1.0, 0.5, 0.0), (1.0, 0.0, 0.0)],
+    interactive=False,
+    save_as="before_registration.png",
 )
 
 ###############################################################################
@@ -77,11 +64,11 @@ show_both_bundles(
 #
 # Before bundle registration.
 
-show_both_bundles(
+show_bundles(
     [cb_subj1, cb_subj2_aligned],
-    colors=[window.colors.orange, window.colors.red],
-    show=False,
-    fname="after_registration.png",
+    colors=[(1.0, 0.5, 0.0), (1.0, 0.0, 0.0)],
+    interactive=False,
+    save_as="after_registration.png",
 )
 
 ###############################################################################
