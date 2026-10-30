@@ -33,7 +33,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import transform_streamlines
-from dipy.viz import has_fury, horizon, regtools
+from dipy.viz import regtools, skyline
 
 ###############################################################################
 # In order to get the deformation field, we will first use two b0 volumes. Both
@@ -204,20 +204,14 @@ sft_in_t2_using_aff_reg = StatefulTractogram(
 )
 
 ###############################################################################
-# Let's visualize the streamlines in the MNI T2 space. Switch the interactive
-# variable to True if you want to explore the visualization in an interactive
-# window.
+# Let's visualize the streamlines in the MNI T2 space with Skyline. Use the
+# slice controls to scroll through the template and check how the bundle fits
+# the anatomy.
 
-interactive = False
-
-if has_fury:
-    horizon(
-        tractograms=[sft_in_t2_using_aff_reg],
-        images=[(t2_mni_data, t2_mni_affine)],
-        interactive=interactive,
-        world_coords=True,
-        out_png="streamlines_DSN_MNI_aff_reg.png",
-    )
+_skyline = skyline(
+    images=[(t2_mni_data, t2_mni_affine, "MNI T2")],
+    tractograms=[(sft_in_t2_using_aff_reg, "Affine registration")],
+)
 
 ###############################################################################
 # To get better result, we use the mapping obtain by Symmetric Diffeomorphic
@@ -230,14 +224,10 @@ sft_in_t2_using_syn = StatefulTractogram(
     mni_t2_streamlines_using_syn, img_t2_mni, Space.RASMM
 )
 
-if has_fury:
-    horizon(
-        tractograms=[sft_in_t2_using_syn],
-        images=[(t2_mni_data, t2_mni_affine)],
-        interactive=interactive,
-        world_coords=True,
-        out_png="streamlines_DSN_MNI_syn.png",
-    )
+_skyline = skyline(
+    images=[(t2_mni_data, t2_mni_affine, "MNI T2")],
+    tractograms=[(sft_in_t2_using_syn, "SyN registration")],
+)
 
 ###############################################################################
 # Finally, we save the two registered streamlines:
