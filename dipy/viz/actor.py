@@ -3,6 +3,7 @@
 from functools import partial
 
 import numpy as np
+from scipy import sparse
 
 from dipy.data import get_sphere
 from dipy.reconst.shm import (
@@ -19,18 +20,18 @@ from dipy.viz.skyline.render.sh_slicer import SHSlicer
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.actor import *
-    from fury.actor import Group, create_axes_helper, surface
-    from fury.colormap import create_colormap, hsv2rgb, image, normalize_colors, text
+    from fury.actor import Group, create_axes_helper, image, surface, text
+    from fury.colormap import create_colormap, hsv2rgb, normalize_colors
     from fury.lib import EventType, PointerEvent
     from fury.transform import apply_transformation
-    from fury.utils import voxel_mesh_by_object
+    from fury.utils import apply_affine, voxel_mesh_by_object
     from fury.window import update_camera
 else:
     Group = create_axes_helper = surface = image = text = EventType = PointerEvent = (
         fury
     )
     apply_transformation = update_camera = normalize_colors = fury
-    voxel_mesh_by_object = create_colormap = hsv2rgb = fury
+    voxel_mesh_by_object = create_colormap = hsv2rgb = apply_affine = fury
 
 
 _SCALAR_BAR_SAMPLES = 256
