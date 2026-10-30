@@ -13,3 +13,4 @@ scikit-image
 boto3
 numexpr
 polyxios>=0.2.0
+dcm2niix>=1.0.20250506

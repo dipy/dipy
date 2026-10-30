@@ -1,4 +1,5 @@
 #!python
+import argparse
 from pathlib import Path
 import sys
 
@@ -21,6 +22,7 @@ cli_flows = {
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
+    "dipy_convert_dicom": ("dipy.workflows.io", "ConvertDicomFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
     "dipy_convert_tensors": ("dipy.workflows.io", "ConvertTensorsFlow"),
     "dipy_convert_sh": ("dipy.workflows.io", "ConvertSHFlow"),
@@ -107,6 +109,23 @@ def run():
                 "action": "store_true",
                 "default": True,
             }
+        }
+    elif script_name == "dipy_convert_dicom":
+        extra_args = {
+            name: {
+                "action": argparse.BooleanOptionalAction,
+                "default": True,
+                "help": description,
+            }
+            for name, description in (
+                ("compress", "Write .nii.gz instead of .nii (default: enabled)."),
+                ("bids", "Write BIDS JSON sidecars (default: enabled)."),
+                (
+                    "anonymize",
+                    "Anonymize BIDS metadata, not images or filenames "
+                    "(default: enabled).",
+                ),
+            )
         }
     elif script_name == "dipy_fit_csa":
         extra_args = {

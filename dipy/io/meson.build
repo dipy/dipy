@@ -1,6 +1,7 @@
 python_sources = [
   '__init__.py',
   'bids.py',
+  'dicom.py',
   'dpy.py',
   'gradients.py',
   'image.py',

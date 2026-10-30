@@ -20,6 +20,7 @@ from dipy.core.gradients import (
 )
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
+from dipy.io.dicom import convert_dicom
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import (
@@ -1351,6 +1352,62 @@ class ConcatenateTractogramFlow(Workflow):
 
         out_fpath = Path(out_dir) / f"{out_tractogram}.{out_extension}"
         save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
+
+
+class ConvertDicomFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "convert_dicom"
+
+    def run(
+        self,
+        input_path,
+        compress=True,
+        filename="%3s_%p",
+        bids=True,
+        anonymize=True,
+        out_dir="",
+    ):
+        """Convert DICOM images to NIfTI using dcm2niix.
+
+        Existing files are never overwritten, even with --force.
+
+        Parameters
+        ----------
+        input_path : string or Path
+            DICOM directory, searched recursively, or a single DICOM file.
+        compress : bool, optional
+            Write .nii.gz instead of .nii files.
+        filename : string, optional
+            dcm2niix filename template, without extension. The default is the
+            zero-padded series number (%3s) followed by the protocol name (%p).
+        bids : bool, optional
+            Write BIDS JSON sidecars.
+        anonymize : bool, optional
+            Remove identifying fields from the BIDS JSON sidecars.
+        out_dir : string or Path, optional
+            Output directory.
+
+        """
+        self.last_generated_outputs = None
+        self.flat_outputs = []
+        outputs = convert_dicom(
+            input_path,
+            out_dir=out_dir or ".",
+            compress=compress,
+            filename=filename,
+            bids=bids,
+            anonymize=anonymize,
+        )
+        self.last_generated_outputs = {
+            f"out_{kind}": [str(path) for path in paths]
+            for kind, paths in outputs.items()
+        }
+        self.flat_outputs = [
+            path for paths in self.last_generated_outputs.values() for path in paths
+        ]
+        for path in self.flat_outputs:
+            logger.info(f"Saved {path}")
 
 
 class ConvertSHFlow(Workflow):
