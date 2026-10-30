@@ -497,11 +497,13 @@ class MultiVoxelFit(ReconstFit):
             else:
                 return S0
 
-        kwargs["S0"] = gimme_S0(S0, ijk)
         # If we have a mask, we might have some Nones up front, skip those:
         while self.fit_array[ijk] is None:
-            ijk = next(idx)
+            ijk = next(idx, None)
+            if ijk is None:
+                raise ValueError("Cannot predict: no voxel inside the mask was fitted.")
 
+        kwargs["S0"] = gimme_S0(S0, ijk)
         if not hasattr(self.fit_array[ijk], "predict"):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
