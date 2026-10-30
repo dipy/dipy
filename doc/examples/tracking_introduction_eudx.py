@@ -45,16 +45,13 @@ from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import eudx_tracking
-from dipy.viz import actor, colormap, has_fury, window
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # Now, let's load an HARDI dataset from Stanford. If you have
 # not already downloaded this data set, the first time you run this example you
 # will need to be connected to the internet and this dataset will be downloaded
 # to your computer.
-
-# Enables/disables interactive visualization
-interactive = False
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -99,18 +96,23 @@ force_pam = force_peaks(fit)
 # which we will use as the basis to perform the tracking. The visualization
 # will be done using the ``fury`` python package
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(
-        actor.peak_slicer(
-            force_pam.peak_dirs, peaks_values=force_pam.peak_values, colors=None
-        )
-    )
+peaks_actor = actor.peaks_slicer(
+    force_pam.peak_dirs,
+    affine=affine,
+    peak_values=force_pam.peak_values,
+    visibility=(False, False, True),
+)
+scene = window.Scene()
+scene.add(peaks_actor)
 
-    window.record(scene=scene, out_path="force_direction_field.png", size=(900, 900))
+###############################################################################
+# Show the peaks with an orientation gizmo.
 
-    if interactive:
-        window.show(scene, size=(800, 800))
+show_manager = window.ShowManager(
+    title="force_direction_field", size=(900, 900), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -181,20 +183,17 @@ streamlines = Streamlines(streamline_generator)
 # We will then display the resulting streamlines using the ``fury``
 # python package.
 
-if has_fury:
-    # Prepare the display objects.
-    streamlines_actor = actor.line(
-        streamlines, colors=colormap.line_colors(streamlines)
-    )
-
-    # Create the 3D display.
-    scene = window.Scene()
-    scene.add(streamlines_actor)
-
-    # Save still images for this static example. Or for interactivity use
-    window.record(scene=scene, out_path="tractogram_EuDX.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(title="tractogram_EuDX", size=(800, 800), scene=scene)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
