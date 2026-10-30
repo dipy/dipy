@@ -10,6 +10,7 @@ if not has_fury:
 else:
     from fury import window
     from fury.actor import create_axes_helper
+    from fury.colormap import create_colormap
 
     from dipy.data import get_sphere
     from dipy.reconst.shm import sh_to_sf
@@ -300,3 +301,95 @@ def test_taubin_smooth_keeps_flat_mesh_in_plane():
     vertices[:, 2] = 0
     smoothed = _taubin_smooth(vertices, faces, 10)
     npt.assert_allclose(smoothed[:, 2], 0, atol=1e-12)
+
+
+def _render_ui(ui_actor):
+    manager = _offscreen_manager()
+    try:
+        manager.screens[0].scene.ui_scene.add(ui_actor)
+        manager._draw_function()
+        return manager.snapshot(fname=None)[..., :3]
+    finally:
+        manager.close()
+
+
+def _end_colors(name):
+    return 255 * create_colormap(np.array([0.0, 1.0]), name=name, auto=False)
+
+
+def test_scalar_bar_horizontal_runs_from_low_to_high_color():
+    bar = actor.scalar_bar(
+        cmap="plasma", orientation="horizontal", length=100, thickness=10, num_ticks=2
+    )
+    pixels = _render_ui(bar)
+    ratio = pixels.shape[0] / 200
+    row = pixels.shape[0] - 1 - int(65 * ratio)
+    left = pixels[row, int(60 * ratio) + 2]
+    right = pixels[row, int(160 * ratio) - 3]
+    low, high = _end_colors("plasma")
+    npt.assert_allclose(left, low, atol=12)
+    npt.assert_allclose(right, high, atol=12)
+
+
+RED_TO_BLUE = ((0.0, 2 / 3), (1.0, 1.0), (1.0, 1.0))
+
+
+def test_scalar_bar_hsv_range_replaces_named_colormap():
+    bar = actor.scalar_bar(hsv_range=RED_TO_BLUE, length=100, thickness=10, num_ticks=2)
+    pixels = _render_ui(bar)
+    ratio = pixels.shape[0] / 200
+    row = pixels.shape[0] - 1 - int(65 * ratio)
+    npt.assert_allclose(pixels[row, int(60 * ratio) + 2], [255, 0, 0], atol=12)
+    npt.assert_allclose(pixels[row, int(160 * ratio) - 3], [0, 0, 255], atol=12)
+
+
+def test_scalar_bar_map_values_uses_bar_colors_and_clips():
+    bar = actor.scalar_bar(clim=(10.0, 20.0), hsv_range=RED_TO_BLUE)
+    rgb = bar.map_values(np.array([0.0, 10.0, 20.0, 99.0]))
+    npt.assert_allclose(rgb[:2], [[1, 0, 0], [1, 0, 0]], atol=1e-6)
+    npt.assert_allclose(rgb[2:], [[0, 0, 1], [0, 0, 1]], atol=1e-6)
+    npt.assert_allclose(bar.map_values(np.array([15.0]))[0], [0, 1, 0], atol=0.05)
+
+
+def test_scalar_bar_vertical_runs_from_bottom_to_top():
+    bar = actor.scalar_bar(
+        cmap="plasma",
+        orientation="vertical",
+        length=100,
+        thickness=10,
+        num_ticks=2,
+        position=(20, 20),
+    )
+    pixels = _render_ui(bar)
+    ratio = pixels.shape[0] / 200
+    col = int(25 * ratio)
+    bottom = pixels[pixels.shape[0] - 1 - int(20 * ratio) - 2, col]
+    top = pixels[pixels.shape[0] - 1 - int(120 * ratio) + 3, col]
+    low, high = _end_colors("plasma")
+    npt.assert_allclose(bottom, low, atol=12)
+    npt.assert_allclose(top, high, atol=12)
+
+
+def test_scalar_bar_title_is_drawn_above_the_bar():
+    kwargs = {"length": 100, "thickness": 10, "num_ticks": 2, "position": (20, 20)}
+    ratio = _render_ui(actor.scalar_bar(**kwargs)).shape[0] / 200
+
+    def above_bar(pixels):
+        return pixels[: pixels.shape[0] - int(36 * ratio)]
+
+    assert not above_bar(_render_ui(actor.scalar_bar(**kwargs))).any()
+    assert above_bar(_render_ui(actor.scalar_bar(title="CCI", **kwargs))).any()
+
+
+@pytest.mark.parametrize(
+    "kwargs, match",
+    [
+        ({"orientation": "diagonal"}, "orientation"),
+        ({"clim": (1.0, 1.0)}, "clim"),
+        ({"clim": (2.0, 1.0)}, "clim"),
+        ({"num_ticks": 1}, "num_ticks"),
+    ],
+)
+def test_scalar_bar_rejects_invalid_arguments(kwargs, match):
+    with pytest.raises(ValueError, match=match):
+        actor.scalar_bar(**kwargs)
