@@ -15,7 +15,7 @@ import numpy as np
 from dipy.data import fetch_bundle_atlas_hcp842, get_two_hcp842_bundles
 from dipy.io.streamline import load_tractogram
 from dipy.stats.analysis import assignment_map
-from dipy.viz import actor, window
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # Download and read data for this tutorial
@@ -33,20 +33,27 @@ model_af_l = sft_af_l.streamlines
 
 ###############################################################################
 # let's visualize Arcuate Fasiculus Left (AF_L) bundle before assignment maps
+# from the left side, with the camera looking along camera_view_dir.
 
-interactive = False
+camera_view_dir = (341.94, 10.90, 47.36)
+camera_up = (-0.03, 0.028, 0.89)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, fake_tube=True, linewidth=6))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        model_af_l,
+        colors=colormap.line_colors(model_af_l),
+        outline_thickness=0,
+    )
 )
-window.record(scene=scene, out_path="af_l_before_assignment_maps.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="af_l_before_assignment_maps", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -64,26 +71,28 @@ n = 100
 _, indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
 
-colors = [rng.random(3) for si in range(n)]
-
-disks_color = [tuple(colors[i]) for i in indx]
+colors = rng.random((n, 3))
+disks_color = colors[indx]
 
 ###############################################################################
 # let's visualize Arcuate Fasiculus Left (AF_L) bundle after assignment maps
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, fake_tube=True, colors=disks_color, linewidth=6))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        model_af_l,
+        colors=disks_color,
+        outline_thickness=0,
+    )
 )
-window.record(scene=scene, out_path="af_l_after_assignment_maps.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="af_l_after_assignment_maps", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
