@@ -114,6 +114,7 @@
 .. _pytorch: https://pytorch.org
 .. _tqdm: https://tqdm.github.io/
 .. _trx-python: https://tee-ar-ex.github.io/trx-python/
+.. _dcm2niix: https://github.com/rordenlab/dcm2niix
 
 .. Python imaging projects
 .. _PyMVPA: https://www.pymvpa.org

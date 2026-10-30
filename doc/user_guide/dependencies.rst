@@ -47,5 +47,6 @@ The following packages are required only for specific DIPY modules:
 * pytorch_ - deep learning models
 * tensorflow_ - deep learning models (deprecated since DIPY 1.10, removed in
   DIPY 2.0; use PyTorch instead)
+* dcm2niix_ - DICOM to NIfTI conversion
 
 .. include:: ../links_names.inc

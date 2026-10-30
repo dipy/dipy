@@ -12,6 +12,7 @@ ruff
 pre-commit
 dependency-groups
 pytest>=9
+pydicom>=3
 coverage
 coveralls
 codecov

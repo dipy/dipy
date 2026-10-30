@@ -5,3 +5,4 @@ coverage
 coveralls
 codecov
 asv
+pydicom>=3

@@ -106,6 +106,7 @@ dipy_track = "dipy.workflows.cli:run"
 dipy_track_pft = "dipy.workflows.cli:run"
 dipy_slr = "dipy.workflows.cli:run"
 dipy_concatenate_tractograms = "dipy.workflows.cli:run"
+dipy_convert_dicom = "dipy.workflows.cli:run"
 dipy_convert_tractogram = "dipy.workflows.cli:run"
 dipy_convert_tensors = "dipy.workflows.cli:run"
 dipy_convert_sh = "dipy.workflows.cli:run"
@@ -134,12 +135,13 @@ all = [
     {include-optional = "optional"},
 ]
 style = ["ruff", "pre-commit"]
-test = ["pytest>=9", "coverage", "coveralls", "codecov", "asv"]
+test = ["pytest>=9", "coverage", "coveralls", "codecov", "asv", "pydicom>=3"]
 dev = [
     {include-group = "build"},
     {include-group = "style"},
     "dependency-groups",
     "pytest>=9",
+    "pydicom>=3",
     "coverage",
     "coveralls",
     "codecov",
@@ -172,6 +174,7 @@ optional = [
     "boto3",
     "numexpr",
     "polyxios>=0.2.0",
+    "dcm2niix>=1.0.20250506",
 ]
 
 [project.urls]
