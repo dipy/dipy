@@ -248,13 +248,18 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 f"{self.epilog[:ref_idx]}{''.join(ref_text)}\n\n{self.epilog[ref_idx:]}"
             )
 
+        non_path_outputs = getattr(workflow, "_non_path_outputs", ())
+
+        def is_output(name):
+            return "out_" in name and name not in non_path_outputs
+
         self._output_params = [
-            param for param in npds["Parameters"] if "out_" in param[0]
+            param for param in npds["Parameters"] if is_output(param[0])
         ]
         self._positional_params = [
             param
             for param in npds["Parameters"]
-            if "optional" not in param[1] and "out_" not in param[0]
+            if "optional" not in param[1] and not is_output(param[0])
         ]
         self._optional_params = [
             param for param in npds["Parameters"] if "optional" in param[1]
@@ -330,7 +335,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 if not is_optional:
                     nb_positional_variable += 1
 
-            if "out_" in arg:
+            if is_output(arg):
                 output_args.add_argument(*_args, **_kwargs)
             else:
                 if _kwargs["action"] not in (
