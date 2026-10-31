@@ -419,11 +419,8 @@ def test_concatenate_flow(tmp_path):
         ]
     ]
     concatenate_flow.run(*input_files, out_dir=tmp_path)
-    assert_true(
-        str(concatenate_flow.last_generated_outputs["out_extension"]).endswith("trx")
-    )
-    _fname = concatenate_flow.last_generated_outputs["out_tractogram"]
-    _fname = Path(_fname).with_suffix(Path(_fname).suffix + ".trx")
+    npt.assert_equal(list(concatenate_flow.last_generated_outputs), ["out_tractogram"])
+    _fname = tmp_path / "concatenated_tractogram.trx"
     assert_true(_fname.is_file())
 
     trk = load_tractogram(_fname, "same")
