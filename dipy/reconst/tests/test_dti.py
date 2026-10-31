@@ -1,11 +1,10 @@
 """Testing DTI."""
 
 import random
+import warnings
 
 import numpy as np
 import numpy.testing as npt
-
-import warnings
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
@@ -1322,17 +1321,17 @@ def test_dti_nlls_cholesky_positivity():
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
-        "ignore",
-        message=r"Number of calls to function has reached maxfev.*",
-        category=RuntimeWarning,
-    )
-    cholesky_params, _ = dti.nlls_fit_tensor(
-        design_matrix,
-        signal_pred,
-        jac=False,
-        cholesky=True,
-        return_lower_triangular=True,
-    )
+            "ignore",
+            message=r"Number of calls to function has reached maxfev.*",
+            category=RuntimeWarning,
+        )
+        cholesky_params, _ = dti.nlls_fit_tensor(
+            design_matrix,
+            signal_pred,
+            jac=False,
+            cholesky=True,
+            return_lower_triangular=True,
+        )
 
     plain_tensor = dti.from_lower_triangular(plain_params[0, :6])
     cholesky_tensor = dti.from_lower_triangular(cholesky_params[0, :6])
