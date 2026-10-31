@@ -420,6 +420,12 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
        Distances between corresponding points in `pts1` and `pts2`
        across the spherical surface, i.e. the great circle distance
 
+    Raises
+    ------
+    ValueError
+       If a point vector has zero length, or the radii do not match when
+       `check_radius` is True.
+
     See Also
     --------
     cart_distance : cartesian distance between points
@@ -442,9 +448,7 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
         if not (np.allclose(radius, lens1) and np.allclose(radius, lens2)):
             raise ValueError("Radii do not match sphere surface")
     # Get angle with vector cosine
-    dots = np.inner(pts1, pts2)
-    lens = lens1 * lens2
-    angle_cos = np.arccos(dots / lens)
+    angle_cos = np.arccos(vector_cosine(pts1, pts2))
     return angle_cos * radius
 
 
@@ -508,6 +512,11 @@ def vector_cosine(vecs1, vecs2):
     vcos : (N,) or (0,) array
        Vector cosines.  To get the angles you will need ``np.arccos``
 
+    Raises
+    ------
+    ValueError
+       If either input contains a zero-length vector, whose angle is undefined.
+
     Notes
     -----
     The vector cosine will be the same as the correlation only if all
@@ -518,8 +527,12 @@ def vector_cosine(vecs1, vecs2):
     vecs2 = np.asarray(vecs2)
     lens1 = np.sqrt(np.sum(vecs1**2, axis=-1))
     lens2 = np.sqrt(np.sum(vecs2**2, axis=-1))
-    dots = np.inner(vecs1, vecs2)
+    if vecs1.ndim and vecs2.ndim and vecs1.shape[-1] != vecs2.shape[-1]:
+        raise ValueError(f"shapes {vecs1.shape} and {vecs2.shape} not aligned")
+    dots = np.sum(vecs1 * vecs2, axis=-1)
     lens = lens1 * lens2
+    if np.any(lens == 0):
+        raise ValueError("Cannot compute cosine with a zero-length vector")
     return dots / lens
 
 
