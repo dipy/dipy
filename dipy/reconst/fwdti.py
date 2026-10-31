@@ -13,11 +13,14 @@ from dipy.reconst.base import ReconstModel
 from dipy.reconst.dki import _positive_evals
 from dipy.reconst.dti import (
     TensorFit,
+    _cholesky_to_lower_triangular_jacobian,
     _decompose_tensor_nan,
+    cholesky_to_lower_triangular,
     decompose_tensor,
     design_matrix,
     from_lower_triangular,
     lower_triangular,
+    lower_triangular_to_cholesky,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
@@ -570,6 +573,11 @@ def _nls_jacobian_func(
         See fwdti.nls_fit_tensor.
     """
     tensor = np.copy(tensor_elements)
+    if cholesky:
+        r_params = tensor_elements[:6]
+        chol_jacobian = _cholesky_to_lower_triangular_jacobian(r_params)
+        tensor[:6] = cholesky_to_lower_triangular(r_params)
+
     if f_transform:
         f = 0.5 * (1 + np.sin(tensor[7] - np.pi / 2))
     else:
@@ -580,13 +588,18 @@ def _nls_jacobian_func(
 
     T = (f - 1.0) * t[:, None] * design_matrix
     S = np.zeros(design_matrix.shape)
-    S[:, 6] = f * s
+    S[:, 6] = f * s * design_matrix[:, 6]
 
     if f_transform:
         df = (t - s) * (0.5 * np.cos(tensor[7] - np.pi / 2))
     else:
         df = t - s
-    return np.concatenate((T - S, df[:, None]), axis=1)
+    jacobian = np.concatenate((T - S, df[:, None]), axis=1)
+
+    if cholesky:
+        jacobian[:, :6] = jacobian[:, :6] @ chol_jacobian
+
+    return jacobian
 
 
 @warning_for_keywords()
@@ -663,6 +676,15 @@ def nls_iter(
         design_matrix, sig, S0, min_signal=min_signal, Diso=Diso, mdreg=mdreg
     )
 
+    partial_jac_func = partial(
+        _nls_jacobian_func,
+        Diso=Diso,
+        weighting=weighting,
+        sigma=sigma,
+        cholesky=cholesky,
+        f_transform=f_transform,
+    )
+
     partial_err_func = partial(
         _nls_err_func,
         Diso=Diso,
@@ -677,9 +699,13 @@ def nls_iter(
         # converting evals and evecs to diffusion tensor elements
         evals = params[:3]
         evecs = params[3:12].reshape((3, 3))
-        dt = lower_triangular(vec_val_vect(evecs, evals))
 
         # Cholesky decomposition if requested
+        if cholesky:
+            evals = np.maximum(evals, 2e-7)
+
+        dt = lower_triangular(vec_val_vect(evecs, evals))
+
         if cholesky:
             dt = lower_triangular_to_cholesky(dt)
 
@@ -691,12 +717,13 @@ def nls_iter(
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(S0), f]), axis=0)
+
         if jac:
             this_tensor, status = opt.leastsq(
                 partial_err_func,
                 start_params[:8],
                 args=(design_matrix, sig),
-                Dfun=_nls_jacobian_func,
+                Dfun=partial_jac_func,
             )
         else:
             this_tensor, status = opt.leastsq(
@@ -707,19 +734,26 @@ def nls_iter(
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
 
+        start_tensor = start_params[:6]
+
+        if cholesky:
+            start_tensor = cholesky_to_lower_triangular(start_tensor)
+
         evals, evecs = _decompose_tensor_nan(
             from_lower_triangular(this_tensor[:6]),
-            from_lower_triangular(start_params[:6]),
+            from_lower_triangular(start_tensor),
         )
 
         # Process water volume fraction f
         f = this_tensor[7]
+
         if f_transform:
             f = 0.5 * (1 + np.sin(f - np.pi / 2))
 
         params = np.concatenate(
             (evals, evecs[0], evecs[1], evecs[2], np.array([f])), axis=0
         )
+
     return params
 
 
@@ -832,63 +866,6 @@ def nls_fit_tensor(
             fw_params[v] = params
 
     return fw_params
-
-
-def lower_triangular_to_cholesky(tensor_elements):
-    """Performs Cholesky decomposition of the diffusion tensor
-
-    Parameters
-    ----------
-    tensor_elements : array (6,)
-        Array containing the six elements of diffusion tensor's lower
-        triangular.
-
-    Returns
-    -------
-    cholesky_elements : array (6,)
-        Array containing the six Cholesky's decomposition elements
-        (R0, R1, R2, R3, R4, R5) :footcite:p:`Koay2006b`.
-
-    References
-    ----------
-    .. footbibliography::
-    """
-    R0 = np.sqrt(tensor_elements[0])
-    R3 = tensor_elements[1] / R0
-    R1 = np.sqrt(tensor_elements[2] - R3**2)
-    R5 = tensor_elements[3] / R0
-    R4 = (tensor_elements[4] - R3 * R5) / R1
-    R2 = np.sqrt(tensor_elements[5] - R4**2 - R5**2)
-
-    return np.array([R0, R1, R2, R3, R4, R5])
-
-
-def cholesky_to_lower_triangular(R):
-    """Convert Cholesky decomposition elements to the diffusion tensor elements
-
-    Parameters
-    ----------
-    R : array (6,)
-        Array containing the six Cholesky's decomposition elements
-        (R0, R1, R2, R3, R4, R5) :footcite:p:`Koay2006b`.
-
-    Returns
-    -------
-    tensor_elements : array (6,)
-        Array containing the six elements of diffusion tensor's lower
-        triangular.
-
-    References
-    ----------
-    .. footbibliography::
-    """
-    Dxx = R[0] ** 2
-    Dxy = R[0] * R[3]
-    Dyy = R[1] ** 2 + R[3] ** 2
-    Dxz = R[0] * R[5]
-    Dyz = R[1] * R[4] + R[3] * R[5]
-    Dzz = R[2] ** 2 + R[4] ** 2 + R[5] ** 2
-    return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
 
 
 common_fit_methods = {
