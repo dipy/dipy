@@ -1,8 +1,9 @@
 import nibabel as nib
 import numpy as np
 from numpy.testing import assert_, assert_almost_equal, assert_equal, assert_raises
+import pytest
 
-from dipy.align.reslice import _lanczos_kernel, reslice
+from dipy.align.reslice import _lanczos_kernel, isotropic_voxel_size, reslice
 from dipy.data import get_fnames
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.io.image import load_nifti
@@ -117,3 +118,51 @@ def test_reslice_lanczos():
         order="lanczos2",
         mode="mirror",
     )
+
+
+@pytest.mark.parametrize(
+    "zooms, expected",
+    [
+        ((1.0, 1.0, 3.0), 1.5),
+        ((3.0, 1.0, 1.0), 1.5),
+        ((2.0, 2.0, 2.5), 2.25),
+        ((1.25, 1.25, 1.25), 1.25),
+        ((2.5, 2.5, 2.5), 2.5),
+        ((0.7, 0.7, 0.7), 0.7),
+        ((1.0, 1.0, 1.1), 1.0),
+        ((0.1, 0.1, 0.2), 0.25),
+    ],
+)
+def test_isotropic_voxel_size(zooms, expected):
+    assert_almost_equal(isotropic_voxel_size(zooms), expected)
+
+
+def test_isotropic_voxel_size_volume_ratio():
+    # 1x1x3 has volume 3: 1.25**3 = 1.95, 1.5**3 = 3.375, 2**3 = 8.
+    vox = isotropic_voxel_size((1.0, 1.0, 3.0))
+    for other in (1.25, 2.0):
+        assert_(abs(np.log(vox**3 / 3)) < abs(np.log(other**3 / 3)))
+
+
+def test_isotropic_voxel_size_exact_and_errors():
+    assert_almost_equal(isotropic_voxel_size((1.0, 1.0, 3.0), step=0), 3 ** (1 / 3))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, 0.0, 1.0))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0, 2.0), step=-1)
+
+
+def test_reslice_auto_new_zooms():
+    affine = np.diag([1.0, 1.0, 3.0, 1.0])
+    data = np.random.rand(30, 30, 10).astype(np.float32)
+
+    data2, affine2 = reslice(data, affine, (1.0, 1.0, 3.0), None)
+    assert_almost_equal(np.sqrt((affine2[:3, :3] ** 2).sum(0)), [1.5] * 3)
+    assert_equal(data2.shape, (20, 20, 20))
+    assert_almost_equal(np.array(data2.shape) * 1.5, np.array(data.shape) * [1, 1, 3])
+
+    data4d = np.repeat(data[..., None], 2, axis=-1)
+    data4d2, _ = reslice(data4d, affine, (1.0, 1.0, 3.0), None)
+    assert_equal(data4d2.shape, (20, 20, 20, 2))
+
+    data_l, _ = reslice(data, affine, (1.0, 1.0, 3.0), None, order="lanczos")
+    assert_equal(data_l.shape, (20, 20, 20))

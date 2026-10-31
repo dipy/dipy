@@ -8,7 +8,7 @@ from dipy.align import affine_registration, motion_correction
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
-from dipy.align.reslice import reslice
+from dipy.align.reslice import isotropic_voxel_size, reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
 from dipy.core.gradients import (
@@ -21,6 +21,7 @@ from dipy.io.image import load_nifti, save_nifti, save_qa_metric
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
@@ -62,6 +63,7 @@ class ResliceFlow(Workflow):
     def get_short_name(cls):
         return "reslice"
 
+    @deprecated_params(["vox_factor"], since="1.13", until="1.15")
     def run(
         self,
         input_files,
@@ -70,17 +72,16 @@ class ResliceFlow(Workflow):
         mode="constant",
         cval=0,
         num_processes=1,
-        vox_factor=0.14,
+        vox_factor=None,
         out_dir="",
         out_resliced="resliced.nii.gz",
     ):
         """Reslice data to a new voxel resolution with automatic or manual sizing.
 
         This workflow resamples volumetric data to a specified voxel size or
-        automatically determines an optimal isotropic resolution. When automatic
-        calculation is used, the new voxel size balances data quality with
-        computational efficiency by interpolating between the original voxel
-        dimensions.
+        automatically determines an isotropic resolution that preserves the
+        original voxel volume, so the resliced image keeps roughly the same
+        number of voxels and the same signal per voxel.
 
         Parameters
         ----------
@@ -88,14 +89,11 @@ class ResliceFlow(Workflow):
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         new_vox_size : variable float, optional
-            New voxel size as (x, y, z) in mm. If None, it will be
-            automatically calculated using the formula:
-            new_vox = voxel_sorted[1] + (voxel_sorted[2] - voxel_sorted[1]) * vox_factor
-            where voxel_sorted are the original voxel dimensions sorted in
-            ascending order. The calculated value is applied isotropically
-            to all three dimensions. If the auto-calculated value is strictly
-            greater than 2.0mm, it is halved repeatedly until it falls below
-            2.0mm (e.g. 2.5 → 1.25mm, 5.0 → 1.25mm).
+            New voxel size as (x, y, z) in mm. If None, an isotropic voxel
+            size is computed from the original voxel volume
+            ``V = x * y * z``: the geometric mean ``V ** (1 / 3)`` is snapped
+            to the 0.25mm grid value whose cubed volume is closest to ``V``
+            (e.g. 1x1x3mm gives 1.5mm, 2x2x2mm is kept as is).
         order : str, optional
             Interpolation order. Integer values 0–5 select spline order via
             scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
@@ -113,12 +111,11 @@ class ResliceFlow(Workflow):
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
         vox_factor : float, optional
-            Interpolation factor for automatic voxel size calculation,
-            ranging from 0.0 to 1.0. Controls the trade-off between the
-            second-largest and largest original voxel dimensions. 0.0: uses
-            second-largest voxel size (finer resolution). 1.0: uses largest voxel
-            size (coarser resolution). 0.14: recommended value for balanced resolution.
-            Only used when new_vox_size is None.
+            .. deprecated:: 1.13.0
+               This parameter is ignored and will be removed in 1.15.0. The
+               automatic voxel size now preserves the original voxel volume.
+
+            Former interpolation factor for automatic voxel size calculation.
         out_dir : string, optional
             Output directory for saving results.
         out_resliced : string, optional
@@ -138,26 +135,12 @@ class ResliceFlow(Workflow):
             logger.info(f"Processing {inputfile}")
 
             if new_vox_size is None:
-                voxsize_sorted = sorted(zooms)
-                max_vox_size = voxsize_sorted[-1]
-                smax_vox_size = voxsize_sorted[-2]
-                calculated_vox_size = (
-                    smax_vox_size + (max_vox_size - smax_vox_size) * vox_factor
-                )
-                if calculated_vox_size > 2.0:
-                    divisor = 2
-                    while calculated_vox_size / divisor >= 2.0:
-                        divisor *= 2
-                    calculated_vox_size /= divisor
-                    logger.warning(
-                        f"Auto-calculated voxel size > 2.0mm. "
-                        f"Divided by {divisor} → {calculated_vox_size:.4f}mm."
-                    )
-                new_vox_size_to_use = [calculated_vox_size] * 3
+                new_vox_size_to_use = [isotropic_voxel_size(zooms)] * 3
                 logger.warning(
                     f"new_vox_size not provided. Automatically calculated as "
-                    f"{new_vox_size_to_use} based on original voxel size "
-                    f"{tuple(zooms)} using vox_factor={vox_factor}"
+                    f"{new_vox_size_to_use} to preserve the original voxel "
+                    f"volume of {float(np.prod(zooms)):.4f}mm^3 "
+                    f"(voxel size {tuple(float(z) for z in zooms)})."
                 )
             else:
                 new_vox_size_to_use = new_vox_size

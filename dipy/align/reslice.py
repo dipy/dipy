@@ -147,6 +147,55 @@ def _lanczos_resample_3d(
     return vol.astype(data.dtype)
 
 
+def isotropic_voxel_size(zooms, *, step=0.25):
+    """Find the isotropic voxel size that best preserves the voxel volume.
+
+    The voxel volume ``prod(zooms)`` sets the amount of signal each voxel
+    integrates. An isotropic voxel of edge ``s`` has volume ``s ** 3``, so the
+    volume-preserving edge is the geometric mean ``prod(zooms) ** (1 / 3)``.
+    That value is snapped to the nearest multiple of ``step`` in volume-ratio
+    terms: among the two grid neighbours, the one minimising
+    ``|log(s ** 3 / prod(zooms))|`` is kept. Comparing volumes rather than
+    edges matters because volume grows with the cube of the edge. For a
+    1x1x3 mm voxel (volume 3), 1.25 mm gives a volume of 1.95 and 1.5 mm
+    gives 3.375, so 1.5 mm is selected while 2 mm (volume 8) is far off.
+
+    Parameters
+    ----------
+    zooms : array-like, shape (3,)
+        Voxel size along each spatial axis.
+    step : float, optional
+        Grid spacing on which the isotropic voxel size is snapped. Use 0 to
+        return the exact geometric mean.
+
+    Returns
+    -------
+    voxel_size : float
+        Isotropic voxel size. Already isotropic ``zooms`` are returned
+        unchanged.
+    """
+    zooms = np.asarray(zooms, dtype=np.float64)
+    if zooms.shape != (3,) or np.any(zooms <= 0):
+        raise ValueError(f"zooms must be 3 positive values, got {zooms}.")
+    if step < 0:
+        raise ValueError(f"step must be non-negative, got {step}.")
+
+    if np.allclose(zooms, zooms[0]):
+        return float(zooms[0])
+
+    volume = np.prod(zooms)
+    target = np.cbrt(volume)
+    if step == 0:
+        return float(target)
+
+    candidates = {
+        round(float(np.floor(target / step) * step), 6),
+        round(float(np.ceil(target / step) * step), 6),
+    }
+    candidates = sorted(c for c in candidates if c > 0) or [step]
+    return min(candidates, key=lambda c: abs(np.log(c**3 / volume)))
+
+
 @warning_for_keywords()
 def reslice(
     data,
@@ -170,8 +219,10 @@ def reslice(
         mapping from voxel coordinates to world coordinates
     zooms : tuple, shape (3,)
         voxel size for (i,j,k) dimensions
-    new_zooms : tuple, shape (3,)
-        new voxel size for (i,j,k) after resampling
+    new_zooms : tuple, shape (3,) or None
+        new voxel size for (i,j,k) after resampling. If None, an isotropic
+        voxel size preserving the original voxel volume is selected with
+        :func:`isotropic_voxel_size`.
     order : int or str
         Interpolation order. Integer 0–5 selects spline order via scipy
         (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
@@ -219,6 +270,13 @@ def reslice(
     >>> data2.shape == (77, 77, 40)
     True
 
+    With ``new_zooms=None`` the isotropic voxel size preserving the original
+    voxel volume (4 * 4 * 5 = 80) is used, here 4.25 (4.25 ** 3 = 76.8).
+
+    >>> data3, affine3 = reslice(data, affine, zooms, None)
+    >>> data3.shape == (55, 55, 28)
+    True
+
     """
     num_processes = determine_num_processes(num_processes)
 
@@ -250,6 +308,8 @@ def reslice(
     # input to scipy's affine_transform is [0, 0, 0]
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*scipy.*18.*", category=UserWarning)
+        if new_zooms is None:
+            new_zooms = (isotropic_voxel_size(zooms),) * 3
         new_zooms = np.array(new_zooms, dtype="f8")
         zooms = np.array(zooms, dtype="f8")
         scale = new_zooms / zooms
