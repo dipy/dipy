@@ -17,6 +17,7 @@ from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
     DummyCombinedWorkflow,
     DummyFlow,
+    DummyNonPathOutWorkflow,
     DummyVariableTypeErrorWorkflow,
     DummyVariableTypeWorkflow,
     DummyWorkflow1,
@@ -405,3 +406,33 @@ def test_boolean_optional_action_tri_state():
     parser.add_workflow(TriStateFlow())
     parsed = parser.get_flow_args(["dummy.txt", "--flag"])
     assert parsed["flag"] is True
+
+
+def test_non_path_outputs_parser_groups():
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(DummyNonPathOutWorkflow())
+
+    groups = {
+        group.title: [action.dest for action in group._group_actions]
+        for group in parser._action_groups
+    }
+    npt.assert_equal(groups["output arguments(optional)"], ["out_dir", "out_res"])
+    assert "out_dtype" in groups["options"]
+    assert "out_ext" in groups["options"]
+
+    output_names = [param[0] for param in parser.output_parameters]
+    positional_names = [param[0] for param in parser.positional_parameters]
+    npt.assert_equal(output_names, ["out_dir", "out_res"])
+    npt.assert_equal(positional_names, ["input_files"])
+
+
+def test_non_path_outputs_parser_none():
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(DummyNonPathOutWorkflow())
+    parsed = parser.get_flow_args(["in.txt", "--out_dtype", "None"])
+    assert parsed["out_dtype"] is None
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(DummyNonPathOutWorkflow())
+    parsed = parser.get_flow_args(["in.txt", "--out_dtype", "float32"])
+    npt.assert_equal(parsed["out_dtype"], "float32")
