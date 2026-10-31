@@ -5,6 +5,7 @@ import numpy.testing as npt
 
 from dipy.data import get_fnames
 from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.tests.workflow_tests_utils import DummyNonPathOutWorkflow
 from dipy.workflows.workflow import Workflow
 
 
@@ -64,3 +65,56 @@ def test_missing_file(tmp_path):
 
     dummyflow = TestMissingFile()
     npt.assert_raises(OSError, dummyflow.run, str(tmp_path / "dummy_file.txt"))
+
+
+def test_non_path_outputs_io_rows(tmp_path):
+    in_file = tmp_path / "in.txt"
+    in_file.write_text("x")
+    expected = [(str(in_file), str(tmp_path / "res.txt"))]
+
+    for out_dtype in (None, "float32"):
+        flow = DummyNonPathOutWorkflow(force=True)
+        rows = flow.run(in_file, out_dtype=out_dtype, out_dir=tmp_path)
+        npt.assert_equal(rows, expected)
+
+
+def test_non_path_outputs_multiple_inputs(tmp_path):
+    in_dir = tmp_path / "in"
+    in_dir.mkdir()
+    in_files = [in_dir / "a.txt", in_dir / "b.txt"]
+    for in_file in in_files:
+        in_file.write_text("x")
+
+    flow = DummyNonPathOutWorkflow(force=True)
+    rows = flow.run(in_dir / "*.txt", out_dtype="float32", out_dir=tmp_path)
+    npt.assert_equal(
+        rows, [(str(in_file), str(tmp_path / "res.txt")) for in_file in in_files]
+    )
+
+
+def test_non_path_outputs_last_generated(tmp_path):
+    in_file = tmp_path / "in.txt"
+    in_file.write_text("x")
+
+    flow = DummyNonPathOutWorkflow(force=True)
+    flow.run(in_file, out_dtype="float32", out_dir=tmp_path)
+    npt.assert_equal([str(f) for f in flow.flat_outputs], [str(tmp_path / "res.txt")])
+    npt.assert_equal(list(flow.last_generated_outputs), ["out_res"])
+
+
+def test_non_path_outputs_overwrite(tmp_path):
+    in_file = tmp_path / "in.txt"
+    in_file.write_text("x")
+    (tmp_path / "float32").write_text("x")
+
+    flow = DummyNonPathOutWorkflow()
+    rows = flow.run(in_file, out_dtype="float32", out_dir=tmp_path)
+    npt.assert_equal(len(rows), 1)
+
+    (tmp_path / "res.txt").write_text("x")
+    rows = flow.run(in_file, out_dtype="float32", out_dir=tmp_path)
+    npt.assert_equal(rows, [])
+
+
+def test_non_path_outputs_default():
+    npt.assert_equal(Workflow._non_path_outputs, ())

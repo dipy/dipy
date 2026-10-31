@@ -198,3 +198,34 @@ class DummyVariableTypeErrorWorkflow(Workflow):
             result.append((variable1, variable2))
 
         return result
+
+
+class DummyNonPathOutWorkflow(Workflow):
+    _non_path_outputs = ("out_dtype", "out_ext")
+
+    def run(
+        self,
+        input_files,
+        out_dtype=None,
+        out_ext="txt",
+        out_dir="",
+        out_res="res.txt",
+    ):
+        """Workflow used to test out_ parameters that are not paths.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input files. This path may contain wildcards to
+            process multiple inputs at once.
+        out_dtype : string, optional
+            Data type of the output, not a path.
+        out_ext : string, optional
+            Extension of the output, not a path.
+        out_dir : string or Path, optional
+            Output directory.
+        out_res : string, optional
+            Name of the output file.
+        """
+        io_it = self.get_io_iterator()
+        return [(str(inp), str(out)) for inp, out in io_it]

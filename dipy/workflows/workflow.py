@@ -7,6 +7,8 @@ from dipy.workflows.multi_io import _io_iterator
 
 
 class Workflow:
+    _non_path_outputs = ()
+
     @warning_for_keywords()
     def __init__(
         self, *, output_strategy="absolute", mix_names=False, force=False, skip=False
@@ -41,6 +43,7 @@ class Workflow:
             self.run,
             output_strategy=self._output_strategy,
             mix_names=self._mix_names,
+            non_path_outputs=self._non_path_outputs,
         )
 
         # Make a list out of a list of lists
