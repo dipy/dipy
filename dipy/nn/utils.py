@@ -1,4 +1,7 @@
+from collections import OrderedDict
 import math
+import pickle
+import zipfile
 
 import numpy as np
 from scipy.ndimage import affine_transform, map_coordinates
@@ -389,3 +392,105 @@ def inv_pad_crop(image, crop_vs, pad_vs):
     ]
 
     return image
+
+
+def _rebuild_tensor(storage, offset, size, stride, *args):
+    """Rebuild a pickled PyTorch tensor as a NumPy array.
+
+    Parameters
+    ----------
+    storage : np.ndarray
+        Flat storage of the tensor.
+    offset : int
+        Offset of the tensor in the storage, in elements.
+    size : tuple of int
+        Shape of the tensor.
+    stride : tuple of int
+        Strides of the tensor, in elements.
+    *args
+        Gradient and hook metadata, ignored.
+
+    Returns
+    -------
+    np.ndarray
+        Copy of the tensor data.
+    """
+    return np.lib.stride_tricks.as_strided(
+        storage[offset:],
+        shape=tuple(size),
+        strides=tuple(s * storage.itemsize for s in stride),
+    ).copy()
+
+
+_STATE_DICT_GLOBALS = {
+    ("collections", "OrderedDict"): OrderedDict,
+    ("torch._utils", "_rebuild_tensor_v2"): _rebuild_tensor,
+    ("torch", "FloatStorage"): np.float32,
+    ("torch", "DoubleStorage"): np.float64,
+    ("torch", "HalfStorage"): np.float16,
+    ("torch", "IntStorage"): np.int32,
+    ("torch", "LongStorage"): np.int64,
+}
+
+
+class _StateDictUnpickler(pickle.Unpickler):
+    """Unpickler rebuilding the tensors of a PyTorch state dict as arrays.
+
+    Only the globals listed in ``_STATE_DICT_GLOBALS`` can be loaded, so
+    reading a file cannot execute arbitrary code.
+
+    Parameters
+    ----------
+    file : file object
+        Opened ``data.pkl`` member of the archive.
+    archive : zipfile.ZipFile
+        Archive holding the tensor storages.
+    prefix : str
+        Top-level folder of the archive.
+    """
+
+    def __init__(self, file, *, archive, prefix):
+        super().__init__(file)
+        self.archive = archive
+        self.prefix = prefix
+
+    def find_class(self, module, name):
+        try:
+            return _STATE_DICT_GLOBALS[(module, name)]
+        except KeyError:
+            raise pickle.UnpicklingError(
+                f"Unsupported object {module}.{name} in a PyTorch state dict"
+            ) from None
+
+    def persistent_load(self, pid):
+        _, dtype, key, _, numel = pid
+        data = self.archive.read(f"{self.prefix}/data/{key}")
+        return np.frombuffer(data, dtype=np.dtype(dtype).newbyteorder("<"), count=numel)
+
+
+def load_state_dict(fname):
+    """Read a PyTorch state dict saved by ``torch.save``, without PyTorch.
+
+    Parameters
+    ----------
+    fname : str or Path
+        Path to the file, in the zip format used by PyTorch since 1.6.
+
+    Returns
+    -------
+    dict
+        Parameter names mapped to NumPy arrays.
+    """
+    try:
+        with zipfile.ZipFile(fname) as archive:
+            pickles = [n for n in archive.namelist() if n.endswith("/data.pkl")]
+            if len(pickles) != 1:
+                raise ValueError(f"{fname} is not a PyTorch state dict")
+            prefix = pickles[0][: -len("/data.pkl")]
+            with archive.open(pickles[0]) as f:
+                state = _StateDictUnpickler(f, archive=archive, prefix=prefix).load()
+    except (zipfile.BadZipFile, pickle.UnpicklingError, KeyError, ValueError) as e:
+        raise ValueError(f"Could not read the PyTorch state dict {fname}") from e
+    if not isinstance(state, dict):
+        raise ValueError(f"{fname} is not a PyTorch state dict")
+    return dict(state)

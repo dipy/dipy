@@ -733,6 +733,17 @@ fetch_synthseg_torch_weights = _make_fetcher(
     doc="Download SynthSeg model weights for Billot et. al 2023",
 )
 
+fetch_mindgrab_weights = _make_fetcher(
+    "fetch_mindgrab_weights",
+    Path(dipy_home) / "mindgrab",
+    "https://raw.githubusercontent.com/neuroneural/brainchop-models/"
+    "528f2d8d2ca937968b2d4b2b9ef9fa9170f4b9cf/meshnet/mindgrab/",
+    ["model.pth"],
+    ["mindgrab_weights.pth"],
+    md5_list=["eb9457fc5cb825e2c4534434b2e5ff04"],
+    doc="Download MindGrab model weights for Fani et. al 2025",
+)
+
 fetch_synthseg_test = _make_fetcher(
     "fetch_synthseg_test",
     Path(dipy_home) / "synthseg",
@@ -2328,6 +2339,9 @@ def get_fnames(*, name="small_64D", include_optional=False):
         _, folder = fetch_synthseg_torch_weights()
         w1 = Path(folder) / "synthseg_model_weights.pth"
         return w1
+    if name == "mindgrab_weights":
+        _, folder = fetch_mindgrab_weights()
+        return Path(folder) / "mindgrab_weights.pth"
     if name == "synthseg_test_data":
         files, folder = fetch_synthseg_test()
         test_data = Path(folder) / "synthseg_test_data.npz"

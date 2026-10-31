@@ -37,12 +37,6 @@ else:
     class Module:
         pass
 
-    logger.warning(
-        "This model requires Pytorch.\
-                    Please install these packages using \
-                    pip."
-    )
-
 
 def prepare_img(image):
     """Function to prepare image for model input

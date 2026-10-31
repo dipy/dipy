@@ -4,6 +4,7 @@ python_sources = [
   'test_deepn4.py',
   'test_evac.py',
   'test_histo_resdnn.py',
+  'test_mindgrab.py',
   'test_synb0.py',
   'test_tf.py',
   'test_utils.py',

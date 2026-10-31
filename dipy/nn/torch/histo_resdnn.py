@@ -23,12 +23,6 @@ else:
     class Module:
         pass
 
-    logger.warning(
-        "This model requires Pytorch.\
-                    Please install these packages using \
-                    pip."
-    )
-
 
 class DenseModel(Module):
     """Deep Neural Network model with several linear layers.
