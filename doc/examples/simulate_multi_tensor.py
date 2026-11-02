@@ -103,26 +103,25 @@ fig.savefig("simulated_signal.png", bbox_inches="tight")
 # simulation of only a single voxel, we can use a sphere with very high
 # resolution. We generate that by subdividing the triangles of one of DIPY_'s
 # cached spheres, which we can read in the following way.
+#
+# Colors encode orientation. SH coefficients approximate the sampled ODF for
+# display, and the ODF is normalized for display without changing the original.
+# Viewing from +Y exposes the X/Z crossing plane without rotating the data.
 
 sphere = get_sphere(name="repulsion724")
 sphere = sphere.subdivide(n=2)
 
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)
 
-# Enables/disables interactive visualization
-interactive = False
-
 scene = window.Scene()
-
-odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap="plasma")
-odf_actor.RotateX(90)
+odf_actor = actor.odf_slicer(sh_func=odf[None, None, None, :], sphere=sphere, l_max=16)
 
 scene.add(odf_actor)
-
-print("Saving illustration as multi_tensor_simulation")
-window.record(scene=scene, out_path="multi_tensor_simulation.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(
+    title="multi_tensor_simulation", size=(200, 200), scene=scene
+)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 
 ###############################################################################
