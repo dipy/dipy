@@ -70,7 +70,12 @@ streamlines = Streamlines(streamlines_generator)
 ###############################################################################
 # We will create a streamline actor from the streamlines.
 
-streamlines_actor = actor.line(streamlines, colors=cmap.line_colors(streamlines))
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=cmap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
 
 ###############################################################################
 # Next, we create a surface actor from the corpus callosum seed ROI. We
@@ -94,17 +99,19 @@ scene.add(streamlines_actor)
 scene.add(seedroi_actor)
 
 ###############################################################################
-# If you uncomment the following line, the rendering will pop up in an
-# interactive window.
+# Show the streamlines and the seed ROI surface with an orientation gizmo. The
+# default camera looks from the superior side; we simulate a click on ``L`` to
+# snap the camera to the left side.
 
-interactive = False
-if interactive:
-    window.show(scene)
-
-window.record(scene=scene, out_path="contour_from_roi_tutorial.png", size=(1200, 900))
+show_manager = window.ShowManager(
+    title="contour_from_roi_tutorial", size=(1200, 900), scene=scene
+)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# A top view of corpus callosum streamlines with the blue transparent
+# A left view of corpus callosum streamlines with the blue transparent
 # seed ROI in the center.
