@@ -387,9 +387,17 @@ def test_scalar_bar_title_is_drawn_above_the_bar():
         ({"orientation": "diagonal"}, "orientation"),
         ({"clim": (1.0, 1.0)}, "clim"),
         ({"clim": (2.0, 1.0)}, "clim"),
+        ({"clim": (np.nan, 1.0)}, "clim"),
+        ({"clim": (0.0, np.inf)}, "clim"),
         ({"num_ticks": 1}, "num_ticks"),
     ],
 )
 def test_scalar_bar_rejects_invalid_arguments(kwargs, match):
     with pytest.raises(ValueError, match=match):
         actor.scalar_bar(**kwargs)
+
+
+def test_scalar_bar_map_values_rejects_nan():
+    bar = actor.scalar_bar(clim=(0.0, 1.0))
+    with pytest.raises(ValueError, match="NaN"):
+        bar.map_values(np.array([0.5, np.nan]))

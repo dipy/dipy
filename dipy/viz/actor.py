@@ -13,6 +13,7 @@ from dipy.reconst.shm import (
     sf_to_sh,
 )
 from dipy.utils.optpkg import optional_package
+from dipy.viz.colormap import create_colormap, map_scalars_to_lut
 from dipy.viz.skyline.io import _validate_sh_basis
 from dipy.viz.skyline.render.renderer import affine_voxel_sizes
 from dipy.viz.skyline.render.sh_slicer import SHSlicer
@@ -21,7 +22,7 @@ fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.actor import *
     from fury.actor import Group, create_axes_helper, image, surface, text
-    from fury.colormap import create_colormap, hsv2rgb, normalize_colors
+    from fury.colormap import normalize_colors
     from fury.lib import EventType, PointerEvent
     from fury.transform import apply_transformation
     from fury.utils import apply_affine, voxel_mesh_by_object
@@ -31,7 +32,7 @@ else:
         fury
     )
     apply_transformation = update_camera = normalize_colors = fury
-    voxel_mesh_by_object = create_colormap = hsv2rgb = apply_affine = fury
+    voxel_mesh_by_object = apply_affine = fury
 
 
 _SCALAR_BAR_SAMPLES = 256
@@ -466,33 +467,9 @@ def smooth_contour_from_roi(
     return contour
 
 
-def _map_to_colors(values, *, clim, colors):
-    """Map scalar values to the nearest of the evenly spaced ``colors``.
-
-    Parameters
-    ----------
-    values : array_like
-        Scalar values; those outside ``clim`` are clipped.
-    clim : tuple of float
-        Scalar values ``(low, high)`` mapped to the first and last colors.
-    colors : ndarray of shape (M, 3)
-        RGB colors ordered from low to high values.
-
-    Returns
-    -------
-    ndarray of shape (..., 3)
-        RGB colors of ``values``.
-    """
-    low, high = clim
-    fraction = np.clip((np.asarray(values) - low) / (high - low), 0, 1)
-    return colors[np.round(fraction * (len(colors) - 1)).astype(int)]
-
-
-# TODO(fury#1392, fury#1393): FURY v2 has no scalar bar / colorbar actor, and
-# ``fury.colormap.create_colormap`` only accepts colormap names. Remove
-# ``scalar_bar`` and use the FURY actor, with custom colormap support, once
-# https://github.com/fury-gl/fury/issues/1392 and
-# https://github.com/fury-gl/fury/issues/1393 are resolved.
+# TODO(fury#1392): FURY v2 has no scalar bar / colorbar actor. Remove
+# ``scalar_bar`` and use the FURY actor once
+# https://github.com/fury-gl/fury/issues/1392 is resolved.
 def scalar_bar(
     *,
     clim=(0.0, 1.0),
@@ -512,30 +489,30 @@ def scalar_bar(
 
     Parameters
     ----------
-    clim : tuple of float
+    clim : tuple of float, optional
         Scalar values ``(low, high)`` mapped to the first and last colors.
-    cmap : str
+    cmap : str, optional
         Name of the colormap, as accepted by ``fury.colormap.create_colormap``.
     hsv_range : tuple of three (low, high) pairs, optional
         Hue, saturation and value ramps, each in [0, 1], from the first to the
         last color. Replaces ``cmap`` when given.
-    orientation : {"horizontal", "vertical"}
+    orientation : {"horizontal", "vertical"}, optional
         Bar orientation. Low values are on the left or at the bottom.
-    length : float
+    length : float, optional
         Bar length in pixels.
-    thickness : float
+    thickness : float, optional
         Bar thickness in pixels.
-    num_ticks : int
+    num_ticks : int, optional
         Number of evenly spaced tick labels, including both ends.
-    tick_format : str
+    tick_format : str, optional
         Format specification applied to each tick value.
     title : str, optional
         Text drawn above the bar.
-    font_size : float
+    font_size : float, optional
         Font size of the labels in pixels.
-    color : tuple of float
+    color : tuple of float, optional
         RGB color of the labels.
-    position : tuple of float
+    position : tuple of float, optional
         Bottom-left corner of the bar in pixels from the bottom-left of the
         screen viewport.
 
@@ -546,33 +523,35 @@ def scalar_bar(
         ``map_values`` attribute maps scalar values to the RGB colors of the
         bar, clipping values outside ``clim``.
 
+    Raises
+    ------
+    ValueError
+        If ``orientation`` is not ``"horizontal"`` or ``"vertical"``, if
+        ``clim`` is not finite with ``low < high``, if ``num_ticks`` is lower
+        than 2, or if ``hsv_range`` does not have three (low, high) pairs.
+
     Notes
     -----
     Add it with ``show_manager.screens[0].scene.ui_scene.add(bar)``. Temporary
-    until FURY provides one with custom colormaps
-    (https://github.com/fury-gl/fury/issues/1392 and
-    https://github.com/fury-gl/fury/issues/1393).
+    until FURY provides one (https://github.com/fury-gl/fury/issues/1392).
     """
     if orientation not in ("horizontal", "vertical"):
         raise ValueError(
             f"orientation must be 'horizontal' or 'vertical', got {orientation!r}."
         )
     low, high = clim
-    if not low < high:
-        raise ValueError(f"clim must satisfy low < high, got {clim}.")
+    if not (np.isfinite(clim).all() and low < high):
+        raise ValueError(f"clim must be finite with low < high, got {clim}.")
     if num_ticks < 2:
         raise ValueError(f"num_ticks must be at least 2, got {num_ticks}.")
 
     horizontal = orientation == "horizontal"
-    if hsv_range is None:
-        colors = create_colormap(
-            np.linspace(0, 1, _SCALAR_BAR_SAMPLES), name=cmap, auto=False
-        )
-    else:
-        hsv = np.stack(
-            [np.linspace(*ramp, _SCALAR_BAR_SAMPLES) for ramp in hsv_range], axis=1
-        )
-        colors = hsv2rgb(hsv)
+    colors = create_colormap(
+        np.linspace(0, 1, _SCALAR_BAR_SAMPLES),
+        name=cmap,
+        auto=False,
+        hsv_range=hsv_range,
+    )
     num_colors = len(colors)
     gradient = colors[None] if horizontal else colors[:, None]
     texel_size = [
@@ -617,5 +596,5 @@ def scalar_bar(
                 anchor="bottom-left",
             )
         )
-    bar.map_values = partial(_map_to_colors, clim=clim, colors=colors)
+    bar.map_values = partial(map_scalars_to_lut, clim=clim, lut=colors)
     return bar

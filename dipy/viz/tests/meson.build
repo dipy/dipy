@@ -1,6 +1,7 @@
 python_sources = [
   '__init__.py',
   'test_actor.py',
+  'test_colormap.py',
   'test_gmem.py',
   'test_horizon.py',
   'test_plotting.py',

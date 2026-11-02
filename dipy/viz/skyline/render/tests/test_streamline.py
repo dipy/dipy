@@ -1,4 +1,3 @@
-import colorsys
 from itertools import pairwise
 import logging
 
@@ -20,13 +19,13 @@ else:
     from fury.colormap import line_colors
     from fury.lib import OrthographicCamera
 
+    from dipy.viz.colormap import create_colormap
     from dipy.viz.skyline.render.streamline import (
         ClusterStreamline3D,
         Streamline3D,
         _set_line_appearance,
         apply_buan_colors,
         create_cluster_help,
-        create_colormap,
         create_streamline,
         create_streamline_visualization,
     )
@@ -212,29 +211,6 @@ def test_tubes_ignore_line_appearance_arguments(opacity, thickness):
     _assert_same_tube(actual, expected)
 
 
-def test_create_colormap_shape_and_range():
-    lut = create_colormap(16)
-
-    assert lut.shape == (16, 3)
-    assert lut.dtype == np.float32
-    assert lut.min() >= 0.0
-    assert lut.max() <= 1.0
-
-
-def test_create_colormap_interpolates_between_the_endpoints():
-    lut = create_colormap(5, hue=(0.0, 1.0), saturation=(1.0, 0.0), value=0.5)
-
-    npt.assert_allclose(lut[0], colorsys.hsv_to_rgb(0.0, 1.0, 0.5), atol=1e-6)
-    npt.assert_allclose(lut[-1], colorsys.hsv_to_rgb(1.0, 0.0, 0.5), atol=1e-6)
-    npt.assert_allclose(lut[2], colorsys.hsv_to_rgb(0.5, 0.5, 0.5), atol=1e-6)
-
-
-def test_create_colormap_constant_value_channel():
-    lut = create_colormap(8, hue=(0.0, 0.0), saturation=(0.0, 0.0), value=0.3)
-
-    npt.assert_allclose(lut, np.full((8, 3), 0.3), atol=1e-6)
-
-
 def test_apply_buan_colors_returns_one_color_per_point():
     lines = _polylines(4, n_points=6)
     pvals = np.linspace(0.0, 1.0, 20)
@@ -256,7 +232,12 @@ def test_apply_buan_colors_reuses_precomputed_indices():
     colors, reused_idx = apply_buan_colors(lines, pvals, buan_color_idx=color_idx)
 
     npt.assert_array_equal(reused_idx, color_idx)
-    npt.assert_allclose(colors, create_colormap(len(pvals))[color_idx])
+    lut = create_colormap(
+        np.linspace(0, 1, len(pvals)),
+        auto=False,
+        hsv_range=((0.0, 0.1), (0.8, 0.2), (0.8, 0.8)),
+    )
+    npt.assert_allclose(colors, lut[color_idx])
 
 
 def test_apply_buan_colors_follows_the_hue_and_value_settings():
