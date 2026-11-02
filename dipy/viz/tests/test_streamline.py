@@ -17,7 +17,7 @@ if has_matplotlib:
     import matplotlib.pyplot as plt
 
 if has_fury_v2:
-    from dipy.viz import streamline
+    from dipy.viz import actor, streamline
 
 pytestmark = pytest.mark.skipif(
     not (has_fury_v2 and has_matplotlib), reason="Requires FURY >= 2.1 and Matplotlib"
@@ -120,6 +120,24 @@ def test_show_bundles_view_controls_camera_side(tmp_path):
 
     assert spreads["sagittal"] > 300
     assert spreads["axial"] < 100
+
+
+def test_show_bundles_draws_scalar_bar_only_when_given(tmp_path):
+    blue_bar = actor.scalar_bar(
+        hsv_range=((0.66, 0.66), (1.0, 1.0), (1.0, 1.0)),
+        color=(0.0, 0.0, 0.0),
+        position=(300, 60),
+    )
+    without_bar = tmp_path / "without_bar.png"
+    with_bar = tmp_path / "with_bar.png"
+    kwargs = {"colors": [(1, 0, 0)], "interactive": False}
+    streamline.show_bundles([_bundle()], save_as=without_bar, **kwargs)
+    streamline.show_bundles(
+        [_bundle()], scalar_bar=blue_bar, save_as=with_bar, **kwargs
+    )
+
+    assert _tinted(_read(without_bar), 2) == 0
+    assert _tinted(_read(with_bar), 2) > 20
 
 
 def test_show_bundles_rejects_unknown_view_without_writing(tmp_path):
