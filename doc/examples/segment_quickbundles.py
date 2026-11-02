@@ -57,15 +57,16 @@ print("Centroid of the last cluster:\n", clusters[-1].centroid)
 #
 # Let's first show the initial dataset.
 
-# Enables/disables interactive visualization
-interactive = False
+streamlines_actor = actor.streamtube(
+    streamlines, colors=(1, 1, 1), radius=0.075, backend="cpu"
+)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=window.colors.white))
-window.record(scene=scene, out_path="fornix_initial.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(0, 0, 0, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(title="fornix_initial", size=(600, 600), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -77,13 +78,24 @@ if interactive:
 
 colormap_qb = cmap.create_colormap(np.arange(len(clusters)))
 
-scene.clear()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
-scene.add(actor.streamtube(clusters.centroids, colors=colormap_qb, linewidth=0.4))
-window.record(scene=scene, out_path="fornix_centroids.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamtube(
+    streamlines, colors=(1, 1, 1), opacity=0.05, radius=0.075, backend="cpu"
+)
+# Keep the faded streamlines from hiding the centroids behind them.
+streamlines_actor.material.depth_write = False
+centroids_actor = actor.streamtube(
+    clusters.centroids, colors=colormap_qb, radius=0.4, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+scene.add(centroids_actor)
+
+show_manager = window.ShowManager(
+    title="fornix_centroids", size=(600, 600), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -97,12 +109,16 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap_qb):
     colormap_full[cluster.indices] = color
 
-scene.clear()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamtube(
+    streamlines, colors=colormap_full, radius=0.075, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(title="fornix_clusters", size=(600, 600), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -135,12 +151,18 @@ colormap_full_qbx = np.ones((len(streamlines), 3))
 for cluster, color in zip(qbx_clusters, colormap_qbx):
     colormap_full_qbx[cluster.indices] = color
 
-scene.clear()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full_qbx))
-window.record(scene=scene, out_path="fornix_qbx_clusters.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamtube(
+    streamlines, colors=colormap_full_qbx, radius=0.075, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(
+    title="fornix_qbx_clusters", size=(600, 600), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

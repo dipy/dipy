@@ -19,7 +19,7 @@ from dipy.data import (
 )
 from dipy.io.streamline import load_tractogram
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_row
-from dipy.viz import actor, window
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # Download and read data for this tutorial
@@ -33,15 +33,19 @@ streamlines = load_tractogram(hcp_file, "same", bbox_valid_check=False).streamli
 ###############################################################################
 # Visualize the atlas (ref) bundle and full brain tractogram
 
-interactive = False
+line_actor = actor.line(
+    streamlines, colors=colormap.line_colors(streamlines), material="thin"
+)
+line_actor.local.position = (0, 0, 0)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(streamlines))
-if interactive:
-    window.show(scene)
-else:
-    window.record(scene=scene, out_path="tractograms_initial.png", size=(600, 600))
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(line_actor)
+
+show_manager = window.ShowManager(
+    title="tractograms_initial", size=(600, 600), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -58,18 +62,24 @@ model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 sft_af_l = load_tractogram(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, colors=(0, 1, 0)))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+camera_view_dir = (341.94, 10.90, 47.36)
+camera_up = (-0.03, 0.028, 0.89)
+
+line_actor = actor.streamlines(
+    model_af_l, colors=(0, 1, 0), thickness=0.05, outline_thickness=0
 )
-if interactive:
-    window.show(scene)
-else:
-    window.record(scene=scene, out_path="AF_L_model_bundle.png", size=(600, 600))
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(line_actor)
+
+show_manager = window.ShowManager(
+    title="AF_L_model_bundle", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -116,18 +126,21 @@ recognized_af_l = streamlines[ids_s].copy()
 ###############################################################################
 # let's visualize streamlines similar to the Arcuate Fasciculus Left bundle
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l, colors=(0, 0, 1)))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+line_actor = actor.streamlines(
+    recognized_af_l, colors=(0, 0, 1), thickness=0.05, outline_thickness=0
 )
-if interactive:
-    window.show(scene)
-else:
-    window.record(scene=scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(line_actor)
+
+show_manager = window.ShowManager(
+    title="AF_L_recognized_bundle", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -141,22 +154,31 @@ else:
 
 nn_s, nn_ref, nn_dist = nearest_from_matrix_row(coo_mdist_mtx)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-cmap = actor.colormap_lookup_table(scale_range=(nn_dist.min(), nn_dist.max()))
-scene.add(actor.line(recognized_af_l, colors=nn_dist, lookup_colormap=cmap))
-scene.add(actor.scalar_bar(lookup_table=cmap, title="distance to atlas (mm)"))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+dist_bar = actor.scalar_bar(
+    clim=(nn_dist.min(), nn_dist.max()),
+    hsv_range=((0.8, 0.0), (1.0, 1.0), (0.8, 0.8)),
+    title="distance to atlas (mm)",
+    tick_format=".1f",
+    color=(0, 0, 0),
 )
-if interactive:
-    window.show(scene)
-else:
-    window.record(
-        scene=scene, out_path="AF_L_recognized_bundle_dist.png", size=(600, 600)
-    )
+dist_colors = dist_bar.map_values(nn_dist)
+
+line_actor = actor.streamlines(
+    recognized_af_l, colors=dist_colors, thickness=0.05, outline_thickness=0
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(line_actor)
+scene.ui_scene.add(dist_bar)
+
+show_manager = window.ShowManager(
+    title="AF_L_recognized_bundle_dist", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -174,21 +196,21 @@ ref_color[:] = (1.0, 0.0, 0.0)
 # Reached in green color
 ref_color[ids_ref] = (0.0, 1.0, 0.0)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, colors=ref_color))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+line_actor = actor.streamlines(
+    model_af_l, colors=ref_color, thickness=0.05, outline_thickness=0
 )
 
-if interactive:
-    window.show(scene)
-else:
-    window.record(
-        scene=scene, out_path="AF_L_model_bundle_reached.png", size=(600, 600)
-    )
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(line_actor)
+
+show_manager = window.ShowManager(
+    title="AF_L_model_bundle_reached", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=camera_up
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
