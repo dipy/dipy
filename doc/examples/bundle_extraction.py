@@ -23,7 +23,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import create_tractogram_header
 from dipy.segment.bundles import RecoBundles
-from dipy.viz import actor, window
+from dipy.viz.streamline import show_bundles
 
 ###############################################################################
 # Download and read data for this tutorial
@@ -45,15 +45,14 @@ target_header = create_tractogram_header(target_file, *sft_target.space_attribut
 ###############################################################################
 # let's visualize atlas tractogram and target tractogram before registration
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(atlas, colors=(1, 0, 1)))
-scene.add(actor.line(target, colors=(1, 1, 0)))
-window.record(scene=scene, out_path="tractograms_initial.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+# Setting interactive=True opens a FURY window instead of only saving the image.
+show_bundles(
+    [atlas, target],
+    colors=[(1, 0, 1), (1, 1, 0)],
+    view="axial",
+    interactive=False,
+    save_as="tractograms_initial.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -83,17 +82,13 @@ np.save("slr_transform.npy", transform)
 ###############################################################################
 # let's visualize atlas tractogram and target tractogram after registration
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(atlas, colors=(1, 0, 1)))
-scene.add(actor.line(moved, colors=(1, 1, 0)))
-window.record(
-    scene=scene, out_path="tractograms_after_registration.png", size=(600, 600)
+show_bundles(
+    [atlas, moved],
+    colors=[(1, 0, 1), (1, 1, 0)],
+    view="axial",
+    interactive=False,
+    save_as="tractograms_after_registration.png",
 )
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -147,19 +142,7 @@ model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 sft_af_l = load_tractogram(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
-)
-window.record(scene=scene, out_path="AF_L_model_bundle.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_bundles([model_af_l], interactive=False, save_as="AF_L_model_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -181,19 +164,7 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
-)
-window.record(scene=scene, out_path="AF_L_recognized_bundle.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_bundles([recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -230,19 +201,9 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle2.png"
 )
-window.record(scene=scene, out_path="AF_L_recognized_bundle2.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -279,19 +240,9 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_af_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle3.png"
 )
-window.record(scene=scene, out_path="AF_L_recognized_bundle3.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -334,21 +285,11 @@ r_recognized_af_l, r_af_l_labels = rb.refine(
 ###############################################################################
 # let's visualize extracted refined Arcuate Fasciculus Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(r_recognized_af_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [r_recognized_af_l],
+    interactive=False,
+    save_as="AF_L_refine_recognized_bundle.png",
 )
-window.record(
-    scene=scene, out_path="AF_L_refine_recognized_bundle.png", size=(600, 600)
-)
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -376,19 +317,7 @@ save_tractogram(reco_af_l, "AF_L_org_refine.trx", bbox_valid_check=False)
 sft_cst_l = load_tractogram(model_cst_l_file, "same", bbox_valid_check=False)
 model_cst_l = sft_cst_l.streamlines
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_cst_l))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
-)
-window.record(scene=scene, out_path="CST_L_model_bundle.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_bundles([model_cst_l], interactive=False, save_as="CST_L_model_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -408,19 +337,9 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle.png"
 )
-window.record(scene=scene, out_path="CST_L_recognized_bundle.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -458,19 +377,9 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle2.png"
 )
-window.record(scene=scene, out_path="CST_L_recognized_bundle2.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -507,19 +416,9 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Corticospinal tract Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(recognized_cst_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle3.png"
 )
-window.record(scene=scene, out_path="CST_L_recognized_bundle3.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -563,21 +462,11 @@ r_recognized_cst_l, r_cst_l_labels = rb.refine(
 ###############################################################################
 # let's visualize extracted refined Corticospinal tract Left bundle.
 
-interactive = False
-
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.line(r_recognized_cst_l.copy()))
-scene.set_camera(
-    focal_point=(-18.17281532, -19.55606842, 6.92485857),
-    position=(-360.11, -30.46, -40.44),
-    view_up=(-0.03, 0.028, 0.89),
+show_bundles(
+    [r_recognized_cst_l],
+    interactive=False,
+    save_as="CST_L_refine_recognized_bundle.png",
 )
-window.record(
-    scene=scene, out_path="CST_L_refine_recognized_bundle.png", size=(600, 600)
-)
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
