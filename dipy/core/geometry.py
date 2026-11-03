@@ -1000,8 +1000,8 @@ def perpendicular_directions(v, *, num=30, half=False):
 
     Returns
     -------
-    psamples : array (n, 3)
-        array of vectors perpendicular to v
+    psamples : ndarray, shape (n, 3)
+        Array of vectors perpendicular to v.
 
     Notes
     -----
@@ -1053,7 +1053,6 @@ def perpendicular_directions(v, *, num=30, half=False):
 
     For more details on this calculation, see
     `here <https://gsoc2015dipydki.blogspot.com/2015/07/rnh-post-8-computing-perpendicular.html>`_.
-
     """
     v = np.array(v, dtype=float)
 
