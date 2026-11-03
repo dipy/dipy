@@ -76,7 +76,7 @@ Let's load the T1 and T2 templates together.
 
 **For Windows (PowerShell)** ::
 
-  dipy_skyline "$home/.dipy/mni_template/mni_icbm152_t1_tal_nlin_asym_09a.nii" "$home/.dipy/mni_template/mni_icbm152_t2_tal_nlin_asym_09a.nii"
+  dipy_skyline "\$home/.dipy/mni_template/mni_icbm152_t1_tal_nlin_asym_09a.nii" "\$home/.dipy/mni_template/mni_icbm152_t2_tal_nlin_asym_09a.nii"
 
 Skyline reads ``.nii`` and ``.nii.gz`` images. Each image has these controls:
 
@@ -93,11 +93,11 @@ Instead of listing files one by one, you can pass a quoted glob pattern or a
 folder. Skyline then loads every matching file and skips the formats it does
 not support. ::
 
-  dipy_skyline "$HOME/.dipy/mni_template/*.nii"
+  dipy_skyline "\$HOME/.dipy/mni_template/*.nii"
   dipy_skyline ~/.dipy/mni_template
 
-On Windows, use ``%USERPROFILE%`` (cmd) or ``$home`` (PowerShell) instead of
-``$HOME`` and ``~``, as above. The remaining examples show the macOS and Linux
+On Windows, use ``%USERPROFILE%`` (cmd) or ``\$home`` (PowerShell) instead of
+``\$HOME`` and ``~``, as above. The remaining examples show the macOS and Linux
 form only.
 
 
@@ -121,7 +121,7 @@ This dataset has a NIfTI file with 160 volumes.
 
 **For Windows (PowerShell)** ::
 
-  dipy_skyline "$home/.dipy/stanford_hardi/HARDI150.nii.gz"
+  dipy_skyline "\$home/.dipy/stanford_hardi/HARDI150.nii.gz"
 
 For 4D images, the *Directions* slider selects which volume is shown.
 
@@ -181,7 +181,7 @@ Let's load the whole-brain atlas and group its streamlines into clusters.
 
 **For Windows (PowerShell)** ::
 
-  dipy_skyline "$home/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk" --cluster
+  dipy_skyline "\$home/.dipy/bundle_atlas_hcp842/Atlas_80_Bundles/whole_brain/whole_brain_MNI.trk" --cluster
 
 With ``--cluster``, the streamlines are grouped with QuickBundlesX and each
 cluster is drawn as its centroid. These options control the clustering:
