@@ -35,7 +35,7 @@ def test_reslice(tmp_path):
     volume = load_nifti_data(data_path)
 
     reslice_flow = ResliceFlow()
-    reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=tmp_path)
+    reslice_flow.run(data_path, new_vox_size=[1.5, 1.5, 1.5], out_dir=tmp_path)
 
     out_path = reslice_flow.last_generated_outputs["out_resliced"]
     resliced = load_nifti_data(out_path)
@@ -68,6 +68,18 @@ def test_reslice_auto_voxsize(tmp_path, caplog):
     resliced = load_nifti_data(out_path)
 
     npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+
+
+def test_reslice_positional_new_vox_size_warns(tmp_path):
+    """Test that a positional new_vox_size warns and is still honoured."""
+    data_path, _, _ = get_fnames(name="small_25")
+    reslice_flow = ResliceFlow()
+    with pytest.warns(UserWarning, match="new_vox_size"):
+        reslice_flow.run(data_path, (2.0, 2.0, 2.0), out_dir=tmp_path)
+
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    _, _, new_zooms = load_nifti(out_path, return_voxsize=True)
+    npt.assert_almost_equal(new_zooms[:3], [2.0] * 3)
 
 
 def test_reslice_vox_factor_deprecated(tmp_path):
@@ -167,6 +179,7 @@ def test_reslice_skip_returns_original_path(tmp_path, caplog):
         ((1.0, 1.0, 3.0), 1.5),
         ((2.0, 2.0, 2.5), 2.25),
         ((0.9, 0.9, 4.0), 1.5),
+        ((0.1, 0.1, 0.2), 0.125),
     ],
 )
 def test_reslice_auto_voxsize_preserves_volume(

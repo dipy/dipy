@@ -16,7 +16,7 @@ def test_resample():
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)
     data2, affine2 = reslice(
-        data[..., 0], affine, zooms, new_zooms, order=1, mode="constant"
+        data[..., 0], affine, zooms, new_zooms=new_zooms, order=1, mode="constant"
     )
     img2 = nib.Nifti1Image(data2, affine2)
     new_zooms_confirmed = img2.header.get_zooms()[:3]
@@ -24,13 +24,17 @@ def test_resample():
 
     # test that shape changes correctly for the first 3 dimensions (check 4D)
     new_zooms = (1, 1, 1.0)
-    data2, affine2 = reslice(data, affine, zooms, new_zooms, order=0, mode="reflect")
+    data2, affine2 = reslice(
+        data, affine, zooms, new_zooms=new_zooms, order=0, mode="reflect"
+    )
     assert_equal(2 * np.array(data.shape[:3]), data2.shape[:3])
     assert_equal(data2.shape[-1], data.shape[-1])
 
     # same with different interpolation order
     new_zooms = (1, 1, 1.0)
-    data3, affine2 = reslice(data, affine, zooms, new_zooms, order=5, mode="reflect")
+    data3, affine2 = reslice(
+        data, affine, zooms, new_zooms=new_zooms, order=5, mode="reflect"
+    )
     assert_equal(2 * np.array(data.shape[:3]), data3.shape[:3])
     assert_equal(data3.shape[-1], data.shape[-1])
 
@@ -43,28 +47,35 @@ def test_resample():
     assert_(np.all(sigmas2 > sigmas3))
 
     # check that 4D resampling matches 3D resampling
-    data2, affine2 = reslice(data, affine, zooms, new_zooms)
+    data2, affine2 = reslice(data, affine, zooms, new_zooms=new_zooms)
     for i in range(data.shape[-1]):
-        _data, _affine = reslice(data[..., i], affine, zooms, new_zooms)
+        _data, _affine = reslice(data[..., i], affine, zooms, new_zooms=new_zooms)
         assert_almost_equal(data2[..., i], _data)
         assert_almost_equal(affine2, _affine)
 
     # check use of multiprocessing pool of specified size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=4)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms=new_zooms, num_processes=4)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
 
     # check use of multiprocessing pool of autoconfigured size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=-1)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms=new_zooms, num_processes=-1)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
 
     # test invalid values of num_threads
-    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms, num_processes=0)
+    assert_raises(
+        ValueError, reslice, data, affine, zooms, new_zooms=new_zooms, num_processes=0
+    )
 
     # test invalid volume dimension
     assert_raises(
-        ValueError, reslice, np.zeros((4, 4, 4, 4, 1)), affine, zooms, new_zooms
+        ValueError,
+        reslice,
+        np.zeros((4, 4, 4, 4, 1)),
+        affine,
+        zooms,
+        new_zooms=new_zooms,
     )
 
 
@@ -83,30 +94,39 @@ def test_reslice_lanczos():
     new_zooms = (1.0, 1.0, 1.0)
 
     data_l2, affine_l2 = reslice(
-        data[..., 0], affine, zooms, new_zooms, order="lanczos2"
+        data[..., 0], affine, zooms, new_zooms=new_zooms, order="lanczos2"
     )
-    data_l, affine_l = reslice(data[..., 0], affine, zooms, new_zooms, order="lanczos")
+    data_l, affine_l = reslice(
+        data[..., 0], affine, zooms, new_zooms=new_zooms, order="lanczos"
+    )
     assert_almost_equal(data_l2, data_l)
     assert_almost_equal(affine_l2, affine_l)
 
-    data_lin, _ = reslice(data[..., 0], affine, zooms, new_zooms, order=1)
+    data_lin, _ = reslice(data[..., 0], affine, zooms, new_zooms=new_zooms, order=1)
     assert_equal(data_l2.shape, data_lin.shape)
 
-    data_l3, _ = reslice(data[..., 0], affine, zooms, new_zooms, order="lanczos3")
+    data_l3, _ = reslice(
+        data[..., 0], affine, zooms, new_zooms=new_zooms, order="lanczos3"
+    )
     assert_equal(data_l3.shape, data_lin.shape)
 
-    data2_4d, _ = reslice(data, affine, zooms, new_zooms, order="lanczos2")
+    data2_4d, _ = reslice(data, affine, zooms, new_zooms=new_zooms, order="lanczos2")
     assert_equal(data2_4d.shape[:3], data_l2.shape[:3])
     assert_equal(data2_4d.shape[-1], data.shape[-1])
 
     assert_almost_equal(affine_l2, affine_l)
 
     assert_raises(
-        ValueError, reslice, data[..., 0], affine, zooms, new_zooms, order="bad"
+        ValueError,
+        reslice,
+        data[..., 0],
+        affine,
+        zooms,
+        new_zooms=new_zooms,
+        order="bad",
     )
-    assert_raises(ValueError, reslice, data[..., 0], affine, zooms, new_zooms, order=6)
     assert_raises(
-        ValueError, reslice, data[..., 0], affine, zooms, new_zooms, mode="invalid"
+        ValueError, reslice, data[..., 0], affine, zooms, new_zooms=new_zooms, order=6
     )
     assert_raises(
         ValueError,
@@ -114,7 +134,16 @@ def test_reslice_lanczos():
         data[..., 0],
         affine,
         zooms,
-        new_zooms,
+        new_zooms=new_zooms,
+        mode="invalid",
+    )
+    assert_raises(
+        ValueError,
+        reslice,
+        data[..., 0],
+        affine,
+        zooms,
+        new_zooms=new_zooms,
         order="lanczos2",
         mode="mirror",
     )
@@ -130,7 +159,11 @@ def test_reslice_lanczos():
         ((2.5, 2.5, 2.5), 2.5),
         ((0.7, 0.7, 0.7), 0.7),
         ((1.0, 1.0, 1.1), 1.0),
-        ((0.1, 0.1, 0.2), 0.25),
+        ((0.1, 0.1, 0.2), 0.125),
+        ((0.1, 0.1, 0.1001), 0.1),
+        ((1.05, 1.05, 1.0501), 1.05),
+        ((0.9, 0.9, 1.2), 1.0),
+        ((10.0, 10.0, 30.0), 15.0),
     ],
 )
 def test_isotropic_voxel_size(zooms, expected):
@@ -148,21 +181,39 @@ def test_isotropic_voxel_size_exact_and_errors():
     assert_almost_equal(isotropic_voxel_size((1.0, 1.0, 3.0), step=0), 3 ** (1 / 3))
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0))
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 0.0, 1.0))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, np.nan, 1.0))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, np.inf, 1.0))
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0, 2.0), step=np.nan)
+    assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0, 2.0), step=np.inf)
     assert_raises(ValueError, isotropic_voxel_size, (1.0, 1.0, 2.0), step=-1)
+
+
+def test_isotropic_voxel_size_explicit_step():
+    assert_almost_equal(isotropic_voxel_size((0.1, 0.1, 0.2), step=0.25), 0.25)
+    assert_almost_equal(isotropic_voxel_size((1.0, 1.0, 3.0), step=0.1), 1.4)
 
 
 def test_reslice_auto_new_zooms():
     affine = np.diag([1.0, 1.0, 3.0, 1.0])
     data = np.random.rand(30, 30, 10).astype(np.float32)
 
-    data2, affine2 = reslice(data, affine, (1.0, 1.0, 3.0), None)
+    data2, affine2 = reslice(data, affine, (1.0, 1.0, 3.0))
     assert_almost_equal(np.sqrt((affine2[:3, :3] ** 2).sum(0)), [1.5] * 3)
     assert_equal(data2.shape, (20, 20, 20))
     assert_almost_equal(np.array(data2.shape) * 1.5, np.array(data.shape) * [1, 1, 3])
 
     data4d = np.repeat(data[..., None], 2, axis=-1)
-    data4d2, _ = reslice(data4d, affine, (1.0, 1.0, 3.0), None)
+    data4d2, _ = reslice(data4d, affine, (1.0, 1.0, 3.0))
     assert_equal(data4d2.shape, (20, 20, 20, 2))
 
-    data_l, _ = reslice(data, affine, (1.0, 1.0, 3.0), None, order="lanczos")
+    data_l, _ = reslice(data, affine, (1.0, 1.0, 3.0), order="lanczos")
     assert_equal(data_l.shape, (20, 20, 20))
+
+
+def test_reslice_positional_new_zooms_warns():
+    affine = np.diag([1.0, 1.0, 3.0, 1.0])
+    data = np.random.rand(10, 10, 4).astype(np.float32)
+    with pytest.warns(UserWarning, match="new_zooms"):
+        data2, _ = reslice(data, affine, (1.0, 1.0, 3.0), (2.0, 2.0, 2.0))
+    expected, _ = reslice(data, affine, (1.0, 1.0, 3.0), new_zooms=(2.0, 2.0, 2.0))
+    assert_almost_equal(data2, expected)

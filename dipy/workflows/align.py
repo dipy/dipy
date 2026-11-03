@@ -21,7 +21,7 @@ from dipy.io.image import load_nifti, save_nifti, save_qa_metric
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
@@ -63,10 +63,12 @@ class ResliceFlow(Workflow):
     def get_short_name(cls):
         return "reslice"
 
+    @warning_for_keywords()
     @deprecated_params(["vox_factor"], since="1.13", until="1.15")
     def run(
         self,
         input_files,
+        *,
         new_vox_size=None,
         order=1,
         mode="constant",
@@ -92,8 +94,10 @@ class ResliceFlow(Workflow):
             New voxel size as (x, y, z) in mm. If None, an isotropic voxel
             size is computed from the original voxel volume
             ``V = x * y * z``: the geometric mean ``V ** (1 / 3)`` is snapped
-            to the 0.25mm grid value whose cubed volume is closest to ``V``
-            (e.g. 1x1x3mm gives 1.5mm, 2x2x2mm is kept as is).
+            to the grid value whose cubed volume is closest to ``V``. The grid
+            is 0.25mm for voxels between 1 and 10mm and 0.025mm for voxels
+            between 0.1 and 1mm (e.g. 1x1x3mm gives 1.5mm, 0.1x0.1x0.2mm
+            gives 0.125mm, 2x2x2mm is kept as is).
         order : str, optional
             Interpolation order. Integer values 0–5 select spline order via
             scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
@@ -165,7 +169,7 @@ class ResliceFlow(Workflow):
                     data,
                     affine,
                     zooms,
-                    new_vox_size_to_use,
+                    new_zooms=new_vox_size_to_use,
                     order=order,
                     mode=mode,
                     cval=cval,

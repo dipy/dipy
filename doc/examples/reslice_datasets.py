@@ -43,7 +43,7 @@ print(f"New Voxel size: {new_voxel_size}")
 ###############################################################################
 # Start resampling (reslicing). Trilinear interpolation is used by default.
 
-data2, affine2 = reslice(data, affine, voxel_size, new_voxel_size)
+data2, affine2 = reslice(data, affine, voxel_size, new_zooms=new_voxel_size)
 print(f"New data size: {data2.shape}")
 
 ###############################################################################

@@ -60,19 +60,19 @@ def prepare_img(image):
     input1 = np.moveaxis(image, -1, 0)
     input1 = np.expand_dims(input1, 1)
 
-    input2, _ = reslice(image, np.eye(4), (1, 1, 1), (2, 2, 2))
+    input2, _ = reslice(image, np.eye(4), (1, 1, 1), new_zooms=(2, 2, 2))
     input2 = np.moveaxis(input2, -1, 0)
     input2 = np.expand_dims(input2, 1)
 
-    input3, _ = reslice(image, np.eye(4), (1, 1, 1), (4, 4, 4))
+    input3, _ = reslice(image, np.eye(4), (1, 1, 1), new_zooms=(4, 4, 4))
     input3 = np.moveaxis(input3, -1, 0)
     input3 = np.expand_dims(input3, 1)
 
-    input4, _ = reslice(image, np.eye(4), (1, 1, 1), (8, 8, 8))
+    input4, _ = reslice(image, np.eye(4), (1, 1, 1), new_zooms=(8, 8, 8))
     input4 = np.moveaxis(input4, -1, 0)
     input4 = np.expand_dims(input4, 1)
 
-    input5, _ = reslice(image, np.eye(4), (1, 1, 1), (16, 16, 16))
+    input5, _ = reslice(image, np.eye(4), (1, 1, 1), new_zooms=(16, 16, 16))
     input5 = np.moveaxis(input5, -1, 0)
     input5 = np.expand_dims(input5, 1)
 
