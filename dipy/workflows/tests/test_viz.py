@@ -2,10 +2,13 @@
 
 import os
 
+import nibabel as nib
 import numpy as np
 import pytest
 
 from dipy.io.image import save_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 
 _, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
@@ -55,3 +58,33 @@ def test_skyline_flow_captures_offscreen(tmp_path, stealth, dipy_value):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+
+
+@pytest.mark.parametrize(
+    "performance_version, line_type", [(False, "Tube"), (True, "Line")]
+)
+def test_skyline_flow_performance_version_renders_lines(
+    tmp_path, performance_version, line_type
+):
+    reference = nib.Nifti1Image(np.zeros((4, 4, 4), dtype=np.float32), np.eye(4))
+    streamlines = [
+        np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]),
+        np.array([[0.0, 1.0, 0.0], [1.0, 2.0, 1.0], [2.0, 3.0, 2.0]]),
+    ]
+    tract_path = tmp_path / "tracts.trk"
+    save_tractogram(
+        StatefulTractogram(streamlines, reference, Space.RASMM),
+        str(tract_path),
+        bbox_valid_check=False,
+    )
+
+    viewer = SkylineFlow().run(
+        [str(tract_path)],
+        performance_version=performance_version,
+        stealth=True,
+        out_dir=str(tmp_path),
+        out_stealth_png="tracts.png",
+    )
+
+    (tractogram,) = viewer._tractogram_visualizations
+    assert tractogram._line_type == line_type
