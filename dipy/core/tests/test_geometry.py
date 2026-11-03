@@ -190,6 +190,13 @@ def test_sphere_distance_corresponding_rows(radius):
     assert_array_almost_equal(distances, [0, np.pi, 2 * np.pi])
 
 
+def test_sphere_distance_same_rows():
+    rng = np.random.default_rng(42)
+    pts = rng.normal(size=(1000, 3))
+    pts /= np.linalg.norm(pts, axis=1, keepdims=True)
+    assert_array_almost_equal(sphere_distance(pts, pts), np.zeros(1000))
+
+
 @pytest.mark.parametrize(
     "function, expected",
     [(sphere_distance, [0, np.pi / 2, np.pi / 2]), (vector_cosine, [1, 0, 0])],

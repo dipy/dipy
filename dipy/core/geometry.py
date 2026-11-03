@@ -448,7 +448,7 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
         if not (np.allclose(radius, lens1) and np.allclose(radius, lens2)):
             raise ValueError("Radii do not match sphere surface")
     # Get angle with vector cosine
-    angle_cos = np.arccos(vector_cosine(pts1, pts2))
+    angle_cos = np.arccos(np.clip(vector_cosine(pts1, pts2), -1, 1))
     return angle_cos * radius
 
 
