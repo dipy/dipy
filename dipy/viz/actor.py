@@ -2,7 +2,6 @@
 
 from functools import partial
 
-from nibabel.affines import apply_affine
 import numpy as np
 from scipy import sparse
 
@@ -14,6 +13,7 @@ from dipy.reconst.shm import (
     sf_to_sh,
 )
 from dipy.utils.optpkg import optional_package
+from dipy.viz.colormap import create_colormap, map_scalars_to_lut
 from dipy.viz.skyline.io import _validate_sh_basis
 from dipy.viz.skyline.render.renderer import affine_voxel_sizes
 from dipy.viz.skyline.render.sh_slicer import SHSlicer
@@ -21,17 +21,21 @@ from dipy.viz.skyline.render.sh_slicer import SHSlicer
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.actor import *
-    from fury.actor import Group, create_axes_helper, surface
+    from fury.actor import Group, create_axes_helper, image, surface, text
     from fury.colormap import normalize_colors
     from fury.lib import EventType, PointerEvent
     from fury.transform import apply_transformation
-    from fury.utils import voxel_mesh_by_object
+    from fury.utils import apply_affine, voxel_mesh_by_object
     from fury.window import update_camera
 else:
-    Group = create_axes_helper = surface = EventType = PointerEvent = fury
+    Group = create_axes_helper = surface = image = text = EventType = PointerEvent = (
+        fury
+    )
     apply_transformation = update_camera = normalize_colors = fury
-    voxel_mesh_by_object = fury
+    voxel_mesh_by_object = apply_affine = fury
 
+
+_SCALAR_BAR_SAMPLES = 256
 
 _SH_BASIS_FUNCTIONS = {
     "descoteaux07": (real_sh_descoteaux, False),
@@ -461,3 +465,136 @@ def smooth_contour_from_roi(
             vertices = apply_affine(affine, vertices)
         contour.add(surface(vertices, mesh["faces"], colors=color, opacity=opacity))
     return contour
+
+
+# TODO(fury#1392): FURY v2 has no scalar bar / colorbar actor. Remove
+# ``scalar_bar`` and use the FURY actor once
+# https://github.com/fury-gl/fury/issues/1392 is resolved.
+def scalar_bar(
+    *,
+    clim=(0.0, 1.0),
+    cmap="plasma",
+    hsv_range=None,
+    orientation="horizontal",
+    length=300,
+    thickness=20,
+    num_ticks=5,
+    tick_format=".3g",
+    title=None,
+    font_size=14,
+    color=(1.0, 1.0, 1.0),
+    position=(60, 60),
+):
+    """Create a color bar showing how scalar values map to colors.
+
+    Parameters
+    ----------
+    clim : tuple of float, optional
+        Scalar values ``(low, high)`` mapped to the first and last colors.
+    cmap : str, optional
+        Name of the colormap, as accepted by ``fury.colormap.create_colormap``.
+    hsv_range : tuple of three (low, high) pairs, optional
+        Hue, saturation and value ramps, each in [0, 1], from the first to the
+        last color. Replaces ``cmap`` when given.
+    orientation : {"horizontal", "vertical"}, optional
+        Bar orientation. Low values are on the left or at the bottom.
+    length : float, optional
+        Bar length in pixels.
+    thickness : float, optional
+        Bar thickness in pixels.
+    num_ticks : int, optional
+        Number of evenly spaced tick labels, including both ends.
+    tick_format : str, optional
+        Format specification applied to each tick value.
+    title : str, optional
+        Text drawn above the bar.
+    font_size : float, optional
+        Font size of the labels in pixels.
+    color : tuple of float, optional
+        RGB color of the labels.
+    position : tuple of float, optional
+        Bottom-left corner of the bar in pixels from the bottom-left of the
+        screen viewport.
+
+    Returns
+    -------
+    bar : fury.actor.Group
+        The color bar actor, to be added to a screen's UI scene. Its
+        ``map_values`` attribute maps scalar values to the RGB colors of the
+        bar, clipping values outside ``clim``.
+
+    Raises
+    ------
+    ValueError
+        If ``orientation`` is not ``"horizontal"`` or ``"vertical"``, if
+        ``clim`` is not finite with ``low < high``, if ``num_ticks`` is lower
+        than 2, or if ``hsv_range`` does not have three (low, high) pairs.
+
+    Notes
+    -----
+    Add it with ``show_manager.screens[0].scene.ui_scene.add(bar)``. Temporary
+    until FURY provides one (https://github.com/fury-gl/fury/issues/1392).
+    """
+    if orientation not in ("horizontal", "vertical"):
+        raise ValueError(
+            f"orientation must be 'horizontal' or 'vertical', got {orientation!r}."
+        )
+    low, high = clim
+    if not (np.isfinite(clim).all() and low < high):
+        raise ValueError(f"clim must be finite with low < high, got {clim}.")
+    if num_ticks < 2:
+        raise ValueError(f"num_ticks must be at least 2, got {num_ticks}.")
+
+    horizontal = orientation == "horizontal"
+    colors = create_colormap(
+        np.linspace(0, 1, _SCALAR_BAR_SAMPLES),
+        name=cmap,
+        auto=False,
+        hsv_range=hsv_range,
+    )
+    num_colors = len(colors)
+    gradient = colors[None] if horizontal else colors[:, None]
+    texel_size = [
+        length / num_colors if horizontal else thickness,
+        thickness if horizontal else length / num_colors,
+        1,
+    ]
+    gradient_actor = image(gradient, interpolation="linear")
+    gradient_actor.local.scale = texel_size
+    # Image texels are centered on integer coordinates; shift the first one
+    # so the bar starts exactly at the group origin.
+    gradient_actor.local.position = [0.5 * texel_size[0], 0.5 * texel_size[1], 0]
+
+    bar = Group(name="DIPY Scalar Bar")
+    bar.local.position = [position[0], position[1], 0]
+    bar.add(gradient_actor)
+
+    margin = 4
+    values = np.linspace(low, high, num_ticks)
+    offsets = np.linspace(0, length, num_ticks)
+    for value, offset in zip(values, offsets):
+        label_position = (
+            (offset, -margin, 0) if horizontal else (thickness + margin, offset, 0)
+        )
+        bar.add(
+            text(
+                format(value, tick_format),
+                colors=color,
+                position=label_position,
+                font_size=font_size,
+                anchor="top-center" if horizontal else "middle-left",
+            )
+        )
+    if title is not None:
+        title_y = thickness + margin if horizontal else length + margin
+        bar.add(
+            text(
+                title,
+                colors=color,
+                position=(0, title_y, 0),
+                font_size=font_size,
+                anchor="bottom-left",
+            )
+        )
+    bar.map_values = partial(map_scalars_to_lut, clim=clim, lut=colors)
+    return bar

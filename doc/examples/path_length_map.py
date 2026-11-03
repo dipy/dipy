@@ -21,6 +21,7 @@ Let's start by importing the necessary modules.
 """
 
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 import numpy as np
 
@@ -91,7 +92,12 @@ streamlines = Streamlines(streamlines_generator)
 # Visualize the streamlines and the Path Length Map base ROI
 # (in this case also the seed ROI)
 
-streamlines_actor = actor.line(streamlines, colors=cmap.line_colors(streamlines))
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=cmap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(
@@ -99,24 +105,22 @@ seedroi_actor = actor.contour_from_roi(
 )
 
 scene = window.Scene()
-scene.add(streamlines_actor)
-scene.add(seedroi_actor)
+scene.add(streamlines_actor, seedroi_actor)
 
 ###############################################################################
-# If you set interactive to True (below), the scene will pop up in an
-# interactive window.
+# Show the scene with an orientation gizmo and simulate a click on its ``L``
+# label to snap the camera to the left (sagittal) view, where the ROI contour
+# and the streamlines leaving it are seen from the side.
 
-interactive = False
-if interactive:
-    window.show(scene)
-
-window.record(scene=scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
+show_manager = window.ShowManager(title="plm_roi_sls", size=(800, 800), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# A top view of corpus callosum streamlines with the blue transparent ROI in
-# the center.
+# A left view of corpus callosum streamlines with the cyan transparent ROI.
 #
 #
 #
@@ -144,7 +148,7 @@ t1_fname = get_fnames(name="stanford_t1")
 t1_data = load_nifti_data(t1_fname)
 
 
-fig = mpl.pyplot.figure()
+fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
 ax = AxesGrid(
     fig,

@@ -17,8 +17,8 @@ fury, has_fury, _ = optional_package(
     "fury", trip_msg=fury_pckg_msg, min_version="2.1.0"
 )
 if has_fury:
-    from fury import colormap, ui, window
+    from fury import ui, window
 
-    from dipy.viz import actor
+    from dipy.viz import actor, colormap
     from dipy.viz.horizon.app import horizon
     from dipy.viz.skyline.app import skyline, skyline_from_files

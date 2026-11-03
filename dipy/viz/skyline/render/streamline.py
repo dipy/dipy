@@ -1,6 +1,5 @@
 """Tractography layers, clustering, and BUAN coloring for Skyline."""
 
-import colorsys
 from pathlib import Path
 import time
 
@@ -16,6 +15,7 @@ from dipy.tracking.streamline import (
 )
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
+from dipy.viz.colormap import create_colormap, scalars_to_lut_indices
 from dipy.viz.skyline.UI.elements import (
     color_picker,
     colors_equal,
@@ -59,34 +59,6 @@ if has_imgui:
     icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
 
 
-def create_colormap(n, *, hue=(0.0, 0.1), saturation=(0.8, 0.2), value=0.8):
-    """Build an RGB lookup table sampled along HSV space.
-
-    Parameters
-    ----------
-    n : int
-        Number of discrete colors.
-    hue : tuple of float, optional
-        Hue endpoints passed through ``np.interp`` over the LUT indices.
-    saturation : tuple of float, optional
-        Saturation endpoints interpolated like ``hue``.
-    value : float, optional
-        Fixed HSV value (brightness) for every entry.
-
-    Returns
-    -------
-    ndarray, shape (n, 3)
-        Float32 RGB colors in ``[0, 1]``.
-    """
-    lut = np.zeros((n, 3), dtype=np.float32)
-    h = np.interp(np.arange(n), [0, n - 1], hue)
-    s = np.interp(np.arange(n), [0, n - 1], saturation)
-    for i in range(n):
-        r, g, b = colorsys.hsv_to_rgb(h[i], s[i], value)
-        lut[i] = (r, g, b)
-    return lut
-
-
 def apply_buan_colors(
     streamlines,
     buan_pvals,
@@ -106,11 +78,11 @@ def apply_buan_colors(
     buan_pvals : ndarray
         Scalar p-values (or statistics) sampled per correspondence bin.
     hue : tuple of float, optional
-        Passed to :func:`create_colormap`.
+        Hue ramp of the lookup table, passed to :func:`create_colormap`.
     saturation : tuple of float, optional
-        Passed to :func:`create_colormap`.
+        Saturation ramp of the lookup table, passed to :func:`create_colormap`.
     value : float, optional
-        Passed to :func:`create_colormap`.
+        Fixed HSV value (brightness) of every lookup-table entry.
     buan_color_idx : ndarray or None, optional
         Precomputed indices into the LUT; if None, computed via ``assignment_map``.
 
@@ -128,11 +100,15 @@ def apply_buan_colors(
     if buan_color_idx is None:
         _, indx = assignment_map(streamlines, streamlines, n)
         buan_color_pvals = buan_pvals[indx].astype(np.float32)
-        buan_color_idx = np.interp(
-            buan_color_pvals, [buan_pvals.min(), buan_pvals.max()], [0, n - 1]
-        ).astype(int)
+        buan_color_idx = scalars_to_lut_indices(
+            buan_color_pvals, (buan_pvals.min(), buan_pvals.max()), n
+        )
 
-    lut = create_colormap(n, hue=hue, saturation=saturation, value=value)
+    lut = create_colormap(
+        np.linspace(0, 1, n),
+        auto=False,
+        hsv_range=(hue, saturation, (value, value)),
+    )
 
     buan_colors = lut[buan_color_idx]
 
