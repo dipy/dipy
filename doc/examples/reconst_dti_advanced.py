@@ -40,7 +40,7 @@ maskdata = crop(maskdata, mins, maxs)
 tenmodel = dti.TensorModel(gtab, fit_method="WLS")
 tenfit = tenmodel.fit(maskdata)
 
-"""
+r"""
 Diffusivities from the eigenvalues
 ----------------------------------
 
@@ -50,41 +50,41 @@ the principal diffusion direction, the first eigenvalue:
 
 .. math::
 
-    AD = \\lambda_1
+    AD = \lambda_1
 
 RD is the diffusivity perpendicular to it, the average of the second and third
 eigenvalues:
 
 .. math::
 
-    RD = \\frac{\\lambda_2 + \\lambda_3}{2}
+    RD = \frac{\lambda_2 + \lambda_3}{2}
 """
 
 AD = tenfit.ad
 RD = tenfit.rd
 
-"""
+r"""
 The trace is the sum of the eigenvalues, which is three times MD. It is
 commonly reconstructed at the scanner as part of clinical protocols for
 assessment and diagnostics:
 
 .. math::
 
-    \\mathrm{Tr}(\\mathbf{D}) = \\lambda_1 + \\lambda_2 + \\lambda_3
+    \mathrm{Tr}(\mathbf{D}) = \lambda_1 + \lambda_2 + \lambda_3
 """
 
 Trace = tenfit.trace
 
-"""
+r"""
 Diffusivity along a direction
 -----------------------------
 
 The apparent diffusion coefficient (ADC) is the diffusivity along a given
-direction $\\mathbf{g}$:
+direction :math:`\mathbf{g}`:
 
 .. math::
 
-    ADC = \\mathbf{g}^T \\mathbf{D} \\mathbf{g}
+    ADC = \mathbf{g}^T \mathbf{D} \mathbf{g}
 
 ``TensorFit.adc`` evaluates it for every vertex of a sphere, so it returns one
 volume per direction. Here we compute it along the three principal axes.
@@ -96,7 +96,7 @@ axes = Sphere(xyz=np.eye(3))
 ADC = tenfit.adc(axes)
 print("ADC shape (one volume per direction):", ADC.shape)
 
-"""
+r"""
 Shape of the tensor
 -------------------
 
@@ -108,28 +108,28 @@ bundle:
 
 .. math::
 
-    c_l = \\frac{\\lambda_1 - \\lambda_2}{\\lambda_1 + \\lambda_2 + \\lambda_3}
+    c_l = \frac{\lambda_1 - \lambda_2}{\lambda_1 + \lambda_2 + \lambda_3}
 
 Planarity is high when two eigenvalues are large and similar, as where two
 fiber populations cross in a plane:
 
 .. math::
 
-    c_p = \\frac{2 (\\lambda_2 - \\lambda_3)}{\\lambda_1 + \\lambda_2 + \\lambda_3}
+    c_p = \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1 + \lambda_2 + \lambda_3}
 
 Sphericity is high when all three eigenvalues are similar, as in isotropic
 tissue such as gray matter or cerebrospinal fluid:
 
 .. math::
 
-    c_s = \\frac{3 \\lambda_3}{\\lambda_1 + \\lambda_2 + \\lambda_3}
+    c_s = \frac{3 \lambda_3}{\lambda_1 + \lambda_2 + \lambda_3}
 """
 
 linearity = tenfit.linearity
 planarity = tenfit.planarity
 sphericity = tenfit.sphericity
 
-"""
+r"""
 Descriptive operations on the tensor
 ------------------------------------
 
@@ -137,7 +137,7 @@ Several basic operations on the tensor matrix are used to build more
 specialized metrics, such as the determinant and the norm. Note that the
 module functions differ in their input: ``determinant``, ``norm``,
 ``isotropic``, ``deviatoric``, ``norm_anisotropy`` and ``mode`` take the
-quadratic form $\\mathbf{D}$ of the tensor (``tenfit.quadratic_form``), while
+quadratic form :math:`\mathbf{D}` of the tensor (``tenfit.quadratic_form``), while
 ``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the so-called Westin
 measures (see above) take its eigenvalues (``tenfit.evals``). The ``TensorFit`` properties
 pass the right input for you.
@@ -147,7 +147,7 @@ volume of the diffusion ellipsoid:
 
 .. math::
 
-    \\det(\\mathbf{D}) = \\lambda_1 \\lambda_2 \\lambda_3
+    \det(\mathbf{D}) = \lambda_1 \lambda_2 \lambda_3
 """
 
 from dipy.reconst.dti import determinant, norm
@@ -155,18 +155,18 @@ from dipy.reconst.dti import determinant, norm
 q_form = tenfit.quadratic_form
 Det = determinant(q_form)
 
-"""
+r"""
 The Frobenius norm of the tensor is its overall magnitude:
 
 .. math::
 
-    \\lVert \\mathbf{D} \\rVert = \\sqrt{\\sum_{i,j} D_{ij}^2}
-    = \\sqrt{\\lambda_1^2 + \\lambda_2^2 + \\lambda_3^2}
+    \lVert \mathbf{D} \rVert = \sqrt{\sum_{i,j} D_{ij}^2}
+    = \sqrt{\lambda_1^2 + \lambda_2^2 + \lambda_3^2}
 """
 
 Norm = norm(q_form)
 
-"""
+r"""
 Geodesic anisotropy
 -------------------
 
@@ -178,10 +178,10 @@ their geometric mean, the cube root of the determinant:
 
 .. math::
 
-    GA = \\sqrt{\\sum_{i=1}^3
-         \\log^2{\\left ( \\lambda_i/<\\mathbf{D}> \\right )}},
-         \\quad \\textrm{where} \\quad <\\mathbf{D}> =
-         (\\lambda_1\\lambda_2\\lambda_3)^{1/3}
+    GA = \sqrt{\sum_{i=1}^3
+         \log^2{\left ( \lambda_i/\langle \mathbf{D} \rangle \right )}},
+         \quad \textrm{where} \quad \langle \mathbf{D} \rangle =
+         (\lambda_1\lambda_2\lambda_3)^{1/3}
 
 Some later papers reproduce this equation incorrectly; DIPY follows the
 original definition (see the ``geodesic_anisotropy`` docstring for details).
@@ -189,7 +189,7 @@ original definition (see the ``geodesic_anisotropy`` docstring for details).
 
 GA = tenfit.ga
 
-"""
+r"""
 Isotropic and deviatoric parts of the tensor
 --------------------------------------------
 
@@ -199,9 +199,9 @@ from isotropy :footcite:p:`Ennis2006`:
 
 .. math::
 
-    \\bar{\\mathbf{D}} = \\frac{1}{3} \\mathrm{Tr}(\\mathbf{D}) \\mathbf{I}
-    = MD \\, \\mathbf{I}, \\qquad
-    \\widetilde{\\mathbf{D}} = \\mathbf{D} - \\bar{\\mathbf{D}}
+    \bar{\mathbf{D}} = \frac{1}{3} \mathrm{Tr}(\mathbf{D}) \mathbf{I}
+    = MD \, \mathbf{I}, \qquad
+    \widetilde{\mathbf{D}} = \mathbf{D} - \bar{\mathbf{D}}
 """
 
 from dipy.reconst.dti import deviatoric, isotropic
@@ -209,7 +209,7 @@ from dipy.reconst.dti import deviatoric, isotropic
 D_iso = isotropic(q_form)
 D_dev = deviatoric(q_form)
 
-"""
+r"""
 Orthogonal moments of the diffusion tensor
 ------------------------------------------
 
@@ -220,7 +220,7 @@ the first three moments of the eigenvalue distribution:
 - the mean diffusivity (MD), the first moment, describes the overall magnitude
   of diffusion;
 - the norm of anisotropy (NA), the second moment, is the norm of the
-  deviatoric tensor, $NA = \\lVert \\widetilde{\\mathbf{D}} \\rVert$. It
+  deviatoric tensor, :math:`NA = \lVert \widetilde{\mathbf{D}} \rVert`. It
   measures the spread of the eigenvalues;
 - the mode of anisotropy (MO), the third moment, describes the shape of the
   anisotropy. It ranges from -1 (planar) through 0 (orthotropic) to +1
@@ -235,7 +235,7 @@ This is not true of every change: scaling all eigenvalues by the same factor
 scales both MD and NA, and leaves MO unchanged.
 
 NA is related to FA, which is NA normalized by the norm of the tensor,
-$FA = \\sqrt{3/2} \\, NA / \\lVert \\mathbf{D} \\rVert$. Because the norm
+:math:`FA = \sqrt{3/2} \, NA / \lVert \mathbf{D} \rVert`. Because the norm
 of the tensor depends on MD, FA changes with a uniform shift of the
 eigenvalues, while NA does not. Conversely, FA is unchanged by a uniform
 scaling of the eigenvalues, while NA scales with it.
