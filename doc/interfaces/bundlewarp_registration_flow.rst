@@ -19,7 +19,7 @@ and static/fixed bundle named ``s_UF_L.trk``.
 
 Visualizing the moving and static bundles before registration::
 
-    dipy_horizon "m_UF.trk" "s_UF_LI.trk" --random_color
+    dipy_skyline "m_UF_L.trk" "s_UF_L.trk" --tract_colors random
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/before_bw_registration.png?raw=true
     :width: 70 %
@@ -61,7 +61,7 @@ as ``nonlinearly_moved.trk``.
 
 Visualizing the moved and static bundles after registration::
 
-    dipy_horizon "nonlinearly_moved.trk" "s_UF_L.trk" --random_color
+    dipy_skyline "nonlinearly_moved.trk" "s_UF_L.trk" --tract_colors random
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/partially_deformable_bw_registration.png?raw=true
     :width: 70 %
@@ -88,7 +88,7 @@ as ``nonlinearly_moved.trk``.
 
 Visualizing the moved and static bundles after registration::
 
-    dipy_horizon "nonlinearly_moved.trk" "s_UF_L.trk" --random_color
+    dipy_skyline "nonlinearly_moved.trk" "s_UF_L.trk" --tract_colors random
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/fully_deformable_bw_registration.png?raw=true
     :width: 70 %
