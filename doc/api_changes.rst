@@ -28,6 +28,37 @@ DIPY 1.13.0 changes
 
       from dipy.utils.deprecator import warning_for_keywords
 
+**Align**
+
+- ``dipy.align.reslice.reslice`` now takes ``new_zooms`` as an optional
+  keyword-only argument. If omitted, an isotropic voxel size that preserves the
+  original voxel volume is picked by the new
+  ``dipy.align.reslice.isotropic_voxel_size``. Passing ``new_zooms`` positionally
+  keeps working and warns until 2.0.0::
+
+      reslice(data, affine, zooms, (2, 2, 2))  # warns
+
+  becomes::
+
+      reslice(data, affine, zooms, new_zooms=(2, 2, 2))
+
+**Workflows**
+
+- ``dipy_reslice`` (``ResliceFlow``) changed how it picks the voxel size when
+  ``--new_vox_size`` is not given. The old rule interpolated between the two
+  largest voxel edges and halved any result above 2 mm, which could upsample
+  isotropic data (2.5 mm became 1.25 mm, 8x more voxels). The new rule keeps the
+  original voxel volume: 1x1x3 mm gives 1.5 mm, 0.1x0.1x0.2 mm gives 0.125 mm and
+  isotropic input is left untouched. Outputs of scripts relying on the automatic
+  size will differ; pass ``--new_vox_size`` to keep a fixed resolution.
+
+- The ``vox_factor`` parameter of ``ResliceFlow.run`` (``--vox_factor``) is
+  deprecated since 1.13.0, ignored, and removed in 1.15.0.
+
+- ``ResliceFlow.run`` options after ``input_files`` are now keyword-only. Passing
+  them positionally from Python keeps working and warns until 2.0.0. The command
+  line is unchanged.
+
 **Reconstruction**
 
 - Models whose options moved after ``*args`` in 1.12.0 now report the old positional
