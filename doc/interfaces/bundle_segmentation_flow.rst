@@ -23,7 +23,7 @@ downloaded, named ``whole_brain_MNI.trk``.
 
 Visualizing the target and atlas tractograms before registration::
 
-    dipy_horizon "streamlines.trk" "whole_brain_MNI.trk" --random_color
+    dipy_skyline "streamlines.trk" "whole_brain_MNI.trk" --tract_colors random
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/tractograms_initial.png?raw=true
     :width: 70 %
@@ -52,7 +52,7 @@ Per default, the SLR workflow will save a transformed tractogram as ``moved.trk`
 
 Visualizing the target and atlas tractograms after registration::
 
-    dipy_horizon "moved.trk" "whole_brain_MNI.trk" --random_color
+    dipy_skyline "moved.trk" "whole_brain_MNI.trk" --tract_colors random
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/tractograms_after_registration.png?raw=true
     :width: 70 %
@@ -75,7 +75,7 @@ Run the following workflow::
     dipy_recobundles "moved.trk" "bundles/*.trk" --force --mix_names --out_dir "rb_output"
 
 This workflow will extract 30 bundles from the tractogram.
-Example of extracted Left Arcuate fasciculus (AF_L) bundle (visualized with ``dipy_horizon``):
+Example of extracted Left Arcuate fasciculus (AF_L) bundle (visualized with ``dipy_skyline``):
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_rb.png?raw=true
     :width: 70 %

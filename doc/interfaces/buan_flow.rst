@@ -193,14 +193,13 @@ Plots will look like the following example:
 
     Result plot for left arcuate fasciculus (AF_L) on FA measure
 
-We can also visualize and highlight the specific location of group differences on the bundle by providing
-output p-values file from dipy_buan_lmm workflow. The user can specify at what level of
-significance they want to see group differences by providing threshold value of p-value to ``buan_thr`` (default 0.05).
-The color of the highlighted area can be specified by providing RGB color values to ``buan_highlight`` (Default Red)
+We can also visualize where along the bundle the groups differ by giving Skyline the p-values file saved by
+the dipy_buan_lmm workflow. Skyline colors each segment of the bundle by its p-value. The *Hue*, *Saturation*
+and *Value* sliders in the tractogram controls adjust the colors.
 
 Run the following commandline for visualizing group differences on the model bundle::
 
-    dipy_horizon bundles/AF_L.trk lmm_plots/AF_L_fa_pvalues.npy --buan --buan_thr 0.05
+    dipy_skyline bundles/AF_L.trk --buan_pvals lmm_plots/AF_L_fa_pvalues.npy
 
 Where, ``AF_L.trk `` is located in your model bundle folder ``bundles`` and
 ``AF_L_fa_pvalues.npy`` is saved in output folder ``lmm_plots`` of dipy_buan_lmm workflow
@@ -212,22 +211,15 @@ The output of this commandline is an interactive visualization window. Example s
     :alt: alternate text
     :align: center
 
-    Result plot for left arcuate fasciculus (AF_L) with a highlighted area on the bundle in red color.
-    The highlighted area represents the segments on bundles with significant group differences
-    that have pvalues < 0.05.
+    Left arcuate fasciculus (AF_L) colored by the BUAN p-values of the FA group comparison.
+    The highlighted area marks the segments with significant group differences (p < 0.05).
 
-Let's use a different highlight color this time on ``CST_L`` bundle::
+The same command works for any other bundle, for example the left corticospinal tract (CST_L)::
 
-     dipy_horizon bundles/CST_L.trk lmm_plots/CST_L_fa_pvalues.npy --buan --buan_thr 0.05 --buan_highlight 1 1 0
+    dipy_skyline bundles/CST_L.trk --buan_pvals lmm_plots/CST_L_fa_pvalues.npy
 
-.. figure:: https://github.com/dipy/dipy_data/blob/master/CST_L_highlighted.png?raw=true
-    :width: 50 %
-    :alt: alternate text
-    :align: center
-
-    Result plot for left corticospinal tract left (CST_L) with a highlighted area on the bundle
-    in yellow color. The highlighted area represents the segments on bundles with significant
-    group differences that have pvalues < 0.05.
+A p-values file can also be loaded into a running window with *Upload BUAN P values* in the tractogram controls,
+and *Reset colors* restores the original colors. See :ref:`viz_flow` for the other viewer options.
 
 
 -----------------------------------------------------------

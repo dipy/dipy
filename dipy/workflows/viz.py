@@ -117,6 +117,12 @@ class SkylineFlow(Workflow):
             Output directory for offscreen figures.
         out_stealth_png : str, optional
             Filename of the offscreen figure.
+
+        Returns
+        -------
+        Skyline
+            The viewer, returned once its window is closed or the offscreen
+            figure is saved.
         """
         super().__init__(force=True)
         skyline_input_files = []
@@ -141,14 +147,14 @@ class SkylineFlow(Workflow):
             # 50th percentile of the cluster size distribution
             cluster_size_thr = None
 
-        skyline_from_files(
+        return skyline_from_files(
             skyline_input_files,
             rois=rois,
             peaks=peaks,
             shm_coeffs=odfs,
             sh_basis=sh_basis,
             is_cluster=cluster,
-            is_light_version=not performance_version,
+            is_light_version=performance_version,
             glass_brain=glass_brain,
             bg_color=bg_color,
             tract_colors=tract_colors,
@@ -275,6 +281,12 @@ class HorizonFlow(SkylineFlow):
         out_stealth_png : str, optional
             Filename of saved picture.
 
+        Returns
+        -------
+        Skyline
+            The viewer, returned once its window is closed or the offscreen
+            figure is saved.
+
         References
         ----------
         .. footbibliography::
@@ -294,7 +306,7 @@ class HorizonFlow(SkylineFlow):
                     buan_pvals = [input_file]
                     break
 
-        super().run(
+        return super().run(
             input_files,
             bg_color=bg_color,
             cluster=cluster,
