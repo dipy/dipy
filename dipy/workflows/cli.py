@@ -72,7 +72,6 @@ cli_flows = {
     "dipy_spectra_hfdr_external": ("dipy.workflows.stats", "SpectraHFDRExternalFlow"),
     "dipy_spectra_lmm": ("dipy.workflows.stats", "SpectraLMMFlow"),
     "dipy_spectra_profile": ("dipy.workflows.stats", "SpectraProfileFlow"),
-    "dipy_spectra_viz": ("dipy.workflows.viz", "SpectraVizFlow"),
     "dipy_split": ("dipy.workflows.io", "SplitFlow"),
     "dipy_tensor2pam": ("dipy.workflows.io", "TensorToPamFlow"),
     "dipy_track": ("dipy.workflows.tracking", "LocalFiberTrackingPAMFlow"),

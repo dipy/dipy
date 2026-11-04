@@ -1741,10 +1741,11 @@ def estimate_length_scales(residuals, grid, *, nu=0.5, rho_thresh=0.2):
     """Estimate the spatial correlation length scales of residuals.
 
     A Matern correlation is fitted to the correlation of the residuals along
-    the tract and across the radial bins of a SPECTRA grid. Use the residuals
-    of a model without the target variable (``"residuals_reduced"`` of
-    :func:`fit_grid_lmm`), so that the estimate does not depend on the effect
-    being tested.
+    the tract and across the radial bins of a SPECTRA grid. As in SPECTRA, use
+    the residuals of the model without the target variable
+    (``"residuals_reduced"`` of :func:`fit_grid_lmm`), which is the model of
+    the data when there is no effect. A real effect stays in these residuals
+    and can make them slightly smoother.
 
     See :footcite:p:`Feng2026SPECTRA` for further details about the method.
 

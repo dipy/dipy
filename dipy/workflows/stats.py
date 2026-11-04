@@ -1024,6 +1024,9 @@ class SpectraProfileFlow(Workflow):
     ):
         """Workflow of SPECTRA bundle profiles.
 
+        Step 1 of 3 of the SPECTRA statistics: run it once for each subject.
+        The next steps are ``dipy_spectra_lmm`` and ``dipy_spectra_fdr``.
+
         Computes the SPECTRA profiles of the bundles of one subject for each
         metric: the two-dimensional profile along the tract and across the
         radial bins (see :meth:`dipy.stats.analysis.SpectraGrid.profile`) and
@@ -1180,11 +1183,12 @@ class SpectraLMMFlow(Workflow):
     ):
         """Workflow of SPECTRA linear mixed models.
 
-        First stage of the SPECTRA statistics: fits a linear mixed model in
-        each cell of the SPECTRA profiles of a group of subjects (see
-        :func:`dipy.stats.analysis.fit_grid_lmm`), and saves the results of
-        each bundle in ``<out_dir>/<bundle>.npz``. The bundles can be fitted
-        in separate runs, e.g. in parallel jobs. The second stage,
+        Step 2 of 3 of the SPECTRA statistics: run it once for each bundle,
+        after ``dipy_spectra_profile`` has been run for all the subjects. It
+        fits a linear mixed model in each cell of the SPECTRA profiles of the
+        subjects (see :func:`dipy.stats.analysis.fit_grid_lmm`), and saves the
+        results of each bundle in ``<out_dir>/<bundle>.npz``. The bundles can be
+        fitted in separate runs, e.g. in parallel jobs. Step 3,
         ``dipy_spectra_fdr``, corrects the results of all the bundles for
         multiple comparisons.
 
@@ -1382,10 +1386,11 @@ class SpectraFDRFlow(Workflow):
     ):
         """Workflow of SPECTRA corrections for multiple comparisons.
 
-        Second stage of the SPECTRA statistics: corrects the results of
-        ``dipy_spectra_lmm`` for all the bundles together, with the
-        Benjamini-Hochberg procedure or the hierarchical FDR procedure of
-        SPECTRA (see :func:`dipy.stats.analysis.hierarchical_fdr`).
+        Step 3 of 3 of the SPECTRA statistics: run it once, after
+        ``dipy_spectra_lmm`` has been run for all the bundles. It corrects the
+        results of all the bundles together, with the Benjamini-Hochberg
+        procedure or the hierarchical FDR procedure of SPECTRA (see
+        :func:`dipy.stats.analysis.hierarchical_fdr`).
 
         The results are saved in three CSV files: the statistics of each
         tested cell (``out_stats``), the Stage 1 blocks of the hierarchical
@@ -1524,9 +1529,11 @@ class SpectraHFDRExternalFlow(Workflow):
     ):
         """Workflow of SPECTRA hierarchical FDR for external statistics.
 
-        Applies the hierarchical FDR procedure of SPECTRA (see
-        :func:`dipy.stats.analysis.hierarchical_fdr`) to statistics fitted in
-        each cell of SPECTRA grids by another software.
+        Use this instead of ``dipy_spectra_lmm`` and ``dipy_spectra_fdr`` when
+        the statistics of each cell were computed by another software, e.g. a
+        mixed model in R. It applies the hierarchical FDR procedure of SPECTRA
+        (see :func:`dipy.stats.analysis.hierarchical_fdr`) to these
+        statistics.
 
         The statistics are read from a CSV file with the columns
         ``grid_name`` (the bundle), ``s_idx`` (the segment), ``r_idx`` (the
