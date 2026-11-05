@@ -32,12 +32,7 @@ from dipy.tracking.tracker import (
     ptt_tracking,
 )
 from dipy.tracking.utils import connectivity_matrix, seeds_from_mask
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
-
-print("Downloading data...")
+from dipy.viz import actor, colormap, window
 
 ###############################################################################
 # Prepare the synthetic DiSCo data for tractography. The ground-truth
@@ -58,15 +53,21 @@ labels_fname = fnames[disco1_fnames.index("highRes_DiSCo1_ROIs.nii.gz")]
 labels, affine, labels_img = load_nifti(labels_fname, return_img=True)
 labels = labels.astype(int)
 
-print("Loading data...")
 tracks_fname = fnames[disco1_fnames.index("DiSCo1_Strands_Trajectories.tck")]
 GT_streams = load_tractogram(tracks_fname, reference=labels_img).streamlines
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(GT_streams, colors=colormap.line_colors(GT_streams)))
-    window.record(scene=scene, out_path="tractogram_ground_truth.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    GT_streams,
+    colors=colormap.line_colors(GT_streams),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_ground_truth", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 fig, ax = plt.subplots()
 ax.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest")
@@ -127,19 +128,17 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=8)
 csd_fit = csd_model.fit(data, mask=mask)
 ODFs = csd_fit.odf(default_sphere)
 
-if has_fury:
-    scene = window.Scene()
-    ODF_spheres = actor.odf_slicer(
-        ODFs[:, :, 17:18, :],
-        sphere=default_sphere,
-        scale=2,
-        norm=False,
-        colormap="plasma",
-    )
-    scene.add(ODF_spheres)
-    window.record(scene=scene, out_path="GT_odfs.png", size=(600, 600))
-    if interactive:
-        window.show(scene)
+ODF_spheres = actor.odf_slicer(
+    sh_func=ODFs[:, :, 17:18, :],
+    sphere=default_sphere,
+    scale=2,
+    norm=False,
+    visibility=(False, False, True),
+)
+scene = window.Scene()
+scene.add(ODF_spheres)
+show_manager = window.ShowManager(title="GT_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 #
@@ -150,7 +149,6 @@ if has_fury:
 #
 
 # Perform deterministic tractography using 1 thread (cpu)
-print("Running Deterministic Tractography...")
 streamline_generator = deterministic_tracking(
     seeds, sc, affine, sf=ODFs, nbr_threads=1, random_seed=42, sphere=default_sphere
 )
@@ -159,14 +157,19 @@ det_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(det_streams, labels_img, Space.RASMM)
 save_tractogram(sft, "tractogram_disco_deterministic.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(det_streams, colors=colormap.line_colors(det_streams)))
-    window.record(
-        scene=scene, out_path="tractogram_disco_deterministic.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    det_streams,
+    colors=colormap.line_colors(det_streams),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_disco_deterministic", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 # Compare the estimated connectivity with the ground-truth connectivity
 connectome = connectivity_matrix(det_streams, affine, labels)[1:, 1:]
@@ -190,7 +193,6 @@ plt.close(fig)
 #
 # Perform probabilistic tractography using 4 threads (cpus)
 
-print("Running Probabilistic Tractography...")
 streamline_generator = probabilistic_tracking(
     seeds, sc, affine, sf=ODFs, nbr_threads=4, random_seed=42, sphere=default_sphere
 )
@@ -198,14 +200,19 @@ prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
 save_tractogram(sft, "tractogram_disco_probabilistic.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(prob_streams, colors=colormap.line_colors(prob_streams)))
-    window.record(
-        scene=scene, out_path="tractogram_disco_probabilistic.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    prob_streams,
+    colors=colormap.line_colors(prob_streams),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_disco_probabilistic", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 # Compare the estimated connectivity with the ground-truth connectivity
 connectome = connectivity_matrix(prob_streams, affine, labels)[1:, 1:]
@@ -229,7 +236,6 @@ plt.close(fig)
 #
 
 # Perform parallel transport tractography tractography using all threads (cpus)
-print("Running Parallel Transport Tractography...")
 streamline_generator = ptt_tracking(
     seeds,
     sc,
@@ -244,12 +250,19 @@ ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
 save_tractogram(sft, "tractogram_disco_ptt.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(ptt_streams, colors=colormap.line_colors(ptt_streams)))
-    window.record(scene=scene, out_path="tractogram_disco_ptt.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    ptt_streams,
+    colors=colormap.line_colors(ptt_streams),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_disco_ptt", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 # Compare the estimated connectivity with the ground-truth connectivity
 connectome = connectivity_matrix(ptt_streams, affine, labels)[1:, 1:]
