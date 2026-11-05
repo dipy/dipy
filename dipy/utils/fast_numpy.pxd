@@ -65,11 +65,29 @@ cpdef double random() noexcept nogil
 
 cpdef void seed(cnp.npy_uint32 s) noexcept nogil
 
+cdef enum RNGKind:
+    RNG_PCG32 = 0
+    RNG_PHILOX = 1
+
 cdef struct RNGState:
+    # PCG32 state (RNG_PCG32)
     cnp.npy_uint64 state
     cnp.npy_uint64 inc
+    # RNG_PCG32 or RNG_PHILOX
+    int kind
+    # Philox4x32-10 counter, key, current output block and position in it
+    cnp.npy_uint32 ctr[4]
+    cnp.npy_uint32 key[2]
+    cnp.npy_uint32 out[4]
+    int idx
 
 cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil
+
+cdef void seed_philox(RNGState* rng_state, cnp.npy_uint64 seed,
+                      cnp.npy_uint64 stream) noexcept nogil
+
+cdef void philox4x32_10(cnp.npy_uint32* ctr, cnp.npy_uint32* key,
+                        cnp.npy_uint32* out) noexcept nogil
 
 cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil
 
