@@ -127,7 +127,9 @@ viz_vector_field(
 ###############################################################################
 # We can also visualize the magnitude of deformations in mm mapped over
 # affinely moved bundle. It shows which streamlines were deformed the most
-# after affine registration.
+# after affine registration. Streamlines are coloured from pink (smallest
+# displacement) to green (largest displacement), as shown by the color bar in
+# mm.
 
 fname = "partially_deformation_magnitude_over_linearly_moved.png"
 viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
@@ -186,7 +188,8 @@ viz_vector_field(
 ###############################################################################
 # Let's visualize the magnitude of deformations in mm mapped over affinely
 # moved bundle. It shows which streamlines were deformed the most after affine
-# registration.
+# registration. Streamlines are coloured from pink (smallest displacement) to
+# green (largest displacement), as shown by the color bar in mm.
 
 fname = "fully_deformation_magnitude_over_linearly_moved.png"
 viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
