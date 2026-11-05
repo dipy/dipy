@@ -68,6 +68,7 @@ def show_bundles(
     colors=None,
     linewidth=0.3,
     save_as=None,
+    scalar_bar=None,
 ):
     """Render bundles to visualize them interactively or save them into a png.
 
@@ -89,6 +90,9 @@ def show_bundles(
         Thickness of each rendered streamline.
     save_as : str or Path, optional
         If not None, the rendered scene is stored in a png file with that name.
+    scalar_bar : fury.actor.Group, optional
+        Color bar created with ``dipy.viz.actor.scalar_bar``, added to the scene
+        to show how values map to colors.
     """
 
     if view == "sagital":  # codespell:ignore sagital
@@ -115,6 +119,8 @@ def show_bundles(
                 outline_thickness=0,
             )
         )
+    if scalar_bar is not None:
+        scene.ui_scene.add(scalar_bar)
 
     _show_scene(
         scene,

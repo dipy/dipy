@@ -8,6 +8,7 @@ Here we present an example for visualizing slices from 3D images.
 Let's start by importing the relevant modules.
 """
 
+from functools import partial
 from pathlib import Path
 
 from dipy.data import fetch_bundles_2_subjects
@@ -33,8 +34,7 @@ data, affine = load_nifti(fname_t1)
 ###############################################################################
 # Create a Scene object which holds all the actors which we want to visualize.
 
-scene = window.Scene()
-scene.background((0.5, 0.5, 0.5))
+scene = window.Scene(background=(0.5, 0.5, 0.5))
 
 ###############################################################################
 # Render slices from T1 with a specific value range
@@ -47,44 +47,38 @@ mean, std = data[data > 0].mean(), data[data > 0].std()
 value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
 ###############################################################################
-# The ``slice`` function will read data and resample the data using an affine
-# transformation matrix. The default behavior of this function is to show the
-# middle slice of the last dimension of the resampled data.
+# The ``volume_slicer`` function places the data in world coordinates using the
+# affine transformation matrix. It holds three orthogonal planes (x, y, z)
+# through the middle of the volume. We start by showing only the axial (z)
+# plane. ``depth_write=True`` lets the opaque planes hide each other where they
+# cross.
 
-slice_actor = actor.slicer(data, affine=affine, value_range=value_range)
-
-###############################################################################
-# The ``slice_actor`` contains an axial slice.
+slice_actor = actor.volume_slicer(
+    data,
+    affine=affine,
+    value_range=value_range,
+    visibility=(False, False, True),
+    depth_write=True,
+)
 
 scene.add(slice_actor)
 
 ###############################################################################
-# The same actor can show any different slice from the given data using its
-# ``display`` function. However, if we want to show multiple slices we need to
-# copy the actor first.
+# The same actor can show any combination of its planes with
+# ``set_group_visibility`` (and ``show_slices`` moves them to other world
+# positions). Here the sagittal plane is shown too.
 
-slice_actor2 = slice_actor.copy()
-
-###############################################################################
-# Now we have a new ``slice_actor`` which displays the middle slice of the
-# sagittal plane.
-
-slice_actor2.display(x=slice_actor2.shape[0] // 2, y=None, z=None)
-
-scene.add(slice_actor2)
-
-scene.reset_camera()
-scene.zoom(1.4)
+actor.set_group_visibility(slice_actor, (True, False, True))
 
 ###############################################################################
-# In order to interact with the data you will need to uncomment the line below.
+# The camera looks from the left, anterior and superior side so both planes are
+# visible. ``start`` opens an interactive window (documentation builds save a
+# screenshot instead).
 
-# window.show(scene, size=(600, 600), reset_camera=False)
-
-###############################################################################
-# Otherwise, you can save a screenshot using the following command.
-
-window.record(scene=scene, out_path="slices.png", size=(600, 600), reset_camera=False)
+show_manager = window.ShowManager(title="slices", size=(600, 600), scene=scene)
+screen = show_manager.screens[0]
+screen.camera.show_object(screen.scene.main_scene, view_dir=(1, -1, -1), up=(0, 0, 1))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -110,30 +104,39 @@ fname_fa = (
 
 fa = load_nifti_data(fname_fa)
 
-lut = actor.colormap_lookup_table(
-    scale_range=(fa.min(), fa.max() * 0.8),
-    hue_range=(0.4, 1.0),
-    saturation_range=(1, 1.0),
-    value_range=(0.0, 1.0),
-)
-
 ###############################################################################
-# This is because the lookup table is applied in the slice after interpolating
-# to (0, 255).
+# ``volume_slicer`` shows scalar volumes in gray levels and RGB volumes as
+# given. So the HSV colormap is built with a scalar bar, and its ``map_values``
+# turns the FA volume into an RGB volume. FA above 80% of the maximum gets the
+# last color of the colormap. ``value_range=(0, 1)`` keeps the RGB colors
+# unscaled. Nearest interpolation draws each voxel as a flat square, so what
+# you see is the voxel you click on next. The default camera looks from the
+# superior side with anterior at the top.
 
-fa_actor = actor.slicer(fa, affine=affine, lookup_colormap=lut)
-
-scene.clear()
-scene.add(fa_actor)
-
-scene.reset_camera()
-scene.zoom(1.4)
-
-# window.show(scene, size=(600, 600), reset_camera=False)
-
-window.record(
-    scene=scene, out_path="slices_lut.png", size=(600, 600), reset_camera=False
+fa_bar = actor.scalar_bar(
+    clim=(fa.min(), fa.max() * 0.8),
+    hsv_range=((0.4, 1.0), (1.0, 1.0), (0.0, 1.0)),
+    orientation="vertical",
+    title="FA",
+    tick_format=".2f",
+    position=(910, 300),
 )
+fa_rgb = fa_bar.map_values(fa)
+
+fa_actor = actor.volume_slicer(
+    fa_rgb,
+    affine=affine,
+    value_range=(0, 1),
+    interpolation="nearest",
+    visibility=(False, False, True),
+)
+
+fa_scene = window.Scene(background=(0.5, 0.5, 0.5))
+fa_scene.add(fa_actor)
+fa_scene.ui_scene.add(fa_bar)
+
+show_manager = window.ShowManager(title="slices_lut", size=(1200, 900), scene=fa_scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -143,131 +146,115 @@ window.record(
 #
 #
 # Now we would like to add the ability to click on a voxel and show its value
-# on a panel in the window. The panel is a UI element which requires access to
-# different areas of the visualization pipeline and therefore we don't
-# recommend using it with ``window.show``. The more appropriate way is to use
-# the ``ShowManager`` object, which allows accessing the pipeline in different
-# areas.
+# on a panel in the window. The panel is a UI element positioned in pixels from
+# the top-left corner of the window. Clicking a voxel of the slice fills it.
 
-show_m = window.ShowManager(scene=scene, size=(1200, 900))
-show_m.initialize()
+label_position = ui.TextBlock2D(text="Position:", dynamic_bbox=True)
+label_value = ui.TextBlock2D(text="Value:", dynamic_bbox=True)
 
-###############################################################################
-# We'll start by creating the panel and adding it to the ``ShowManager``
-
-label_position = ui.TextBlock2D(text="Position:")
-label_value = ui.TextBlock2D(text="Value:")
-
-result_position = ui.TextBlock2D(text="")
-result_value = ui.TextBlock2D(text="")
+result_position = ui.TextBlock2D(text="", dynamic_bbox=True)
+result_value = ui.TextBlock2D(text="", dynamic_bbox=True)
 
 panel_picking = ui.Panel2D(
     size=(250, 125), position=(20, 20), color=(0, 0, 0), opacity=0.75, align="left"
 )
 
-panel_picking.add_element(label_position, (0.1, 0.55))
-panel_picking.add_element(label_value, (0.1, 0.25))
+panel_picking.add_element(label_position, (0.1, 0.25))
+panel_picking.add_element(label_value, (0.1, 0.55))
 
-panel_picking.add_element(result_position, (0.45, 0.55))
-panel_picking.add_element(result_value, (0.45, 0.25))
+panel_picking.add_element(result_position, (0.45, 0.25))
+panel_picking.add_element(result_value, (0.45, 0.55))
 
-scene.add(panel_picking)
+fa_scene.add(panel_picking)
 
 ###############################################################################
-# Add a left-click callback to the slicer. Also disable interpolation so you
-# can see what you are picking.
+# Add a ``pointer_down`` callback to the slicer. The picked voxel index is in
+# ``event.pick_info["index"]``.
 
 
-def left_click_callback(obj, ev):
-    """Get the value of the clicked voxel and show it in the panel."""
-    event_pos = show_m.iren.GetEventPosition()
+def show_voxel_value(event):
+    """Show the index and FA value of the clicked voxel in the panel.
 
-    obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
+    Parameters
+    ----------
+    event : fury.lib.PointerEvent
+        Click on the FA slicer; ``event.pick_info["index"]`` is the voxel.
+    """
+    i, j, k = event.pick_info["index"]
+    result_position.message = f"({i}, {j}, {k})"
+    result_value.message = f"{fa[i, j, k]:.8f}"
 
-    i, j, k = obj.picker.GetPointIJK()
+
+fa_actor.add_event_handler(show_voxel_value, "pointer_down")
+
+show_manager = window.ShowManager(
+    title="slices_picking", size=(1200, 900), scene=fa_scene
+)
+show_manager.start()
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# FA slice with a panel showing the index and value of the clicked voxel.
+#
+#
+# Create a mosaic
+# ===============
+#
+# Each tile of the mosaic is a ``volume_slicer`` of a one-slice slab
+# ``data[:, :, k : k + 1]``, so only that slice is uploaded. Tiles are built
+# without affine, so they are laid out in voxel units and shifted with
+# ``local.position``. We need a callback that reports the slice of the clicked
+# tile.
+
+
+def show_mosaic_voxel_value(event, *, k):
+    """Show the index and T1 value of the voxel clicked in a mosaic tile.
+
+    Parameters
+    ----------
+    event : fury.lib.PointerEvent
+        Click on a tile; ``event.pick_info["index"]`` is the voxel of the
+        one-slice tile.
+    k : int
+        Axial slice shown by the clicked tile.
+    """
+    i, j, _ = event.pick_info["index"]
     result_position.message = f"({i}, {j}, {k})"
     result_value.message = f"{data[i, j, k]:.8f}"
 
 
-fa_actor.SetInterpolate(False)
-fa_actor.AddObserver("LeftButtonPressEvent", left_click_callback, 1.0)
-
-# show_m.start()
-
 ###############################################################################
-# Create a mosaic
-# ===============
-#
-# By using the ``copy`` and ``display`` method of the ``slice_actor`` it
-# becomes easy and efficient to create a mosaic of all the slices.
-#
-# So, let's clear the scene and change the projection from perspective to
-# parallel. We'll also need a new show manager and an associated callback.
-
-scene.clear()
-scene.projection(proj_type="parallel")
+# Now we create the tiles in a grid of 15 columns. The number of rows follows
+# from the number of slices. The default camera looks straight at the flat
+# mosaic, so no parallel projection is needed, and ``zoom`` enlarges it. In the
+# window, right-drag pans, the wheel zooms and a left click shows the voxel
+# value in the panel.
 
 result_position.message = ""
 result_value.message = ""
 
-show_m_mosaic = window.ShowManager(scene=scene, size=(1200, 900))
-show_m_mosaic.initialize()
-
-
-def left_click_callback_mosaic(obj, ev):
-    """Get the value of the clicked voxel and show it in the panel."""
-    event_pos = show_m_mosaic.iren.GetEventPosition()
-
-    obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
-
-    i, j, k = obj.picker.GetPointIJK()
-    result_position.message = f"({i}, {j}, {k})"
-    result_value.message = f"{data[i, j, k]:.8f}"
-
-
-###############################################################################
-# Now we need to create two nested for loops which will set the positions of
-# the grid of the mosaic and add the new actors to the scene. We are going
-# to use 15 columns and 10 rows but you can adjust those with your datasets.
-
-cnt = 0
-
-X, Y, Z = slice_actor.shape[:3]
-
-rows = 10
+X, Y, Z = data.shape
 cols = 15
 border = 10
 
-for j in range(rows):
-    for i in range(cols):
-        slice_mosaic = slice_actor.copy()
-        slice_mosaic.display(z=cnt)
-        slice_mosaic.SetPosition(
-            (X + border) * i, 0.5 * cols * (Y + border) - (Y + border) * j, 0
-        )
-        slice_mosaic.SetInterpolate(False)
-        slice_mosaic.AddObserver(
-            "LeftButtonPressEvent", left_click_callback_mosaic, 1.0
-        )
-        scene.add(slice_mosaic)
-        cnt += 1
-        if cnt > Z:
-            break
-    if cnt > Z:
-        break
+mosaic_scene = window.Scene(background=(0.5, 0.5, 0.5))
+for k in range(Z):
+    row, col = divmod(k, cols)
+    tile = actor.volume_slicer(
+        data[:, :, k : k + 1],
+        value_range=value_range,
+        interpolation="nearest",
+        visibility=(False, False, True),
+    )
+    tile.local.position = (col * (X + border), -row * (Y + border), 0)
+    tile.add_event_handler(partial(show_mosaic_voxel_value, k=k), "pointer_down")
+    mosaic_scene.add(tile)
+mosaic_scene.add(panel_picking)
 
-scene.reset_camera()
-scene.zoom(1.0)
-
-# show_m_mosaic.ren.add(panel_picking)
-# show_m_mosaic.start()
-
-###############################################################################
-# If you uncomment the two lines above, you will be able to move
-# the mosaic up/down and left/right using the middle mouse button drag,
-# zoom in/out using the scroll wheel, and pick voxels with left click.
-
-window.record(scene=scene, out_path="mosaic.png", size=(900, 600), reset_camera=False)
+show_manager = window.ShowManager(title="mosaic", size=(900, 600), scene=mosaic_scene)
+show_manager.screens[0].camera.zoom = 1.6
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
