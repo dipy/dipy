@@ -123,9 +123,6 @@ print("Cluster sizes:", map(len, clusters))
 #
 # **Note:** Inputs must be vectors (i.e. 1D array).
 
-# Enables/disables interactive visualization
-interactive = False
-
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
 
@@ -141,13 +138,16 @@ for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-scene = window.Scene()
-scene.clear()
-scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="cosine_metric.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines, colors=colormap_full, thickness=0.05, outline_thickness=0
+)
+
+scene = window.Scene(background=(0, 0, 0, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(title="cosine_metric", size=(600, 600), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
