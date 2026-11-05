@@ -1265,6 +1265,8 @@ class ExtractVolumeFlow(Workflow):
 
 
 class ConcatenateTractogramFlow(Workflow):
+    _non_path_outputs = ("out_extension",)
+
     @classmethod
     def get_short_name(cls):
         return "concatracks"
@@ -1316,7 +1318,7 @@ class ConcatenateTractogramFlow(Workflow):
 
         trx_list = []
         has_group = False
-        for fpath, _, _ in io_it:
+        for fpath, _ in io_it:
             _, extension = split_filename_extension(fpath)
             if extension.lower() in [".trx", ".trk"]:
                 reference = "same"

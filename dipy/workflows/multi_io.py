@@ -188,7 +188,9 @@ def io_iterator(
 
 
 @warning_for_keywords()
-def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
+def _io_iterator(
+    frame, fnc, *, output_strategy="absolute", mix_names=False, non_path_outputs=()
+):
     """Create an IOIterator using introspection.
 
     Parameters
@@ -201,6 +203,9 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
         Controls the behavior of the IOIterator for output paths.
     mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
+    non_path_outputs : tuple of str, optional
+        Names of ``out_`` parameters that are not output paths. They are not
+        added to the outputs of the IOIterator.
 
     Returns
     -------
@@ -235,7 +240,7 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
     for arv in args[split_at:]:
         if arv == "out_dir":
             out_dir = values[arv]
-        elif "out_" in arv:
+        elif "out_" in arv and arv not in non_path_outputs:
             out_keys.append(arv)
             outputs.append(values[arv])
 
