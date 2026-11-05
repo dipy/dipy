@@ -40,6 +40,7 @@ from dipy.reconst.weights_method import (
 )
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.testing import check_for_warnings
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 
@@ -882,6 +883,40 @@ def test_MK_singularities():
         MK_nm = dki.mean_kurtosis(dki_params, analytical=False)
 
         assert_almost_equal(MK_an, MK_nm, decimal=3)
+
+
+@set_random_number_generator()
+def test_dki_nls_cholesky_with_noise(rng):
+    """Test Cholesky NLS on a noisy DKI signal."""
+    if not have_cvxpy:
+        return
+
+    mevals = mevals_cross
+
+    signal_clean, dt_gt, kt_gt = multi_tensor_dki(
+        gtab_2s,
+        mevals,
+        S0=S0,
+        angles=angles_cross,
+        fractions=frac_cross,
+        snr=None,
+    )
+
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, S0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    model = dki.DiffusionKurtosisModel(
+        gtab_2s, fit_method="NLS", cholesky=True, jac=False
+    )
+    fit = model.fit(noisy_signal)
+
+    evals_gt, _ = decompose_tensor(from_lower_triangular(dt_gt))
+
+    assert np.all(np.isfinite(fit.model_params))
+    assert np.all(fit.evals > 0)
+    assert np.linalg.norm(fit.evals - evals_gt) < 5e-4
 
 
 def test_dki_errors():

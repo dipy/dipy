@@ -8,15 +8,15 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (
+    cholesky_to_lower_triangular,
     decompose_tensor,
     fractional_anisotropy,
     from_lower_triangular,
+    lower_triangular_to_cholesky,
 )
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import (
-    cholesky_to_lower_triangular,
     fwdti_prediction,
-    lower_triangular_to_cholesky,
     nls_fit_tensor,
     wls_fit_tensor,
 )
@@ -292,6 +292,57 @@ def test_fwdti_jac_multi_voxel():
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
+
+
+def test_fwdti_cholesky_jacobian():
+    """Test the fwDTI Cholesky Jacobian against finite differences."""
+    design_matrix = dti.design_matrix(gtab_2s)
+
+    params = np.array([0.04, 0.03, 0.02, 0.005, -0.004, 0.003, -np.log(100.0), 0.2])
+    data = np.ones(design_matrix.shape[0])
+
+    analytical = fwdti._nls_jacobian_func(
+        params,
+        design_matrix,
+        data,
+        cholesky=True,
+        f_transform=False,
+    )
+
+    numerical = np.empty_like(analytical)
+    step = 1e-6
+
+    for column in range(params.size):
+        params_plus = params.copy()
+        params_minus = params.copy()
+
+        params_plus[column] += step
+        params_minus[column] -= step
+
+        residual_plus = fwdti._nls_err_func(
+            params_plus,
+            design_matrix,
+            data,
+            cholesky=True,
+            f_transform=False,
+        )
+
+        residual_minus = fwdti._nls_err_func(
+            params_minus,
+            design_matrix,
+            data,
+            cholesky=True,
+            f_transform=False,
+        )
+
+        numerical[:, column] = (residual_plus - residual_minus) / (2 * step)
+
+    np.testing.assert_allclose(
+        analytical,
+        numerical,
+        rtol=1e-6,
+        atol=1e-7,
+    )
 
 
 def test_standalone_functions():
