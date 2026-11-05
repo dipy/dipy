@@ -129,15 +129,16 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
-
-# Enables/disables interactive visualization
-interactive = False
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="fornix_clusters_arclength", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -223,12 +224,16 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="fornix_clusters_cosine", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
