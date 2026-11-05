@@ -430,6 +430,24 @@ def test_concatenate_flow(tmp_path):
     npt.assert_equal(len(trk), 13)
 
 
+def test_concatenate_flow_reference_after_trk(tmp_path):
+    data_path, _, _ = get_fnames(name="gold_standard_io")
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(
+        [data_path["gs_streamlines.trk"], data_path["gs_streamlines.tck"]],
+        reference=data_path["gs_volume.nii"],
+        delete_dpv=True,
+        delete_dps=True,
+        out_dir=tmp_path,
+    )
+    _fname = concatenate_flow.last_generated_outputs["out_tractogram"]
+    _fname = Path(_fname).with_suffix(Path(_fname).suffix + ".trx")
+    assert_true(_fname.is_file())
+
+    trx = load_tractogram(_fname, "same")
+    npt.assert_equal(len(trx), 26)
+
+
 def test_convert_sh_flow(tmp_path):
     filepath_in = tmp_path / "sh_coeff_img.nii.gz"
     filename_out = "sh_coeff_img_converted.nii.gz"

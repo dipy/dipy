@@ -492,14 +492,15 @@ class NLMeansFlow(Workflow):
                 logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
 
+                sigma_used = sigma
                 if isinstance(sigma, float) and sigma == 0:
                     logger.info("Estimating sigma")
-                    sigma = estimate_sigma(data)
-                    logger.debug(f"Found sigma {sigma}")
+                    sigma_used = estimate_sigma(data)
+                    logger.debug(f"Found sigma {sigma_used}")
 
                 denoised_data = nlmeans(
                     data,
-                    sigma=sigma,
+                    sigma=sigma_used,
                     patch_radius=patch_radius,
                     block_radius=block_radius,
                     rician=rician,
@@ -593,18 +594,19 @@ class LPCAFlow(Workflow):
             logger.info("Denoising %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
+            sigma_used = sigma
             if not sigma:
                 logger.info("Estimating sigma")
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(
                     bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
                 )
-                sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
-                logger.debug("Found sigma %s", sigma)
+                sigma_used = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
+                logger.debug("Found sigma %s", sigma_used)
 
             denoised_data = localpca(
                 data,
-                sigma=sigma,
+                sigma=sigma_used,
                 patch_radius=patch_radius,
                 pca_method=pca_method,
                 tau_factor=tau_factor,
