@@ -388,9 +388,9 @@ def click_gizmo(show_manager, gizmo_actor, label):
     )
 
 
-# TODO: Move `_taubin_smooth` and `smooth_contour_from_roi` to FURY and remove them
-# from DIPY once https://github.com/fury-gl/fury/issues/1390 is closed
-# (smooth option for `contour_from_roi` and `contour_from_label`).
+# TODO(fury#1390): Move `_taubin_smooth` and this `contour_from_roi` override
+# (FURY signature plus ``iterations``) to FURY, then remove both from DIPY
+# once https://github.com/fury-gl/fury/issues/1390 is closed.
 def _taubin_smooth(vertices, faces, iterations, *, lam=0.5, mu=-0.53):
     """Smooth a triangle mesh with Taubin (shrink-free) Laplacian smoothing.
 
@@ -428,8 +428,14 @@ def _taubin_smooth(vertices, faces, iterations, *, lam=0.5, mu=-0.53):
     return smoothed
 
 
-def smooth_contour_from_roi(
-    data, *, affine=None, color=(1, 0, 0), opacity=0.5, iterations=20
+def contour_from_roi(
+    data,
+    *,
+    affine=None,
+    color=(1, 0, 0),
+    opacity=0.5,
+    material="phong",
+    iterations=20,
 ):
     """Generate a smooth surface actor from a binary ROI.
 
@@ -443,6 +449,9 @@ def smooth_contour_from_roi(
         Contour color (hex string, RGB in [0, 1] or in [0, 255]).
     opacity : float, optional
         Opacity from 0 (transparent) to 1 (opaque).
+    material : str, optional
+        Material of the contour mesh, as accepted by :func:`fury.actor.surface`
+        (``"phong"``, ``"basic"``, ``"standard"``, ``"physical"``).
     iterations : int, optional
         Number of smoothing passes. Use 0 to keep the blocky voxel surface.
 
@@ -453,9 +462,9 @@ def smooth_contour_from_roi(
 
     Notes
     -----
-    :func:`fury.actor.contour_from_roi` draws the voxel faces, which looks
-    staircased on anatomical ROIs. This function smooths that surface with
-    Taubin smoothing, which does not shrink the ROI.
+    Overrides :func:`fury.actor.contour_from_roi`, which draws staircased voxel
+    faces. The surface is smoothed with Taubin smoothing, which does not shrink
+    the ROI.
     """
     color = normalize_colors(color)[0][:3]
     contour = Group()
@@ -463,7 +472,15 @@ def smooth_contour_from_roi(
         vertices = _taubin_smooth(mesh["verts"], mesh["faces"], iterations)
         if affine is not None:
             vertices = apply_affine(affine, vertices)
-        contour.add(surface(vertices, mesh["faces"], colors=color, opacity=opacity))
+        contour.add(
+            surface(
+                vertices,
+                mesh["faces"],
+                colors=color,
+                opacity=opacity,
+                material=material,
+            )
+        )
     return contour
 
 
