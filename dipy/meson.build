@@ -139,57 +139,60 @@ np_dep = declare_dependency(include_directories: inc_np)
 # Define Optimisation for cython extensions
 # ------------------------------------------------------------------------
 omp = dependency('openmp', required: false)
-if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
-  # Check for libomp (OpenMP) - prioritize conda environment to avoid conflicts
+if host_system == 'darwin' and cc.get_id() == 'clang'
+  # Link through a build-only copy with an @rpath install name. Source builds
+  # can then use the environment's PyTorch libomp, or the local installation
+  # when PyTorch is not installed. This also survives editable Ninja rebuilds.
+  omp_lib = ''
+  omp_inc = ''
   conda_prefix = run_command('sh', '-c', 'echo $CONDA_PREFIX', check: false).stdout().strip()
-
-  # First, try conda environment if available
-  if conda_prefix != '' and fs.is_dir(conda_prefix / 'lib')
+  if conda_prefix != '' and fs.exists(conda_prefix / 'lib' / 'libomp.dylib')
     omp_lib = conda_prefix / 'lib'
     omp_inc = conda_prefix / 'include'
-    if fs.exists(omp_lib / 'libomp.dylib') or fs.exists(omp_lib / 'libomp.a')
-      message('OpenMP Found: YES (conda environment) - ', conda_prefix)
-      omp = declare_dependency(
-        compile_args : ['-Xpreprocessor', '-fopenmp'],
-        link_args : ['-L' + omp_lib, '-lomp'],
-        include_directories : include_directories(omp_inc)
-      )
-    endif
   endif
 
-  # Fallback to Homebrew if conda not found or doesn't have libomp
-  if not omp.found()
-    brew = find_program('brew', required : false)
+  if omp_lib == ''
+    brew = find_program('brew', required: false)
     if brew.found()
       prefix_result = run_command(brew, '--prefix', 'libomp', check: false)
       if prefix_result.returncode() == 0
         omp_prefix = prefix_result.stdout().strip()
         if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
-          message('OpenMP Found: YES (Homebrew) - ', omp_prefix)
-          omp = declare_dependency(
-            compile_args : ['-Xpreprocessor', '-fopenmp'],
-            link_args : ['-L' + omp_prefix + '/lib', '-lomp'],
-            include_directories : include_directories(omp_prefix / 'include')
-          )
+          omp_lib = omp_prefix / 'lib'
+          omp_inc = omp_prefix / 'include'
         endif
       endif
     endif
   endif
 
-  # Final fallback: check standard system paths (e.g. pre-built tarballs from
-  # https://mac.r-project.org/openmp/ install libomp.dylib to /usr/local/lib)
-  if not omp.found()
+  if omp_lib == ''
     foreach omp_prefix : ['/usr/local', '/opt/local']
       if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
-        message('OpenMP Found: YES (system path) - ', omp_prefix)
-        omp = declare_dependency(
-          compile_args : ['-Xpreprocessor', '-fopenmp'],
-          link_args : ['-L' + omp_prefix + '/lib', '-lomp'],
-          include_directories : include_directories(omp_prefix / 'include')
-        )
+        omp_lib = omp_prefix / 'lib'
+        omp_inc = omp_prefix / 'include'
         break
       endif
     endforeach
+  endif
+
+  if omp_lib != ''
+    message('OpenMP Found: YES (macOS shared runtime) - ', omp_lib)
+    omp_link_lib = custom_target('macos-libomp-link',
+      input: omp_lib / 'libomp.dylib',
+      output: 'libomp.dylib',
+      command: [py3, meson.project_source_root() / 'tools/ci/patch_macos_torch_libomp.py',
+                '--link-stub', '@INPUT@', '@OUTPUT@'],
+    )
+    torch_lib = run_command(py3, '-c',
+      'import sysconfig; print(sysconfig.get_path("platlib") + "/torch/lib")',
+      check: true).stdout().strip()
+    omp = declare_dependency(
+      compile_args: ['-Xpreprocessor', '-fopenmp'],
+      link_args: [omp_link_lib.full_path(),
+                  '-Wl,-rpath,' + torch_lib, '-Wl,-rpath,' + omp_lib],
+      include_directories: include_directories(omp_inc),
+      sources: omp_link_lib,
+    )
   endif
 endif
 

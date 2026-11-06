@@ -18,6 +18,11 @@ The full VCS changelog is available here:
 
 Releases
 ~~~~~~~~
+* Unreleased
+
+- NF: Add PyTorch Synb0 and Synb0-SyN susceptibility distortion correction with a CLI.
+- BF: macOS wheels share PyTorch's OpenMP runtime when present, with the bundled runtime as fallback.
+
 * 1.12.0 (Friday, March 13, 2026)
 
 - NF: FORCE recon model - new signal matching reconstruction model added.

@@ -126,6 +126,20 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=11.0
         with:
           output-dir: dist
+      - name: Share OpenMP with PyTorch on macOS
+        run: python tools/ci/patch_macos_torch_libomp.py dist/*.whl
+      - uses: actions/setup-python@v7
+        if: matrix.os == 'macos-latest'
+        with:
+          python-version: '3.12'
+      - name: Smoke test OpenMP wheel with and without PyTorch
+        if: matrix.os == 'macos-latest'
+        run: |
+          python -m pip install dist/dipy-*-cp312-cp312-*.whl
+          python -I -c 'from dipy.utils.omp import determine_num_threads; assert determine_num_threads(2) == 2'
+          python -m pip install torch threadpoolctl
+          python -I -c 'import dipy.align.vector_fields, torch; from threadpoolctl import threadpool_info; assert len([x for x in threadpool_info() if x["user_api"] == "openmp"]) == 1; assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
+          python -I -c 'import torch, dipy.align.vector_fields; from threadpoolctl import threadpool_info; assert len([x for x in threadpool_info() if x["user_api"] == "openmp"]) == 1; assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
       - uses: actions/upload-artifact@v7
         with:
             name: wheels-${{ matrix.os }}
@@ -151,6 +165,15 @@ jobs:
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
         with:
           output-dir: dist
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Smoke test wheel with PyTorch
+        shell: bash
+        run: |
+          python -m pip install dist/dipy-*-cp312-cp312-*.whl torch threadpoolctl
+          python -I -c 'import dipy.align.vector_fields, torch; from threadpoolctl import threadpool_info; print(threadpool_info()); assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
+          python -I -c 'import torch, dipy.align.vector_fields; from threadpoolctl import threadpool_info; print(threadpool_info()); assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
       - uses: actions/upload-artifact@v7
         with:
             name: wheels-${{ matrix.os }}
@@ -186,6 +209,11 @@ jobs:
           python -c "import dipy; print(dipy.__version__)"
           python -c "import numpy; assert int(numpy.__version__[0]) >= 2, numpy.__version__"
           python -c "from dipy.align.imaffine import AffineMap"
+      - name: Smoke test Linux wheel with PyTorch
+        run: |
+          python -m pip install torch threadpoolctl
+          python -I -c 'import dipy.align.vector_fields, torch; from threadpoolctl import threadpool_info; print(threadpool_info()); assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
+          python -I -c 'import torch, dipy.align.vector_fields; from threadpoolctl import threadpool_info; print(threadpool_info()); assert torch.mm(torch.ones(64, 64), torch.ones(64, 64))[0, 0] == 64'
 
   upload_anaconda:
       permissions:

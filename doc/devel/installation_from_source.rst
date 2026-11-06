@@ -214,9 +214,18 @@ variables. For example, you can add the following lines to your ``~/.bash_profil
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
-Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to then
-run ``pip install dipy``. When you do that, it should now
-compile the code with this OpenMP-enabled compiler, and things should go faster!
+After installing the OpenMP library, build the development version in the
+Python environment where you will run DIPY::
+
+    pip install --group build
+    pip install --no-build-isolation -e .
+
+On macOS, extensions built against a shared ``libomp.dylib`` prefer the
+``torch/lib/libomp.dylib`` in that Python environment when it is present, and
+fall back to the local OpenMP installation otherwise. PyTorch is not required
+to build or import DIPY. Reinstall DIPY if you move the environment or change
+its Python installation: the source build records that environment's
+``site-packages`` path. Editable rebuilds retain the same linking behavior.
 
 Troubleshooting: ImportError on macOS with PyPI wheels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
