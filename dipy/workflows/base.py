@@ -288,6 +288,13 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 f"same order.\n{mismatches}"
             )
 
+        # Renamed parameters keep their old command line name, hidden from the
+        # help, for as long as ``run`` is decorated with ``deprecated_params``.
+        deprecated_aliases = {}
+        for old_name, new_name in getattr(workflow.run, "__deprecated_params__", ()):
+            if new_name is not None:
+                deprecated_aliases.setdefault(new_name, []).append(old_name)
+
         for i, arg in enumerate(args):
             prefix = ""
             is_optional = i >= len_args - len_defaults
@@ -339,6 +346,18 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
                 self.add_argument(*_args, **_kwargs)
+
+            if is_optional:
+                for old_name in deprecated_aliases.get(arg, []):
+                    # ``dest`` is the old name on purpose: ``run`` receives it
+                    # and ``deprecated_params`` emits the deprecation warning.
+                    alias_kwargs = {
+                        **_kwargs,
+                        "dest": old_name,
+                        "default": None,
+                        "help": argparse.SUPPRESS,
+                    }
+                    self.add_argument(f"--{old_name}", **alias_kwargs)
 
         if nb_positional_variable > 1:
             raise ValueError(

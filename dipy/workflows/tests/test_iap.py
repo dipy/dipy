@@ -4,6 +4,8 @@ import sys
 
 import numpy.testing as npt
 
+from dipy.testing import assert_warns
+from dipy.utils.deprecator import ArgsDeprecationWarning, deprecated_params
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.base import (
     IntrospectiveArgumentParser,
@@ -405,3 +407,44 @@ def test_boolean_optional_action_tri_state():
     parser.add_workflow(TriStateFlow())
     parsed = parser.get_flow_args(["dummy.txt", "--flag"])
     assert parsed["flag"] is True
+
+
+def test_deprecated_param_cli_alias():
+    """A renamed parameter keeps its old command line name, hidden from help."""
+
+    class RenamedParamFlow(Workflow):
+        @deprecated_params("out_extension", new_name="extension", since="1.13")
+        def run(self, input_file, *, extension="trx"):
+            """Test a renamed parameter.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            extension : str, optional
+                Extension of the result.
+            """
+            return extension
+
+    flow = RenamedParamFlow()
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    parsed = parser.get_flow_args(["dummy.txt", "--extension", "trk"])
+    npt.assert_equal(parsed["extension"], "trk")
+    assert "out_extension" not in parsed
+
+    # The deprecated name is still accepted and reaches ``run`` under the old
+    # name, so that ``deprecated_params`` can warn about it.
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    parsed = parser.get_flow_args(["dummy.txt", "--out_extension", "trk"])
+    npt.assert_equal(parsed["out_extension"], "trk")
+    assert "extension" not in parsed
+    npt.assert_equal(assert_warns(ArgsDeprecationWarning, flow.run, **parsed), "trk")
+
+    # ... but it is not advertised.
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    assert "--extension" in parser.format_help()
+    assert "out_extension" not in parser.format_help()
