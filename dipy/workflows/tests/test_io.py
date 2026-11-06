@@ -22,6 +22,7 @@ from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true, assert_warns
+from dipy.utils.deprecator import ArgsDeprecationWarning
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 from dipy.workflows.base import _strip_rst_markup, format_key_value_table
@@ -404,30 +405,242 @@ def test_split_flow(tmp_path):
     npt.assert_array_almost_equal(split_affine, affine)
 
 
-def test_concatenate_flow(tmp_path):
-    concatenate_flow = ConcatenateTractogramFlow()
-    data_path, _, _ = get_fnames(name="gold_standard_io")
-    input_files = [
-        v
-        for k, v in data_path.items()
-        if k
-        in [
-            "gs_streamlines.trk",
-            "gs_streamlines.tck",
-            "gs_streamlines.trx",
-            "gs_streamlines.fib",
-        ]
-    ]
-    concatenate_flow.run(*input_files, out_dir=tmp_path)
-    assert_true(
-        str(concatenate_flow.last_generated_outputs["out_extension"]).endswith("trx")
-    )
-    _fname = concatenate_flow.last_generated_outputs["out_tractogram"]
-    _fname = Path(_fname).with_suffix(Path(_fname).suffix + ".trx")
-    assert_true(_fname.is_file())
+def _gold_standard_tractograms():
+    """Two gold standard tractograms, in formats that carry their own header.
 
-    trk = load_tractogram(_fname, "same")
-    npt.assert_equal(len(trk), 13)
+    ``.tck``, ``.fib``, ``.dpy`` and ``.vtk`` need an explicit ``reference``;
+    that path is covered by ``test_concatenate_flow_reference_after_trk``.
+
+    ``tractogram_files`` takes several inputs, so these are passed as one list
+    argument. Spreading them over the signature instead would silently fill
+    ``reference``, ``delete_dpv`` and ``delete_dps``.
+    """
+    data_path, _, _ = get_fnames(name="gold_standard_io")
+    return [
+        str(data_path["gs_streamlines.trk"]),
+        str(data_path["gs_streamlines.trx"]),
+    ]
+
+
+#: Streamlines in each of the gold standard tractograms.
+_STREAMLINES_EACH = 13
+
+
+def _written_output(flow):
+    """Return the one file the flow reports, checking that it was written.
+
+    ``extension`` is not an ``out_`` parameter any more, so a run reports
+    exactly one output, and that output is the file on disk.
+    """
+    outputs = flow.last_generated_outputs
+    npt.assert_equal(sorted(outputs), ["out_tractogram"])
+    fname = Path(outputs["out_tractogram"])
+    assert_true(fname.is_file(), msg=f"{fname} was reported but not written")
+    return fname
+
+
+def test_concatenate_flow(tmp_path):
+    inputs = _gold_standard_tractograms()
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(inputs, out_dir=tmp_path)
+
+    fname = _written_output(concatenate_flow)
+    npt.assert_equal(fname.name, "concatenated_tractogram.trx")
+    npt.assert_equal(
+        len(load_tractogram(fname, "same")), len(inputs) * _STREAMLINES_EACH
+    )
+
+
+def test_concatenate_flow_single_input(tmp_path):
+    inputs = _gold_standard_tractograms()[:1]
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(inputs, out_dir=tmp_path)
+
+    fname = _written_output(concatenate_flow)
+    npt.assert_equal(len(load_tractogram(fname, "same")), _STREAMLINES_EACH)
+
+
+@pytest.mark.parametrize("n_inputs", [1, 2])
+def test_concatenate_flow_writes_one_file_per_run(tmp_path, n_inputs):
+    # The iterator holds one output per input, and all of them stand for the
+    # single file this flow writes. Replacing them must keep that length:
+    # shortening the list raises from ``update_flat_outputs``.
+    out_dir = tmp_path / f"n{n_inputs}"
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(_gold_standard_tractograms()[:n_inputs], out_dir=out_dir)
+
+    npt.assert_equal(len(concatenate_flow.flat_outputs), n_inputs)
+    npt.assert_equal(len(set(map(str, concatenate_flow.flat_outputs))), 1)
+    npt.assert_equal(
+        sorted(path.name for path in out_dir.iterdir()),
+        ["concatenated_tractogram.trx"],
+    )
+
+
+@pytest.mark.parametrize("extension", ["trk", "trx", "tck", "fib", "dpy", "vtk"])
+def test_concatenate_flow_every_valid_extension(tmp_path, extension):
+    out_dir = tmp_path / extension
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(
+        _gold_standard_tractograms(), extension=extension, out_dir=out_dir
+    )
+
+    fname = _written_output(concatenate_flow)
+    npt.assert_equal(fname.name, f"concatenated_tractogram.{extension}")
+    # Nothing else is created: the extension is a setting, not an output path.
+    npt.assert_equal(sorted(path.name for path in out_dir.iterdir()), [fname.name])
+
+
+@pytest.mark.parametrize("extension", ["TRX", "TrX", "trX"])
+def test_concatenate_flow_extension_is_case_insensitive(tmp_path, extension):
+    # The extension is validated case-insensitively, so the file name has to
+    # carry the lower case form that ``save_tractogram`` recognises.
+    out_dir = tmp_path / extension
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(
+        _gold_standard_tractograms(), extension=extension, out_dir=out_dir
+    )
+    npt.assert_equal(
+        _written_output(concatenate_flow).name, "concatenated_tractogram.trx"
+    )
+
+
+@pytest.mark.parametrize("extension", ["nii.gz", ".trx", "", "   ", "txt", "trk.gz"])
+def test_concatenate_flow_rejects_invalid_extensions(tmp_path, extension):
+    out_dir = tmp_path / "invalid"
+    concatenate_flow = ConcatenateTractogramFlow()
+    npt.assert_raises(
+        ValueError,
+        concatenate_flow.run,
+        _gold_standard_tractograms(),
+        extension=extension,
+        out_dir=out_dir,
+    )
+    # Rejected before any output is touched, so the directory is not created.
+    assert_true(not out_dir.exists())
+
+
+def test_concatenate_flow_default_out_dir(tmp_path, monkeypatch):
+    # With the default ``out_dir`` the output lands in the working directory,
+    # not beside the inputs.
+    inputs = _gold_standard_tractograms()
+    monkeypatch.chdir(tmp_path)
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(inputs)
+
+    npt.assert_equal(
+        sorted(path.name for path in tmp_path.iterdir()),
+        ["concatenated_tractogram.trx"],
+    )
+    for source in inputs:
+        npt.assert_equal(
+            list(Path(source).parent.glob("concatenated_tractogram.*")), []
+        )
+
+
+def test_concatenate_flow_mix_names(tmp_path):
+    concatenate_flow = ConcatenateTractogramFlow(mix_names=True)
+    concatenate_flow.run(_gold_standard_tractograms(), out_dir=tmp_path)
+
+    fname = _written_output(concatenate_flow)
+    assert_true(fname.name.endswith("concatenated_tractogram.trx"))
+    assert_true(len(fname.name) > len("concatenated_tractogram.trx"))
+
+
+def test_concatenate_flow_custom_out_tractogram(tmp_path):
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(
+        _gold_standard_tractograms(), out_tractogram="merged", out_dir=tmp_path
+    )
+    npt.assert_equal(_written_output(concatenate_flow).name, "merged.trx")
+
+
+def test_concatenate_flow_extension(tmp_path):
+    inputs = _gold_standard_tractograms()
+
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(inputs, extension="trk", out_dir=tmp_path)
+    npt.assert_equal(
+        _written_output(concatenate_flow).name, "concatenated_tractogram.trk"
+    )
+
+    concatenate_flow = ConcatenateTractogramFlow()
+    npt.assert_raises(
+        ValueError,
+        concatenate_flow.run,
+        inputs,
+        extension="nii.gz",
+        out_dir=tmp_path / "invalid",
+    )
+
+
+def test_concatenate_flow_out_extension_deprecated(tmp_path):
+    concatenate_flow = ConcatenateTractogramFlow()
+    assert_warns(
+        ArgsDeprecationWarning,
+        concatenate_flow.run,
+        _gold_standard_tractograms(),
+        out_extension="trk",
+        out_dir=tmp_path,
+    )
+    npt.assert_equal(
+        _written_output(concatenate_flow).name, "concatenated_tractogram.trk"
+    )
+
+
+def test_concatenate_flow_rejects_both_parameter_names(tmp_path):
+    # ``deprecated_params`` refuses the old and the new name together rather
+    # than silently preferring one of them.
+    concatenate_flow = ConcatenateTractogramFlow()
+    npt.assert_raises(
+        TypeError,
+        concatenate_flow.run,
+        _gold_standard_tractograms(),
+        extension="trk",
+        out_extension="trx",
+        out_dir=tmp_path,
+    )
+
+
+def test_concatenate_flow_overwrite(tmp_path):
+    inputs = _gold_standard_tractograms()
+
+    # The overwrite check has to look at the file that is really written,
+    # ``<out_tractogram>.<extension>``, and not at the extension-less name.
+    # While it guarded the wrong name, an existing output was destroyed
+    # without ``--force``.
+    existing = tmp_path / "concatenated_tractogram.trx"
+    existing.write_bytes(b"not a tractogram")
+
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(inputs, out_dir=tmp_path)
+    npt.assert_equal(existing.read_bytes(), b"not a tractogram")
+
+    concatenate_flow = ConcatenateTractogramFlow(force=True)
+    concatenate_flow.run(inputs, out_dir=tmp_path)
+    npt.assert_equal(
+        len(load_tractogram(existing, "same")), len(inputs) * _STREAMLINES_EACH
+    )
+
+
+@pytest.mark.parametrize("extension", ["trk", "trx"])
+def test_concatenate_flow_overwrite_respects_the_extension(tmp_path, extension):
+    # A file carrying another extension neither blocks the run nor is touched
+    # by it.
+    other = "trx" if extension == "trk" else "trk"
+    bystander = tmp_path / f"concatenated_tractogram.{other}"
+    bystander.write_bytes(b"leave me alone")
+
+    concatenate_flow = ConcatenateTractogramFlow()
+    concatenate_flow.run(
+        _gold_standard_tractograms(), extension=extension, out_dir=tmp_path
+    )
+
+    npt.assert_equal(
+        _written_output(concatenate_flow).name,
+        f"concatenated_tractogram.{extension}",
+    )
+    npt.assert_equal(bystander.read_bytes(), b"leave me alone")
 
 
 def test_concatenate_flow_reference_after_trk(tmp_path):
@@ -440,8 +653,8 @@ def test_concatenate_flow_reference_after_trk(tmp_path):
         delete_dps=True,
         out_dir=tmp_path,
     )
-    _fname = concatenate_flow.last_generated_outputs["out_tractogram"]
-    _fname = Path(_fname).with_suffix(Path(_fname).suffix + ".trx")
+    _fname = Path(concatenate_flow.last_generated_outputs["out_tractogram"])
+    assert_true(_fname.name.endswith(".trx"))
     assert_true(_fname.is_file())
 
     trx = load_tractogram(_fname, "same")

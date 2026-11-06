@@ -56,6 +56,16 @@ class AppendTextFlow(Workflow):
         output. Lastly, all `out_` params needs to be at the end of the params
         list.
 
+        The `out_` prefix is reserved for output paths: every `out_` parameter
+        (except `out_dir`) is turned into an output file path by
+        ``get_io_iterator``, created on disk and checked against the overwrite
+        policy. A parameter that only tunes the output, such as a file
+        extension, a prefix or a data type, is not a path and must therefore
+        not be named with `out_`; name it `extension`, `prefix`, `dtype`, etc.,
+        and keep it before the `out_` params. When renaming such a parameter in
+        an existing workflow, keep the old command line name working with
+        ``@deprecated_params`` (see ``dipy/workflows/io.py``).
+
         The ``run`` docstring is very important, you need to document every
         parameter as they will be used with inspection to build the command line
         argument parser.
