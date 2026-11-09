@@ -1,24 +1,12 @@
-"""Tests for :mod:`dipy.core.gradient_check`.
-
-Verifies that the Aganj-2018 fiber-continuity criterion correctly identifies
-the (permutation, flip) configuration needed to bring a corrupted gradient
-table back into agreement with the image coordinate frame.
-
-The data-driven tests load the Stanford HARDI dataset (or skip if it is not
-available in the user's ``~/.dipy`` cache so the unit test does not perform
-network IO under CI). Multiple corruption configurations are applied and the
-algorithm is expected to recover the inverse transform in every case.
-"""
-
-import os
+"""Tests for :mod:`dipy.core.gradient_check`."""
 
 import numpy as np
 import numpy.testing as npt
 import pytest
+from scipy import ndimage as ndi
+from scipy.spatial import cKDTree
 
 from dipy.core.gradient_check import (
-    _FLIPS,
-    _PERMUTATIONS,
     apply_transform,
     check_gradient_table,
     correct_bvecs,
@@ -27,6 +15,9 @@ from dipy.core.gradient_check import (
     transform_label,
 )
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import HemiSphere, disperse_charges
+from dipy.data import default_sphere
+from dipy.reconst.shm import CsaOdfModel
 
 # CsaOdfModel uses the legacy descoteaux07 SH basis; silence the per-call
 # PendingDeprecationWarning under DIPY_WERRORS=1.
@@ -34,28 +25,80 @@ pytestmark = pytest.mark.filterwarnings(
     "ignore:The legacy descoteaux07 SH basis:PendingDeprecationWarning"
 )
 
+CORRUPTIONS = {
+    "flip_x": ((0, 1, 2), (-1, 1, 1)),
+    "flip_y": ((0, 1, 2), (1, -1, 1)),
+    "flip_z": ((0, 1, 2), (1, 1, -1)),
+    "swap_xy": ((1, 0, 2), (1, 1, 1)),
+    "swap_xy_flip_y": ((1, 0, 2), (1, -1, 1)),
+    "cyclic_flip_z": ((1, 2, 0), (1, 1, -1)),
+}
 
-def _assert_bvecs_equivalent(actual, expected, atol=1e-12):
-    """Two b-vector arrays are equivalent under antipodal symmetry of the ODF.
 
-    The 24-element canonical set used by the verifier excludes the
-    "flip-all-three-axes" transforms (they are equivalent to no flip thanks
-    to ``psi(-n) = psi(n)``). Consequently, when the input gradient table is
-    transformed by a corruption ``C``, the recovered transform ``T_rec`` may
-    pick either ``A o C^-1`` or ``-A o C^-1`` -- whichever lies in the
-    canonical set -- where ``A`` is the algorithm's verdict on the
-    uncorrupted data. Both are equally valid corrections; they differ only
-    by a global sign flip of every b-vector. This helper accepts either.
+def _same_up_to_sign(actual, expected):
+    """b-vectors are defined up to a global sign (antipodal ODF symmetry)."""
+    err = min(np.abs(actual - expected).max(), np.abs(actual + expected).max())
+    return err < 1e-10
+
+
+def _make_phantom(voxel_size=(2.0, 2.0, 2.0), nb_tubes=12, seed=0):
+    """Noisy DWI of curved tubes whose fiber direction follows their tangent.
+
+    Returns the data, the gradient table, the brain mask and the voxel size.
     """
-    actual = np.asarray(actual)
-    expected = np.asarray(expected)
-    err_pos = np.max(np.abs(actual - expected))
-    err_neg = np.max(np.abs(actual + expected))
-    if min(err_pos, err_neg) > atol:
-        raise AssertionError(
-            f"b-vectors differ from expected by more than {atol}: "
-            f"max|a-e|={err_pos:.3e}, max|a+e|={err_neg:.3e}"
+    rng = np.random.default_rng(seed)
+    extent = np.array([60.0, 60.0, 30.0])
+    shape = tuple(np.round(extent / voxel_size).astype(int))
+    axes = [(np.arange(n) + 0.5) * v for n, v in zip(shape, voxel_size)]
+    centers = np.stack(np.meshgrid(*axes, indexing="ij"), axis=-1)
+
+    points, tangents = [], []
+    for _ in range(nb_tubes):
+        direction = rng.normal(size=3)
+        direction /= np.linalg.norm(direction)
+        u = np.cross(direction, rng.normal(size=3))
+        u /= np.linalg.norm(u)
+        w = np.cross(direction, u)
+        s = np.arange(0.0, 70.0, 0.5)
+        amp = rng.uniform(4, 10, 2)
+        freq = rng.uniform(0.05, 0.12, 2)
+        phase = rng.uniform(0, 2 * np.pi, 2)
+        start = extent / 2 + rng.normal(size=3) * extent * 0.15 - direction * 35
+        path = (
+            start
+            + s[:, None] * direction
+            + (amp[0] * np.sin(freq[0] * s + phase[0]))[:, None] * u
+            + (amp[1] * np.sin(freq[1] * s + phase[1]))[:, None] * w
         )
+        tangent = np.gradient(path, axis=0)
+        points.append(path)
+        tangents.append(tangent / np.linalg.norm(tangent, axis=1, keepdims=True))
+    points, tangents = np.concatenate(points), np.concatenate(tangents)
+
+    distance, nearest = cKDTree(points).query(centers.reshape(-1, 3))
+    in_tube = (distance < 3.6).reshape(shape)
+    fibers = np.zeros(shape + (3,))
+    fibers[in_tube] = tangents[nearest][in_tube.reshape(-1)]
+    brain = np.linalg.norm((centers - extent / 2) / (extent / 2 * 0.98), axis=-1) < 1
+
+    hemisphere = HemiSphere(
+        theta=np.arccos(rng.uniform(0, 1, 30)), phi=rng.uniform(0, 2 * np.pi, 30)
+    )
+    hemisphere, _ = disperse_charges(hemisphere, 2000)
+    bvals = np.concatenate([np.zeros(4), np.full(30, 1000.0)])
+    bvecs = np.concatenate([np.zeros((4, 3)), hemisphere.vertices])
+
+    cos = np.einsum("...c,nc->...n", fibers, bvecs)
+    adc = np.where(in_tube[..., None], 0.3e-3 + 1.4e-3 * cos**2, 0.8e-3)
+    clean = 1000.0 * np.exp(-bvals * adc) * brain[..., None]
+    noise = rng.normal(0, 1000.0 / 25, (2,) + clean.shape)
+    data = np.hypot(clean + noise[0], noise[1]).astype(np.float32)
+    return data, gradient_table(bvals, bvecs=bvecs), brain
+
+
+@pytest.fixture(scope="module")
+def phantom():
+    return _make_phantom()
 
 
 def test_apply_transform_identity():
@@ -70,348 +113,110 @@ def test_apply_transform_swap_xy_flip_y():
     npt.assert_allclose(out, [[2.0, -1.0, 3.0]])
 
 
-def test_correct_bvecs_swap_xz():
-    bvecs = np.array(
-        [
-            [0.1, 0.2, 0.3],
-            [-0.4, 0.5, -0.6],
-            [0.0, 0.0, 1.0],
-        ]
-    )
+def test_correct_bvecs():
+    bvecs = np.array([[0.1, 0.2, 0.3], [-0.4, 0.5, -0.6], [0.0, 0.0, 1.0]])
     out = correct_bvecs(bvecs, (2, 1, 0), (1, 1, 1))
-    npt.assert_allclose(out[:, 0], bvecs[:, 2])
-    npt.assert_allclose(out[:, 1], bvecs[:, 1])
-    npt.assert_allclose(out[:, 2], bvecs[:, 0])
-
-
-def test_correct_bvecs_bad_shape():
+    npt.assert_allclose(out, bvecs[:, ::-1])
     npt.assert_raises(ValueError, correct_bvecs, np.zeros(3), (0, 1, 2), (1, 1, 1))
     npt.assert_raises(ValueError, correct_bvecs, np.zeros((4, 2)), (0, 1, 2), (1, 1, 1))
 
 
-def test_canonical_set_has_24_distinct_transforms():
-    # Verify that the 6 perms x 4 flips really yield 24 distinct linear maps.
-    seen = set()
-    e = np.eye(3)
-    for perm in _PERMUTATIONS:
-        for flip in _FLIPS:
-            mat = apply_transform(e, perm, flip)
-            seen.add(tuple(mat.flatten().tolist()))
-    npt.assert_equal(len(seen), 24)
+def test_transform_label():
+    label = transform_label((0, 1, 2), (1, 1, 1))
+    assert "X Y Z" in label and "no flip" in label
+    label = transform_label((1, 0, 2), (1, -1, 1))
+    assert "Y X Z" in label and "flip y" in label
 
 
-def test_transform_label_strings():
-    s = transform_label((0, 1, 2), (1, 1, 1))
-    assert "X Y Z" in s and "no flip" in s
-    s = transform_label((1, 0, 2), (1, -1, 1))
-    assert "Y X Z" in s and "flip y" in s
-
-
-def _stanford_hardi_loaded():
-    """Return True if Stanford HARDI is already cached locally."""
-    home = os.path.join(os.path.expanduser("~"), ".dipy", "stanford_hardi")
-    needed = ["HARDI150.bval", "HARDI150.bvec", "HARDI150.nii.gz"]
-    return all(os.path.exists(os.path.join(home, f)) for f in needed)
-
-
-def _wm_mask_for(
-    data, gtab, brain_mask, sh_order_max=4, adc_threshold=0.0015, gfa_threshold=0.4
-):
-    """Mean-ADC + GFA white-matter mask, restricted to ``brain_mask``."""
-    from dipy.reconst.shm import CsaOdfModel
-
-    csa = CsaOdfModel(gtab, sh_order_max=sh_order_max)
-    fit = csa.fit(data, mask=brain_mask)
-    gfa = np.nan_to_num(fit.gfa, nan=0.0, posinf=0.0, neginf=0.0)
-
-    b0_mask = gtab.b0s_mask
-    s0 = data[..., b0_mask].mean(axis=-1)
-    sd = data[..., ~b0_mask]
-    bvals_dwi = gtab.bvals[~b0_mask]
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(s0[..., None] > 0, sd / s0[..., None], 0.0)
-        ratio = np.clip(ratio, 1e-8, None)
-        adc_per_dir = -np.log(ratio) / bvals_dwi[None, None, None, :]
-    mean_adc = np.nan_to_num(adc_per_dir.mean(axis=-1), nan=np.inf)
-
-    return (
-        brain_mask & (mean_adc < adc_threshold) & (mean_adc > 0) & (gfa > gfa_threshold)
-    )
-
-
-@pytest.fixture(scope="module")
-def stanford_hardi_cropped():
-    """Load Stanford HARDI cropped tightly around the brain to keep tests fast."""
-    if not _stanford_hardi_loaded():
-        pytest.skip(
-            "Stanford HARDI not present in ~/.dipy. "
-            "Run `dipy.data.fetch_stanford_hardi()` first."
-        )
-
-    from dipy.io.gradients import read_bvals_bvecs
-    from dipy.io.image import load_nifti
-    from dipy.segment.mask import median_otsu
-
-    home = os.path.join(os.path.expanduser("~"), ".dipy", "stanford_hardi")
-    data, _ = load_nifti(os.path.join(home, "HARDI150.nii.gz"))
-    data = data.astype(np.float32)
-    bvals, bvecs = read_bvals_bvecs(
-        os.path.join(home, "HARDI150.bval"),
-        os.path.join(home, "HARDI150.bvec"),
-    )
-    gtab = gradient_table(bvals, bvecs=bvecs)
-
-    # The Stanford HARDI fetch does not ship a brain mask; compute one with
-    # median_otsu over a representative DWI volume range.
-    _, brain = median_otsu(data, vol_idx=range(10, 50), median_radius=4, numpass=4)
-
-    # Crop tightly to the brain so the spatial-gradient computation is cheap.
-    coords = np.where(brain)
-    sx = slice(coords[0].min(), coords[0].max() + 1)
-    sy = slice(coords[1].min(), coords[1].max() + 1)
-    sz = slice(coords[2].min(), coords[2].max() + 1)
-    data = data[sx, sy, sz]
-    brain = brain[sx, sy, sz]
-
-    wm_mask = _wm_mask_for(data, gtab, brain)
-    return data, gtab, wm_mask
-
-
-@pytest.mark.parametrize(
-    "corrupt_perm, corrupt_flip",
-    [
-        ((0, 1, 2), (-1, 1, 1)),  # flip x
-        ((0, 1, 2), (1, -1, 1)),  # flip y
-        ((1, 0, 2), (1, -1, 1)),  # swap x,y then flip y (Aarhus-style)
-        ((2, 1, 0), (1, 1, 1)),  # swap x,z (no flip)
-        ((1, 2, 0), (1, 1, -1)),  # cyclic perm + flip z
-    ],
-)
-def test_recover_corruption_stanford_hardi(
-    stanford_hardi_cropped, corrupt_perm, corrupt_flip
-):
-    """Algorithm must recover the inverse of every corruption applied to the bvecs."""
-    data, gtab, wm_mask = stanford_hardi_cropped
-
-    # Establish the algorithm's verdict on the *original* gradient table; this
-    # is the canonical reference frame the algorithm has converged on for this
-    # dataset (with Stanford HARDI it is the identity transform).
-    perm0, flip0 = check_gradient_table(data, gtab, mask=wm_mask, sh_order_max=4)
-    canonical_bvecs = correct_bvecs(gtab.bvecs, perm0, flip0)
-
-    # Corrupt the gradient table.
-    bvecs_corr = apply_transform(gtab.bvecs, corrupt_perm, corrupt_flip)
-    gtab_corr = gradient_table(
-        gtab.bvals, bvecs=bvecs_corr, b0_threshold=gtab.b0_threshold
-    )
-
-    # Run the verifier on the corrupted gradient table.
-    perm_rec, flip_rec = check_gradient_table(
-        data, gtab_corr, mask=wm_mask, sh_order_max=4
-    )
-
-    recovered_bvecs = correct_bvecs(bvecs_corr, perm_rec, flip_rec)
-    _assert_bvecs_equivalent(recovered_bvecs, canonical_bvecs)
-
-
-def test_correct_gradient_table_returns_aligned_table(stanford_hardi_cropped):
-    """``correct_gradient_table`` should hand back a usable, corrected GradientTable."""
-    data, gtab, wm_mask = stanford_hardi_cropped
-
-    # Corrupt with [Z Y X], flip y.
-    corrupt_perm = (2, 1, 0)
-    corrupt_flip = (1, -1, 1)
-    bvecs_corr = apply_transform(gtab.bvecs, corrupt_perm, corrupt_flip)
-    gtab_corr = gradient_table(
-        gtab.bvals, bvecs=bvecs_corr, b0_threshold=gtab.b0_threshold
-    )
-
-    gtab_fixed, perm, flip = correct_gradient_table(
-        data, gtab_corr, mask=wm_mask, sh_order_max=4
-    )
-
-    # b-values are untouched.
-    npt.assert_allclose(gtab_fixed.bvals, gtab.bvals)
-
-    # The corrected table should map back to the canonical bvecs.
-    perm0, flip0 = check_gradient_table(data, gtab, mask=wm_mask, sh_order_max=4)
-    canonical = correct_bvecs(gtab.bvecs, perm0, flip0)
-    _assert_bvecs_equivalent(gtab_fixed.bvecs, canonical)
-
-
-def test_fiber_continuity_error_returns_24_entries(stanford_hardi_cropped):
-    data, gtab, wm_mask = stanford_hardi_cropped
-    errors = fiber_continuity_error(data, gtab, mask=wm_mask, sh_order_max=4)
+def test_fiber_continuity_error_keys(phantom):
+    data, gtab, brain = phantom
+    errors = fiber_continuity_error(data, gtab, brain_mask=brain)
     npt.assert_equal(len(errors), 24)
-    for key, val in errors.items():
-        assert isinstance(key, tuple) and len(key) == 2
-        assert val >= 0.0
+    npt.assert_equal(
+        len({tuple(map(tuple, apply_transform(np.eye(3), *k))) for k in errors}), 24
+    )
+    assert all(value >= 0 for value in errors.values())
 
 
-def test_check_gradient_table_validates_inputs():
-    bvals = np.array([0, 1000, 1000, 1000])
-    bvecs = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
-    gtab = gradient_table(bvals, bvecs=bvecs)
-    npt.assert_raises(ValueError, check_gradient_table, np.zeros((3, 4, 5)), gtab)
+def test_fiber_continuity_error_matches_sphere_integration(phantom):
+    # The accumulated-tensor score must equal the direct integration of
+    # ``(T n . grad psi)^2`` over the sphere vertices of the ODF volume.
+    data, gtab, brain = phantom
+    mask = np.zeros(brain.shape, dtype=bool)
+    mask[10:20, 8:22, 5:10] = True
+    mask &= brain
+
+    odf = CsaOdfModel(gtab, sh_order_max=4).fit(data, mask=brain).odf(default_sphere)
+    gradient = np.stack(np.gradient(odf, axis=(0, 1, 2)), axis=-1)[mask]
+    errors = fiber_continuity_error(data, gtab, mask=mask, brain_mask=brain)
+    for (perm, flip), value in errors.items():
+        rotated = apply_transform(default_sphere.vertices, perm, flip)
+        expected = np.sum(np.einsum("vmd,md->vm", gradient, rotated) ** 2)
+        npt.assert_allclose(value, expected, rtol=1e-3)
 
 
-def _make_phantom(brain_shape=(8, 8, 8), border=2, n_dirs=30, seed=0):
-    """Synthetic DWI volume: anisotropic "brain" cube embedded in a zero border.
+@pytest.mark.parametrize("name", CORRUPTIONS)
+def test_check_gradient_table_recovers_corruption(phantom, name):
+    data, gtab, brain = phantom
+    npt.assert_equal(
+        check_gradient_table(data, gtab, brain_mask=brain), ((0, 1, 2), (1, 1, 1))
+    )
 
-    Half the brain slices along z have a fiber along the image x axis, the
-    other half along the image y axis (both in-plane with the z-boundary
-    so the identity transform is a valid minimum). The zero border lets
-    :func:`dipy.segment.mask.median_otsu` find a foreground region during
-    default-mask construction.
-    """
-    rng = np.random.default_rng(seed)
-    raw = rng.standard_normal((n_dirs, 3))
-    raw /= np.linalg.norm(raw, axis=1, keepdims=True)
-    bvecs = np.vstack([[0.0, 0.0, 0.0], raw])
-    bvals = np.concatenate([[0.0], np.full(n_dirs, 1000.0)])
-    gtab = gradient_table(bvals, bvecs=bvecs)
-
-    d_par, d_perp = 1.7e-3, 0.2e-3
-    s0 = 1000.0
-    shape = tuple(s + 2 * border for s in brain_shape)
-    data = np.zeros(shape + (len(bvals),), dtype=np.float32)
-    bx = slice(border, border + brain_shape[0])
-    by = slice(border, border + brain_shape[1])
-    data[bx, by, :, 0] = 0.0  # background b0 stays 0
-    for k in range(border, border + brain_shape[2]):
-        data[bx, by, k, 0] = s0
-        fiber_axis = 0 if k < border + brain_shape[2] // 2 else 1
-        for vol_idx in range(1, len(bvals)):
-            n = raw[vol_idx - 1]
-            adc = d_perp + (d_par - d_perp) * n[fiber_axis] ** 2
-            data[bx, by, k, vol_idx] = s0 * np.exp(-1000.0 * adc)
-    return data, gtab
+    bvecs = apply_transform(gtab.bvecs, *CORRUPTIONS[name])
+    corrupted = gradient_table(gtab.bvals, bvecs=bvecs)
+    perm, flip = check_gradient_table(data, corrupted, brain_mask=brain)
+    assert _same_up_to_sign(correct_bvecs(bvecs, perm, flip), gtab.bvecs)
 
 
-def test_check_gradient_table_synthetic_returns_valid_pick():
-    """Full pipeline on a phantom returns a transform in the canonical set."""
-    data, gtab = _make_phantom()
-    mask = np.ones(data.shape[:3], dtype=bool)
-    perm, flip = check_gradient_table(data, gtab, mask=mask, sh_order_max=2)
-    assert perm in _PERMUTATIONS
-    assert flip in _FLIPS
+def test_check_gradient_table_default_masks(phantom):
+    data, gtab, _ = phantom
+    bvecs = apply_transform(gtab.bvecs, *CORRUPTIONS["swap_xy_flip_y"])
+    corrupted = gradient_table(gtab.bvals, bvecs=bvecs)
+    perm, flip = check_gradient_table(data, corrupted)
+    assert _same_up_to_sign(correct_bvecs(bvecs, perm, flip), gtab.bvecs)
 
 
-def test_make_default_mask_full_body_on_phantom():
-    """Exercise _make_default_mask end-to-end with relaxed median_otsu params.
-
-    The production defaults (``median_radius=4, numpass=4``) erode the small
-    synthetic phantom to nothing; passing ``1, 1`` lets the brain step
-    survive while still exercising every line of the function.
-    """
-    from dipy.core.gradient_check import _make_default_mask
-    from dipy.reconst.shm import CsaOdfModel
-
-    data, gtab = _make_phantom()
-    fit = CsaOdfModel(gtab, sh_order_max=2).fit(data)
-    mask = _make_default_mask(data, gtab, fit, median_radius=1, numpass=1)
-    assert mask.dtype == bool
-    assert mask.shape == data.shape[:3]
-    assert mask.any()
+def test_fiber_continuity_error_ignores_brain_boundary(phantom):
+    # Voxels next to the fitted region would need unfitted neighbors for the
+    # spatial gradient, so they must not contribute to the score.
+    data, gtab, brain = phantom
+    whole = fiber_continuity_error(data, gtab, mask=brain, brain_mask=brain)
+    interior = fiber_continuity_error(
+        data, gtab, mask=ndi.binary_erosion(brain), brain_mask=brain
+    )
+    for key, value in whole.items():
+        npt.assert_allclose(value, interior[key])
 
 
-def test_make_default_mask_with_provided_brain_mask():
-    """When ``brain_mask`` is supplied, median_otsu is skipped."""
-    from dipy.core.gradient_check import _make_default_mask
-    from dipy.reconst.shm import CsaOdfModel
-
-    data, gtab = _make_phantom()
-    brain = data[..., 0] > 0
-    fit = CsaOdfModel(gtab, sh_order_max=2).fit(data, mask=brain)
-    mask = _make_default_mask(data, gtab, fit, brain_mask=brain)
-    assert mask.dtype == bool
-    assert mask.shape == brain.shape
-    # The WM mask must be contained inside the brain.
-    assert not mask[~brain].any()
-
-
-def test_check_gradient_table_brain_mask_kwarg():
-    """``brain_mask=`` limits the CSA fit and still returns a valid pick."""
-    data, gtab = _make_phantom()
-    brain = data[..., 0] > 0
+def test_check_gradient_table_anisotropic_voxels():
+    voxel_size = (1.5, 1.5, 3.0)
+    data, gtab, brain = _make_phantom(voxel_size=voxel_size, seed=1)
+    bvecs = apply_transform(gtab.bvecs, *CORRUPTIONS["cyclic_flip_z"])
+    corrupted = gradient_table(gtab.bvals, bvecs=bvecs)
     perm, flip = check_gradient_table(
-        data, gtab, mask=brain, brain_mask=brain, sh_order_max=2
+        data, corrupted, brain_mask=brain, voxel_size=voxel_size
     )
-    assert perm in _PERMUTATIONS and flip in _FLIPS
+    assert _same_up_to_sign(correct_bvecs(bvecs, perm, flip), gtab.bvecs)
 
 
-def test_correct_gradient_table_identity_returns_input_object(monkeypatch):
-    """Identity short-circuit must hand back the same GradientTable object."""
-    from dipy.core import gradient_check as gc
+def test_correct_gradient_table(phantom):
+    data, gtab, brain = phantom
+    same, perm, flip = correct_gradient_table(data, gtab, brain_mask=brain)
+    assert same is gtab
+    npt.assert_equal((perm, flip), ((0, 1, 2), (1, 1, 1)))
 
-    data, gtab = _make_phantom()
-    mask = np.ones(data.shape[:3], dtype=bool)
-    monkeypatch.setattr(
-        gc, "check_gradient_table", lambda *_args, **_kwargs: ((0, 1, 2), (1, 1, 1))
-    )
-    gtab_out, perm, flip = gc.correct_gradient_table(
-        data, gtab, mask=mask, sh_order_max=2
-    )
-    assert gtab_out is gtab
-    npt.assert_equal(perm, (0, 1, 2))
-    npt.assert_equal(flip, (1, 1, 1))
+    bvecs = apply_transform(gtab.bvecs, *CORRUPTIONS["swap_xy_flip_y"])
+    corrupted = gradient_table(gtab.bvals, bvecs=bvecs)
+    fixed, _, _ = correct_gradient_table(data, corrupted, brain_mask=brain)
+    npt.assert_allclose(fixed.bvals, gtab.bvals)
+    assert _same_up_to_sign(fixed.bvecs, gtab.bvecs)
 
 
-def test_correct_gradient_table_non_identity_rebuilds(monkeypatch):
-    """Non-identity result rebuilds the GradientTable with transformed bvecs."""
-    from dipy.core import gradient_check as gc
-
-    data, gtab = _make_phantom()
-    mask = np.ones(data.shape[:3], dtype=bool)
-    monkeypatch.setattr(
-        gc, "check_gradient_table", lambda *_args, **_kwargs: ((1, 0, 2), (1, -1, 1))
-    )
-    gtab_out, perm, flip = gc.correct_gradient_table(
-        data, gtab, mask=mask, sh_order_max=2
-    )
-    assert gtab_out is not gtab
-    npt.assert_equal(perm, (1, 0, 2))
-    npt.assert_equal(flip, (1, -1, 1))
-    expected_bvecs = apply_transform(gtab.bvecs, (1, 0, 2), (1, -1, 1))
-    npt.assert_allclose(gtab_out.bvecs, expected_bvecs)
-    npt.assert_allclose(gtab_out.bvals, gtab.bvals)
-
-
-def test_fiber_continuity_error_empty_mask_raises():
-    data, gtab = _make_phantom()
-    empty = np.zeros(data.shape[:3], dtype=bool)
+def test_fiber_continuity_error_invalid_input(phantom):
+    data, gtab, brain = phantom
+    npt.assert_raises(ValueError, fiber_continuity_error, data[..., 0], gtab)
+    empty = np.zeros(brain.shape, dtype=bool)
     npt.assert_raises(
-        ValueError, fiber_continuity_error, data, gtab, mask=empty, sh_order_max=2
+        ValueError, fiber_continuity_error, data, gtab, mask=empty, brain_mask=brain
     )
-
-
-def test_fiber_continuity_error_voxel_size_branch():
-    """Non-default voxel_size must still produce 24 finite scores."""
-    data, gtab = _make_phantom()
-    mask = np.ones(data.shape[:3], dtype=bool)
-    errors = fiber_continuity_error(
-        data, gtab, mask=mask, sh_order_max=2, voxel_size=(2.0, 2.0, 2.0)
-    )
-    npt.assert_equal(len(errors), 24)
-    for val in errors.values():
-        assert val >= 0.0
-
-
-def test_default_mask_requires_b0_and_dwi():
-    """_make_default_mask raises when the gradient table is degenerate."""
-    from dipy.core.gradient_check import _make_default_mask
-
-    # All-b0 gradient table -> no DWI volumes.
-    bvals = np.zeros(4)
-    bvecs = np.zeros((4, 3))
-    gtab = gradient_table(bvals, bvecs=bvecs)
-    data = np.ones((3, 3, 3, 4), dtype=np.float32)
-    # The fit argument is unused on the validation branch; pass None.
-    npt.assert_raises(ValueError, _make_default_mask, data, gtab, None)
-
-    # No-b0 gradient table.
-    bvals = np.full(4, 1000.0)
-    bvecs = np.eye(3)
-    bvecs = np.vstack([bvecs, [1.0, 0.0, 0.0]])
-    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
-    npt.assert_raises(ValueError, _make_default_mask, data, gtab, None)
+    npt.assert_raises(ValueError, fiber_continuity_error, data, gtab, gfa_threshold=1.1)

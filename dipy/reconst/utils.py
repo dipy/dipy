@@ -331,8 +331,8 @@ def compute_coherence_table_for_gradient_transforms(
     """Compute fiber coherence indexes for gradient table orientation variations.
 
     This function explores potential gradient table orientation errors by
-    computing coherence across 24 possible permutations and flips of the
-    original gradient directions. See :footcite:p:`Schilling2019b`.
+    computing coherence across up to 24 possible permutations and flips of
+    the original gradient directions. See :footcite:p:`Schilling2019b`.
 
     Parameters
     ----------
@@ -342,33 +342,38 @@ def compute_coherence_table_for_gradient_transforms(
         Anisotropy measure for each voxel (e.g. FA map), shape should match
         ``fiber_orientations.shape[:-1]``
     nb_flips : int, optional
-        Number of flips to consider for each permutation.
+        Number of flip variants per permutation, including the no-flip
+        variant. Must be between 1 and 4.
     angle_threshold : float, optional
         Maximum angle in radians for considering directions coherent.
 
     Returns
     -------
     coherence_values : list of float
-        Coherence value for each of the 24 transforms.
+        Coherence value for each transform.
     transforms : list of ndarray
-        List of (3, 3) transformation matrices corresponding to each entry in
-        ``coherence_values``.
+        List of ``6 * nb_flips`` transformation matrices of shape (3, 3),
+        corresponding to each entry in ``coherence_values``.
 
     References
     ----------
     .. footbibliography::
 
     """
+    if not isinstance(nb_flips, (int, np.integer)) or not 1 <= nb_flips <= 4:
+        raise ValueError("`nb_flips` must be an integer between 1 and 4.")
+
     permutations = list(itertools.permutations([0, 1, 2]))
     nb_transforms = len(permutations) * nb_flips
     transforms = np.zeros((nb_transforms, 3, 3), dtype=np.float32)
 
     for i, perm in enumerate(permutations):
-        transforms[i * nb_flips][np.arange(3), perm] = 1.0
-        for axis in range(3):
-            flip_transform = transforms[i * nb_flips].copy()
-            flip_transform[axis, axis] *= -1
-            transforms[i * nb_flips + axis + 1] = flip_transform
+        base_idx = i * nb_flips
+        transforms[base_idx][np.arange(3), perm] = 1.0
+        for axis in range(nb_flips - 1):
+            flip_transform = transforms[base_idx].copy()
+            flip_transform[axis, :] *= -1
+            transforms[base_idx + axis + 1] = flip_transform
 
     ndims = len(fiber_orientations.shape) - 1
     neighbor_offsets = np.array(

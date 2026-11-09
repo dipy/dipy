@@ -105,7 +105,7 @@ def test_convert_tensor():
     npt.assert_raises(ValueError, convert_tensors, tensor, "dipy", "amico")
 
 
-def test_transform_table_dimensions():
+def test_gradient_transform_table():
     peaks = np.zeros((3, 3, 5, 3), dtype=float)
     fa = np.zeros((3, 3, 5), dtype=float)
 
@@ -114,6 +114,52 @@ def test_transform_table_dimensions():
     npt.assert_equal(len(coherence), 24)
     npt.assert_equal(len(transforms), 24)
     npt.assert_equal(all(t.shape == (3, 3) for t in transforms), True)
+    npt.assert_equal(len({tuple(t.ravel()) for t in transforms}), 24)
+    for transform in transforms:
+        npt.assert_allclose(transform @ transform.T, np.eye(3))
+
+
+def test_gradient_transform_table_nb_flips():
+    peaks = np.zeros((3, 3, 5, 3), dtype=float)
+    fa = np.zeros((3, 3, 5), dtype=float)
+
+    for nb_flips in range(1, 5):
+        coherence, transforms = compute_coherence_table_for_gradient_transforms(
+            peaks, fa, nb_flips=nb_flips
+        )
+        expected_size = 6 * nb_flips
+        npt.assert_equal(len(coherence), expected_size)
+        npt.assert_equal(len(transforms), expected_size)
+        npt.assert_equal(len({tuple(t.ravel()) for t in transforms}), expected_size)
+
+    for nb_flips in (0, 5, 1.5):
+        npt.assert_raises(
+            ValueError,
+            compute_coherence_table_for_gradient_transforms,
+            peaks,
+            fa,
+            nb_flips=nb_flips,
+        )
+
+
+def test_gradient_transform_table_permutation_then_flip():
+    peaks = np.zeros((3, 3, 5, 3), dtype=float)
+    fa = np.zeros((3, 3, 5), dtype=float)
+
+    _, transforms = compute_coherence_table_for_gradient_transforms(peaks, fa)
+
+    # The third permutation is [Y, X, Z]. Its four variants must flip the
+    # output axes after permutation, not diagonal entries of the matrix.
+    expected = np.array(
+        [
+            [[0, 1, 0], [1, 0, 0], [0, 0, 1]],
+            [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+            [[0, 1, 0], [-1, 0, 0], [0, 0, 1]],
+            [[0, 1, 0], [1, 0, 0], [0, 0, -1]],
+        ],
+        dtype=np.float32,
+    )
+    npt.assert_array_equal(transforms[8:12], expected)
 
 
 def test_aligned_fibers_coherence():
