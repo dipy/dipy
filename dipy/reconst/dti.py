@@ -1009,13 +1009,10 @@ class TensorFit:
 
     @auto_attr
     def na(self):
-        """Norm of anisotropy (NA) of the tensor.
-
-        Computed from the cached eigenvalues, which is equivalent to
-        :func:`norm_anisotropy` applied to the quadratic form.
         """
-        evals = self.evals
-        return np.sqrt(np.sum((evals - evals.mean(-1, keepdims=True)) ** 2, -1))
+        Norm of anisotropy (NA) calculated from the tensor quadratic form.
+        """
+        return norm_anisotropy(self.quadratic_form)
 
     @auto_attr
     def md(self):
