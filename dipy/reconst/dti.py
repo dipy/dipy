@@ -1914,6 +1914,10 @@ def nlls_fit_tensor(
     init_params : array ([X, Y, Z, ...], Npar), optional
         Parameters in lower triangular form as initial optimization guess.
 
+    cholesky : bool, optional
+        If True, use a Cholesky parameterization for fitting the tensor.
+        Default: False.
+
     Returns
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
