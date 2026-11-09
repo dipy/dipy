@@ -167,10 +167,10 @@ show_manager.start()
 # specialized metrics, such as the determinant and the norm. Note that the
 # module functions differ in their input: ``determinant``, ``norm``,
 # ``isotropic``, ``deviatoric``, ``norm_anisotropy`` and ``mode`` take the
-# quadratic form :math:`\mathbf{D}` of the tensor (``tenfit.quadratic_form``), while
-# ``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the so-called Westin
-# measures (see above) take its eigenvalues (``tenfit.evals``). The ``TensorFit`` properties
-# pass the right input for you.
+# quadratic form :math:`\mathbf{D}` of the tensor (``tenfit.quadratic_form``),
+# while ``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the
+# so-called Westin measures (see above) take its eigenvalues (``tenfit.evals``).
+# The ``TensorFit`` properties pass the right input for you.
 #
 # The determinant is the product of the eigenvalues. It is proportional to the
 # volume of the diffusion ellipsoid:
@@ -277,7 +277,7 @@ MO = tenfit.mode
 # Each scalar metric is a volume, so it is usually read as a map of the brain.
 # ``compare_maps`` shows one slice of several maps in gray levels. It needs a fit
 # of a single slice, so we fit the slice that holds the ellipsoids above, this
-# time inside the brain mask. AD, RD and MD share one intensity range, so their
+# time inside the brain mask. AD and RD share one intensity range, so their
 # panels can be compared directly.
 
 slice_fit = tenmodel.fit(maskdata[:, :, 28:29], mask=mask[:, :, 28:29])
@@ -305,7 +305,7 @@ compare_maps(
     ["md", "na"],
     fit_labels=[""],
     map_labels=["MD", "NA"],
-    map_kwargs=[diffusivity_range, {"vmin": 0, "vmax": 1e-3}],
+    map_kwargs=[diffusivity_range, {"vmin": 0, "vmax": 1.5e-3}],
     filename="tensor_maps_md_na.png",
 )
 
