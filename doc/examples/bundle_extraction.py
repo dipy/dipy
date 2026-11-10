@@ -45,12 +45,13 @@ target_header = create_tractogram_header(target_file, *sft_target.space_attribut
 ###############################################################################
 # let's visualize atlas tractogram and target tractogram before registration
 
-# Setting interactive=True opens a FURY window instead of only saving the image.
+# interactive=True opens a FURY window besides saving the image; use
+# interactive=False to only save it.
 show_bundles(
     [atlas, target],
     colors=[(1, 0, 1), (1, 1, 0)],
     view="axial",
-    interactive=False,
+    interactive=True,
     save_as="tractograms_initial.png",
 )
 
@@ -86,7 +87,7 @@ show_bundles(
     [atlas, moved],
     colors=[(1, 0, 1), (1, 1, 0)],
     view="axial",
-    interactive=False,
+    interactive=True,
     save_as="tractograms_after_registration.png",
 )
 
@@ -142,7 +143,7 @@ model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 sft_af_l = load_tractogram(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
-show_bundles([model_af_l], interactive=False, save_as="AF_L_model_bundle.png")
+show_bundles([model_af_l], interactive=True, save_as="AF_L_model_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -164,7 +165,7 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle
 
-show_bundles([recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle.png")
+show_bundles([recognized_af_l], interactive=True, save_as="AF_L_recognized_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -201,9 +202,7 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
 
-show_bundles(
-    [recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle2.png"
-)
+show_bundles([recognized_af_l], interactive=True, save_as="AF_L_recognized_bundle2.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -240,9 +239,7 @@ recognized_af_l, af_l_labels = rb.recognize(
 ###############################################################################
 # let's visualize extracted Arcuate Fasciculus Left bundle.
 
-show_bundles(
-    [recognized_af_l], interactive=False, save_as="AF_L_recognized_bundle3.png"
-)
+show_bundles([recognized_af_l], interactive=True, save_as="AF_L_recognized_bundle3.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -287,7 +284,7 @@ r_recognized_af_l, r_af_l_labels = rb.refine(
 
 show_bundles(
     [r_recognized_af_l],
-    interactive=False,
+    interactive=True,
     save_as="AF_L_refine_recognized_bundle.png",
 )
 
@@ -317,7 +314,7 @@ save_tractogram(reco_af_l, "AF_L_org_refine.trx", bbox_valid_check=False)
 sft_cst_l = load_tractogram(model_cst_l_file, "same", bbox_valid_check=False)
 model_cst_l = sft_cst_l.streamlines
 
-show_bundles([model_cst_l], interactive=False, save_as="CST_L_model_bundle.png")
+show_bundles([model_cst_l], interactive=True, save_as="CST_L_model_bundle.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -338,7 +335,7 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 # let's visualize extracted Corticospinal tract Left bundle
 
 show_bundles(
-    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle.png"
+    [recognized_cst_l], interactive=True, save_as="CST_L_recognized_bundle.png"
 )
 
 ###############################################################################
@@ -378,7 +375,7 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 # let's visualize extracted Corticospinal tract Left bundle.
 
 show_bundles(
-    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle2.png"
+    [recognized_cst_l], interactive=True, save_as="CST_L_recognized_bundle2.png"
 )
 
 ###############################################################################
@@ -417,7 +414,7 @@ recognized_cst_l, cst_l_labels = rb.recognize(
 # let's visualize extracted Corticospinal tract Left bundle.
 
 show_bundles(
-    [recognized_cst_l], interactive=False, save_as="CST_L_recognized_bundle3.png"
+    [recognized_cst_l], interactive=True, save_as="CST_L_recognized_bundle3.png"
 )
 
 ###############################################################################
@@ -464,7 +461,7 @@ r_recognized_cst_l, r_cst_l_labels = rb.refine(
 
 show_bundles(
     [r_recognized_cst_l],
-    interactive=False,
+    interactive=True,
     save_as="CST_L_refine_recognized_bundle.png",
 )
 

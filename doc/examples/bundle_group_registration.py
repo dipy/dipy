@@ -62,7 +62,7 @@ colors = [
 ]
 
 show_bundles(
-    bundles, interactive=False, colors=colors, save_as="before_group_registration.png"
+    bundles, interactive=True, colors=colors, save_as="before_group_registration.png"
 )
 
 ###############################################################################
@@ -83,7 +83,7 @@ bundles_reg, aff, d = groupwise_slr(bundles, verbose=True)
 
 show_bundles(
     bundles_reg,
-    interactive=False,
+    interactive=True,
     colors=colors,
     save_as="after_group_registration.png",
 )
