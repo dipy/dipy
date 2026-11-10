@@ -36,7 +36,7 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
+    data, vol_idx=range(10, 50), median_radius=4, numpass=4, dilate=2
 )
 mins, maxs = bounding_box(mask)
 maskdata = crop(maskdata, mins, maxs)
@@ -140,7 +140,7 @@ sphericity = tenfit.sphericity
 # linear, green ellipsoids are planar and blue ellipsoids are spherical. We scale
 # each voxel by its largest channel, because sphericity is otherwise dominant.
 
-roi = (slice(13, 43), slice(44, 74), slice(28, 29))
+roi = (slice(13, 43), slice(42, 72), slice(26, 27))
 evals = tenfit.evals[roi]
 evecs = tenfit.evecs[roi]
 
@@ -280,7 +280,7 @@ MO = tenfit.mode
 # time inside the brain mask. AD and RD share one intensity range, so their
 # panels can be compared directly.
 
-slice_fit = tenmodel.fit(maskdata[:, :, 28:29], mask=mask[:, :, 28:29])
+slice_fit = tenmodel.fit(maskdata[:, :, 26:27], mask=mask[:, :, 26:27])
 
 diffusivity_range = {"vmin": 0, "vmax": 2.5e-3}
 compare_maps(
