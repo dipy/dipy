@@ -3,7 +3,12 @@ import numpy as np
 from numpy.testing import assert_, assert_almost_equal, assert_equal, assert_raises
 import pytest
 
-from dipy.align.reslice import _lanczos_kernel, isotropic_voxel_size, reslice
+from dipy.align.reslice import (
+    _lanczos_kernel,
+    _lanczos_resample_1d_axis0,
+    isotropic_voxel_size,
+    reslice,
+)
 from dipy.data import get_fnames
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.io.image import load_nifti
@@ -217,3 +222,27 @@ def test_reslice_positional_new_zooms_warns():
         data2, _ = reslice(data, affine, (1.0, 1.0, 3.0), (2.0, 2.0, 2.0))
     expected, _ = reslice(data, affine, (1.0, 1.0, 3.0), new_zooms=(2.0, 2.0, 2.0))
     assert_almost_equal(data2, expected)
+
+
+def test_lanczos_resample_1d_axis0_reflect_duplicates_edge():
+    """scipy defines two distinct named boundary modes: 'reflect'
+    (half-sample symmetric, edge sample duplicated, period 2*n) and
+    'mirror' (whole-sample symmetric, edge sample not duplicated, period
+    2*(n - 1)). The lanczos resampler only exposes 'reflect' (and
+    explicitly rejects 'mirror'), so a sample taken just past the edge
+    must duplicate the edge value, not the mirror convention's
+    second-to-last value.
+
+    Resampling [10, 20, 30, 40] with scale=1.0 up to 6 output samples puts
+    an output tap exactly on input coordinate 4.0 (one past the last
+    valid index, 3). The Lanczos kernel is exactly 1 at its center and 0
+    at every other integer offset, so this tap's value is determined
+    entirely by which index the boundary mode maps coordinate 4 to:
+    reflect must give data[3] (= 40, the duplicated edge); the 'mirror'
+    formula this regressed to would instead give data[2] (= 30).
+    """
+    data = np.array([10.0, 20.0, 30.0, 40.0])
+    out = _lanczos_resample_1d_axis0(data, scale=1.0, out_size=6, mode="reflect")
+    assert_almost_equal(out[:4], data)
+    assert_almost_equal(out[4], 40.0)
+    assert_almost_equal(out[5], 30.0)

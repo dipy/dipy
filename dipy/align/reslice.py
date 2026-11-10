@@ -82,9 +82,14 @@ def _lanczos_resample_1d_axis0(
         if mode == "wrap":
             sample = data[np.mod(neigh, in_size)]
         elif mode == "reflect":
-            period = 2 * (in_size - 1) if in_size > 1 else 1
+            # Half-sample symmetric (scipy's actual 'reflect': edge sample
+            # duplicated, period 2*in_size), not 'mirror' (whole-sample
+            # symmetric, period 2*(in_size - 1), edge sample not
+            # duplicated) -- the two are distinct named scipy boundary
+            # modes and this branch is exposed to callers as "reflect".
+            period = 2 * in_size if in_size > 1 else 1
             idx = np.mod(neigh, period)
-            idx = np.where(idx >= in_size, period - idx, idx)
+            idx = np.where(idx >= in_size, period - 1 - idx, idx)
             sample = data[idx]
         else:
             sample = data[np.clip(neigh, 0, in_size - 1)]
