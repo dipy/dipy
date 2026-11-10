@@ -593,7 +593,6 @@ def test_csd_fit_parallel_matches_serial(engine, vox_per_chunk):
     )
 
 
-
 @pytest.mark.parametrize("n_masked", [1, 5, 23])  # leading voxels, C order
 def test_multi_voxel_predict_S0_array_after_masked_voxels(n_masked):
     """Each in-mask voxel is predicted with its own S0, even after masked ones."""
