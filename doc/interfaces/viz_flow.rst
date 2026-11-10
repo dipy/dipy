@@ -47,7 +47,9 @@ opens its own controls and can be removed from the scene.
 You can also start with an empty window and load everything from the menu,
 which opens automatically. ::
 
-  dipy_skyline run
+  dipy_skyline
+
+``dipy_skyline run`` does the same.
 
 
 -------------------------
@@ -251,23 +253,23 @@ A ``.pam5`` file given as an input file is shown as peaks. ::
 
   dipy_skyline recons_csd_output/peaks.pam5
 
-To show its ODF glyphs, pass the same file to ``--odfs``. Use ``run`` as the
-input file when you only load files through options. ::
+To show its ODF glyphs, pass the same file to ``--odfs``, without any input
+file. ::
 
-  dipy_skyline run --odfs recons_csd_output/peaks.pam5
+  dipy_skyline --odfs recons_csd_output/peaks.pam5
 
 Peaks and ODFs can also come from NIfTI files. ``--peaks`` accepts volumes of
 shape (X, Y, Z, 3*N) or (X, Y, Z, N, 3), and ``--odfs`` accepts 4D volumes of
 SH coefficients, such as the ``peaks_dirs.nii.gz`` and ``shm.nii.gz`` files
 that ``dipy_fit_csd --extract_pam_values`` writes. ::
 
-  dipy_skyline run --peaks recons_csd_output/peaks_dirs.nii.gz --odfs recons_csd_output/shm.nii.gz
+  dipy_skyline --peaks recons_csd_output/peaks_dirs.nii.gz --odfs recons_csd_output/shm.nii.gz
 
 ``--sh_basis`` declares the SH convention of the ODF files:
 ``descoteaux07`` (the default, current DIPY), ``descoteaux07_legacy`` (older
 DIPY), ``tournier07`` (MRtrix 0.2) or ``tournier19`` (MRtrix3). ::
 
-  dipy_skyline run --odfs wm_fod.nii.gz --sh_basis tournier19
+  dipy_skyline --odfs wm_fod.nii.gz --sh_basis tournier19
 
 Peaks and ODFs have *Synchronize Slices*, *Scale*, *Opacity* and *Slice*
 controls, so you can step through them together with an image such as FA.

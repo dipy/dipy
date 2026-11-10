@@ -17,6 +17,8 @@ else:
 
 
 class SkylineFlow(Workflow):
+    inputs_are_optional = True
+
     @classmethod
     def get_short_name(cls):
         return "skyline"
@@ -45,10 +47,10 @@ class SkylineFlow(Workflow):
     ):
         """Launch Skyline GUI.
 
-        If you want to load only odfs or rois.
-        use dipy_skyline run --odfs <Your ODF files> or
-        dipy_skyline run --rois <Your ROI files> respectively. You can also load
-        peaks with dipy_skyline run --peaks <Your peak files>.
+        If you want to load only odfs or rois,
+        use dipy_skyline --odfs <Your ODF files> or
+        dipy_skyline --rois <Your ROI files> respectively. You can also load
+        peaks with dipy_skyline --peaks <Your peak files>.
 
         These options should be used in stealth mode. For GUI mode, the files can be
         loaded through the file dialog.
@@ -126,7 +128,7 @@ class SkylineFlow(Workflow):
         """
         super().__init__(force=True)
         skyline_input_files = []
-        start_gui = input_files is not None and input_files[0] in (
+        start_gui = not input_files or input_files[0] in (
             "run",
             "start",
             "launch",
@@ -170,6 +172,8 @@ class SkylineFlow(Workflow):
 
 
 class HorizonFlow(SkylineFlow):
+    inputs_are_optional = False
+
     @classmethod
     def get_short_name(cls):
         return "horizon"
