@@ -29,7 +29,7 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.reconst.dti import TensorModel, tensor_prediction
-from dipy.workflows import qc, report
+from dipy.workflows import qc, report, skyline_app
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.combined_workflow import (
     _ReportHandler as ReportHandler,
@@ -311,9 +311,10 @@ def test_output_buttons():
             page_dir=out_dir,
         )
         (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-        key, command = json.loads(f"[{html.unescape(onclick)}]")
+        key, command, url = json.loads(f"[{html.unescape(onclick)}]")
         assert key == "fa.nii.gz"
         assert command == report.skyline_command(path=volume)
+        assert skyline_app.skyline_target(url) == Path(volume)
         assert 'href="affine.txt"' in items
         assert items.count("qc-open") == 2
 
@@ -332,9 +333,10 @@ def test_output_buttons_quote_paths(tmp_path):
         outputs={"out_fa": volume, "out_affine": text}, page_dir=str(tmp_path)
     )
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    key, command = json.loads(f"[{html.unescape(onclick)}]")
+    key, command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == f"{folder.name}/fa.nii.gz"
     assert command == report.skyline_command(path=volume)
+    assert skyline_app.skyline_target(url) == Path(volume)
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
     assert (
         unquote(html.unescape(href)) == Path(os.path.relpath(text, tmp_path)).as_posix()
@@ -353,7 +355,7 @@ def test_skyline_command_loads_exactly_the_file(tmp_path):
     (tmp_path / "sub 0 o'brien").mkdir()
     volume = str(folder / "fa.nii.gz")
 
-    argument = report.skyline_argument(path=volume)
+    argument = skyline_app.skyline_argument(path=volume)
     assert glob.glob(argument) == [volume]
 
     command = report.skyline_command(path=volume)
@@ -363,9 +365,9 @@ def test_skyline_command_loads_exactly_the_file(tmp_path):
     assert unquoted == argument
 
 
-def _serve(*, out_dir, token):
+def _serve(*, out_dir, token, launcher=None):
     """Start a report server on a free port; return it and its base URL."""
-    handler = partial(ReportHandler, directory=out_dir, token=token)
+    handler = partial(ReportHandler, directory=out_dir, token=token, launcher=launcher)
     httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
     Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd, f"http://127.0.0.1:{httpd.server_address[1]}"
@@ -407,9 +409,7 @@ def test_report_server_launches_only_files_inside_its_root(tmp_path):
         skyline.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     skyline.chmod(0o755)
 
-    old_path = os.environ.get("PATH", "")
-    os.environ["PATH"] = os.pathsep.join([str(bin_dir), old_path])
-    httpd, base = _serve(out_dir=str(out_dir), token="secret")
+    httpd, base = _serve(out_dir=str(out_dir), token="secret", launcher=[str(skyline)])
     try:
         for target in (str(outside), "../report-old/fa.nii.gz", str(volume)):
             with npt.assert_raises(HTTPError) as cm:
@@ -420,7 +420,6 @@ def test_report_server_launches_only_files_inside_its_root(tmp_path):
         assert reply.status == 200
         assert reply.read().decode() == "Skyline launched on fa.nii.gz."
     finally:
-        os.environ["PATH"] = old_path
         httpd.shutdown()
         httpd.server_close()
 
@@ -442,9 +441,10 @@ def test_output_buttons_name_files_from_the_served_root(tmp_path):
     finally:
         os.chdir(cwd)
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    key, command = json.loads(f"[{html.unescape(onclick)}]")
+    key, command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == "dwi/fa.nii.gz"
     assert command == report.skyline_command(path=volume)
+    assert skyline_app.skyline_target(url) == volume
     assert report.skyline_files(root=out_dir) == {key: volume}
 
 

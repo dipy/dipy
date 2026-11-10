@@ -19,6 +19,7 @@ https://github.com/nipy/nibabel/pull/556
 """
 
 os.environ["RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"] = "0"
+os.environ["DIPY_SKYLINE_NO_REGISTER"] = "1"
 
 np.set_printoptions(legacy="1.13")
 

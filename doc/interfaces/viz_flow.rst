@@ -52,6 +52,39 @@ which opens automatically. ::
 ``dipy_skyline run`` does the same.
 
 
+-----------------------------------------
+Open Skyline from the desktop and reports
+-----------------------------------------
+
+Run this once, in the Python environment where DIPY is installed. ::
+
+  dipy_skyline --setup
+
+It installs the visualization packages that are missing from that environment,
+after asking for confirmation, and registers Skyline as an application of your
+user account: a *DIPY SKYLINE* icon in the Start menu or application menu and on
+the desktop, an *Open with* entry for Skyline files and the ``dipy-skyline://``
+links that the HTML reports of ``dipy_auto`` use for their *Open in Skyline*
+buttons. Those buttons then work even when a report is opened by double-click.
+
+The icon is downloaded to the ``.dipy-skyline`` folder of your home directory
+with the other Skyline assets, and the log of the application is written to
+``.dipy-skyline/skyline_app.log``.
+
+``dipy_auto`` registers Skyline by itself, without asking anything, when it
+finishes a pipeline or serves a report. It keeps an existing registration of
+any environment as long as its interpreter still exists, and replaces a missing
+or broken one with a registration for its own environment. It logs what it
+registered; the missing visualization packages are only reported, and
+``dipy_skyline --setup`` installs them.
+
+Only one environment can own the registration, and the last ``--setup`` wins.
+To use the Skyline of another environment, run ``dipy_skyline --setup`` there.
+To remove the registration from any environment, run ::
+
+  dipy_skyline --remove_setup
+
+
 -------------------------
 Visualize 3D Brain Images
 -------------------------
