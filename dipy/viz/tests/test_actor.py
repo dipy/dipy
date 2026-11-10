@@ -232,10 +232,10 @@ def _slab_roi():
     return roi
 
 
-def test_smooth_contour_from_roi_rounds_voxel_corners_without_shrinking():
+def test_contour_from_roi_rounds_voxel_corners_without_shrinking():
     roi = _slab_roi()
-    blocky = _contour_vertices(actor.smooth_contour_from_roi(roi, iterations=0))
-    smooth = _contour_vertices(actor.smooth_contour_from_roi(roi, iterations=20))
+    blocky = _contour_vertices(actor.contour_from_roi(roi, iterations=0))
+    smooth = _contour_vertices(actor.contour_from_roi(roi))
 
     assert not np.allclose(smooth, blocky)
     npt.assert_array_less(smooth.min(axis=0), blocky.min(axis=0) + 1.5)
@@ -243,19 +243,19 @@ def test_smooth_contour_from_roi_rounds_voxel_corners_without_shrinking():
     npt.assert_allclose(smooth.mean(axis=0), blocky.mean(axis=0), atol=0.2)
 
 
-def test_smooth_contour_from_roi_applies_affine():
+def test_contour_from_roi_applies_affine():
     roi = _slab_roi()
     affine = np.eye(4)
     affine[:3, 3] = (10, -5, 2)
-    plain = _contour_vertices(actor.smooth_contour_from_roi(roi))
-    moved = _contour_vertices(actor.smooth_contour_from_roi(roi, affine=affine))
+    plain = _contour_vertices(actor.contour_from_roi(roi))
+    moved = _contour_vertices(actor.contour_from_roi(roi, affine=affine))
     npt.assert_allclose(moved, plain + (10, -5, 2), atol=1e-4)
 
 
-def test_smooth_contour_from_roi_one_actor_per_object():
+def test_contour_from_roi_one_actor_per_object():
     roi = _slab_roi()
     roi[0:2, 0:2, 0:2] = 1
-    assert len(actor.smooth_contour_from_roi(roi).children) == 2
+    assert len(actor.contour_from_roi(roi).children) == 2
 
 
 def _bumpy_grid(size=7):

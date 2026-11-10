@@ -73,9 +73,7 @@ candidate_sl = candidate_sl_sft.streamlines
 candidate_streamlines_actor = actor.streamtube(
     candidate_sl, colors=cmap.line_colors(candidate_sl), radius=0.1
 )
-cc_ROI_actor = actor.smooth_contour_from_roi(
-    cc_slice, color=(1.0, 1.0, 0.0), opacity=0.7
-)
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.7)
 
 vol_actor = actor.volume_slicer(
     t1_data,
