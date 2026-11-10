@@ -14,7 +14,9 @@ from dipy.utils.optpkg import optional_package
 
 fury, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
 if has_fury_v2:
-    from fury import actor, window
+    from fury import actor
+
+    from dipy.viz import window
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 

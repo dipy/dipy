@@ -31,7 +31,6 @@ if has_fury_v2:
     from fury.actor import Actor, show_slices
     from fury.colormap import distinguishable_colormap
     from fury.io import load_image_as_wgpu_texture_view
-    from fury.window import update_camera
 
     from dipy.viz.skyline.render.image import Image3D, create_image_visualization
     from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
@@ -50,6 +49,7 @@ if has_fury_v2:
         create_streamline_visualization,
     )
     from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
+    from dipy.viz.window import update_camera
 
 
 class Skyline:
