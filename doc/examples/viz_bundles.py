@@ -46,10 +46,10 @@ bundle = dix["cg.left"]
 # This is the default option of ``show_bundles``: when ``colors`` is not given,
 # each streamline gets one RGB color computed from the direction between its
 # end points. ``show_bundles`` takes a list of bundles, so we pass ``[bundle]``.
-# With ``interactive=False`` the scene is only saved into the png ``save_as``;
-# use ``interactive=True`` to open a window instead.
+# ``save_as`` saves the scene into a png and ``interactive=True`` also opens a
+# window; use ``interactive=False`` to only save the png.
 
-show_bundles([bundle], interactive=False, save_as="bundle1.png")
+show_bundles([bundle], interactive=True, save_as="bundle1.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -90,7 +90,7 @@ show_bundles(
     [bundle],
     colors=[fa_bar.map_values(point_fa)],
     scalar_bar=fa_bar,
-    interactive=False,
+    interactive=True,
     save_as="bundle2.png",
 )
 
@@ -123,7 +123,7 @@ show_bundles(
     [bundle],
     colors=[red_bar.map_values(point_fa)],
     scalar_bar=red_bar,
-    interactive=False,
+    interactive=True,
     save_as="bundle3.png",
 )
 
@@ -140,7 +140,7 @@ show_bundles(
 # orange.
 
 show_bundles(
-    [bundle], colors=[(1.0, 0.5, 0.0)], interactive=False, save_as="bundle4.png"
+    [bundle], colors=[(1.0, 0.5, 0.0)], interactive=True, save_as="bundle4.png"
 )
 
 ###############################################################################
@@ -174,7 +174,7 @@ show_bundles(
     [bundle],
     colors=[length_bar.map_values(lengths)],
     scalar_bar=length_bar,
-    interactive=False,
+    interactive=True,
     save_as="bundle5.png",
 )
 
@@ -195,7 +195,7 @@ rng = np.random.default_rng()
 
 colors = rng.random((bundle.total_nb_rows, 3))
 
-show_bundles([bundle], colors=[colors], interactive=False, save_as="bundle6.png")
+show_bundles([bundle], colors=[colors], interactive=True, save_as="bundle6.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

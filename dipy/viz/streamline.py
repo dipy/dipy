@@ -8,10 +8,9 @@ from dipy.utils.optpkg import optional_package
 
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
-    from fury import window
     from fury.colormap import line_colors
 
-    from dipy.viz import actor
+    from dipy.viz import actor, window
 
 sagittal_deprecation_warning_msg = (
     "The view argument value `sagital` is deprecated and "  # codespell:ignore sagital

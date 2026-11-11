@@ -8,6 +8,7 @@ python_sources = [
   'projections.py',
   'regtools.py',
   'streamline.py',
+  'window.py',
   ]
 
 

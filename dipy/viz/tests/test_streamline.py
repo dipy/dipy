@@ -58,15 +58,23 @@ def _read(path):
     return plt.imread(path)[..., :3]
 
 
-def _tinted(pixels, channel, margin=0.2):
-    """Count scene pixels where ``channel`` dominates the other two by ``margin``.
+def _tinted_mask(pixels, channel, margin=0.2):
+    """Return the scene pixels where ``channel`` dominates the other two by ``margin``.
 
     The gizmo corner (first ``GIZMO_WIDTH`` columns) is excluded.
     """
     scene = pixels[:, GIZMO_WIDTH:]
     others = [c for c in range(3) if c != channel]
     strongest_other = np.maximum(scene[..., others[0]], scene[..., others[1]])
-    return int(np.count_nonzero(scene[..., channel] - strongest_other > margin))
+    return scene[..., channel] - strongest_other > margin
+
+
+def _tinted(pixels, channel, margin=0.2):
+    """Count scene pixels where ``channel`` dominates the other two by ``margin``.
+
+    The gizmo corner (first ``GIZMO_WIDTH`` columns) is excluded.
+    """
+    return int(np.count_nonzero(_tinted_mask(pixels, channel, margin=margin)))
 
 
 def _pink(pixels):
@@ -138,6 +146,30 @@ def test_show_bundles_draws_scalar_bar_only_when_given(tmp_path):
 
     assert _tinted(_read(without_bar), 2) == 0
     assert _tinted(_read(with_bar), 2) > 20
+
+
+def test_show_bundles_scalar_bar_stays_fixed_when_view_changes(tmp_path):
+    boxes = {}
+    for view in ("sagittal", "axial"):
+        blue_bar = actor.scalar_bar(
+            hsv_range=((0.66, 0.66), (1.0, 1.0), (1.0, 1.0)),
+            color=(0.0, 0.0, 0.0),
+            position=(300, 60),
+        )
+        output = tmp_path / f"{view}.png"
+        streamline.show_bundles(
+            [_bundle(along_z=True)],
+            colors=[(1, 0, 0)],
+            scalar_bar=blue_bar,
+            interactive=False,
+            view=view,
+            save_as=output,
+        )
+        rows, cols = np.nonzero(_tinted_mask(_read(output), 2))
+        assert rows.size > 20
+        boxes[view] = np.array([rows.min(), rows.max(), cols.min(), cols.max()])
+
+    assert np.abs(boxes["sagittal"] - boxes["axial"]).max() <= 1
 
 
 def test_show_bundles_rejects_unknown_view_without_writing(tmp_path):

@@ -49,13 +49,13 @@ cb_subj2_aligned = srm.transform(cb_subj2)
 
 ###############################################################################
 # The orange bundle is the static subject (``cb_subj1``) and the red bundle is
-# the moving subject (``cb_subj2``). Setting ``interactive=True`` opens a FURY
-# window instead of only saving the image.
+# the moving subject (``cb_subj2``). ``interactive=True`` opens a FURY window
+# besides saving the image; use ``interactive=False`` to only save it.
 
 show_bundles(
     [cb_subj1, cb_subj2],
     colors=[(1.0, 0.5, 0.0), (1.0, 0.0, 0.0)],
-    interactive=False,
+    interactive=True,
     save_as="before_registration.png",
 )
 
@@ -67,7 +67,7 @@ show_bundles(
 show_bundles(
     [cb_subj1, cb_subj2_aligned],
     colors=[(1.0, 0.5, 0.0), (1.0, 0.0, 0.0)],
-    interactive=False,
+    interactive=True,
     save_as="after_registration.png",
 )
 

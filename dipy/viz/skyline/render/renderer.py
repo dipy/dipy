@@ -24,8 +24,9 @@ fury, has_fury_v2, _ = optional_package(
 
 if has_fury_v2:
     from PIL import Image
-    from fury import window
     import glfw
+
+    from dipy.viz import window
 else:
     window = fury
     Image = fury
