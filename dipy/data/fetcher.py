@@ -741,7 +741,7 @@ fetch_mindgrab_weights = _make_fetcher(
     ["model.pth"],
     ["mindgrab_weights.pth"],
     md5_list=["eb9457fc5cb825e2c4534434b2e5ff04"],
-    doc="Download MindGrab model weights for Fani et. al 2025",
+    doc="Download MindGrab model weights for Fani et al. 2026",
 )
 
 fetch_synthseg_test = _make_fetcher(

@@ -147,7 +147,7 @@ class MeshNet(Module):
     A fully convolutional network made of a stack of dilated 3D convolutions,
     each followed by a parameter-free group normalization and a GELU
     activation :footcite:p:`Fedorov2017`. MindGrab repeats the dilation
-    schedule 16, 8, 4, 2, 1 five times :footcite:p:`Fani2025`.
+    schedule 16, 8, 4, 2, 1 five times :footcite:p:`Fani2026`.
 
     Parameters
     ----------
@@ -212,7 +212,7 @@ class MeshNet(Module):
 class MindGrab:
     """This class is intended for the MindGrab model.
 
-    The MindGrab model :footcite:p:`Fani2025` is a lightweight (146k
+    The MindGrab model :footcite:p:`Fani2026` is a lightweight (146k
     parameters) fully convolutional network for skull stripping. It was
     trained only on synthetic data, which makes it modality agnostic: it
     handles T1w, T2w, FLAIR, DWI, CT or PET volumes alike.
