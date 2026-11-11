@@ -55,7 +55,7 @@ BUNDLE_EXTENSIONS = (".trk", ".trx")
 logger = logging.getLogger(__name__)
 
 
-def get_pairwise_tree(n_bundle, seed=None):
+def get_pairwise_tree(n_bundle, *, seed=None):
     """Pairwise tree structure calculation.
 
     Constructs a pairwise tree by randomly matching the indexes of a given
@@ -117,7 +117,7 @@ def get_pairwise_tree(n_bundle, seed=None):
     return matched_pairs, unpaired, n_pair
 
 
-def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
+def select_streamlines(bundle1, bundle2, n_out, *, strategy="weighted", rng=None):
     """Select and combine streamlines from two bundles.
 
     Parameters
@@ -190,6 +190,7 @@ def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
 def combine_bundles(
     bundle1,
     bundle2,
+    *,
     comb_method="rlap",
     distance="mdf",
     n_stream="mean",
@@ -258,7 +259,7 @@ def combine_bundles(
 
     # If random_pick just merge all streamlines and pick n_stream randomly
     if comb_method == "random_pick":
-        return select_streamlines(bundle1, bundle2, n_stream, "weighted")
+        return select_streamlines(bundle1, bundle2, n_stream, strategy="weighted")
 
     # Reorientation based on centroid
     bundle1 = orient_by_streamline(bundle1, bundle1[0])
@@ -312,7 +313,7 @@ def combine_bundles(
         remain1 = bundle1[outliers1] if len(outliers1) > 0 else []
         remain2 = bundle2[np.hstack((unmatched, outliers2)).astype("int").tolist()]
 
-        extra = select_streamlines(remain1, remain2, n_extra, "weighted")
+        extra = select_streamlines(remain1, remain2, n_extra, strategy="weighted")
         extra = list(extra)  # matrix to list
 
         combined = [*combined, *extra]
@@ -322,7 +323,7 @@ def combine_bundles(
     return combined
 
 
-def _load_bundle(file, return_header=False):
+def _load_bundle(file, *, return_header=False):
     """Load a tractography bundle from a .trk or .trx file.
 
     Parameters
@@ -503,6 +504,7 @@ def _register_atlas_to_mni(
 
 def compute_atlas_bundle(
     in_dir,
+    *,
     subjects=None,
     group=None,
     mid_path="",
@@ -790,8 +792,7 @@ def compute_atlas_bundle(
                 j = pair[1]
 
                 logger.info(
-                    f"step:{i_step + 1}/{len(tree)}"
-                    + f" pair:{index + 1}/{n_reg[i_step]}"
+                    f"step:{i_step + 1}/{len(tree)} pair:{index + 1}/{n_reg[i_step]}"
                 )
 
                 static, header = _load_bundle(file_list[i] + ".trk", return_header=True)
@@ -834,8 +835,8 @@ def compute_atlas_bundle(
                     combined = combine_bundles(
                         static,
                         aligned,
-                        "random_pick",
-                        distance,
+                        comb_method="random_pick",
+                        distance=distance,
                         n_stream=n_stream_max,
                         d_max=d_max,
                     )
@@ -843,8 +844,8 @@ def compute_atlas_bundle(
                     combined = combine_bundles(
                         static,
                         aligned,
-                        comb_method,
-                        distance,
+                        comb_method=comb_method,
+                        distance=distance,
                         n_stream=n_stream_max,
                         d_max=d_max,
                     )

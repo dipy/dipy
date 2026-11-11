@@ -159,38 +159,62 @@ def test_combine_bundles():
         assert_equal(len(combined), 0)
 
         # Test random pick (expected streamline number)
-        combined = combine_bundles(bundle1, bundle2, "random_pick", n_stream=33)
+        combined = combine_bundles(
+            bundle1, bundle2, comb_method="random_pick", n_stream=33
+        )
         assert_equal(len(combined), 33)
 
-        combined = combine_bundles(bundle2, bundle1, "random_pick", n_stream=33)
+        combined = combine_bundles(
+            bundle2, bundle1, comb_method="random_pick", n_stream=33
+        )
         assert_equal(len(combined), 33)
 
         # Test RLAP (expected streamline number and correct averaging)
         for dist in ["mdf", "mdf_se"]:
             # Test RLAP
-            combined = combine_bundles(bundle1, bundle2, "rlap", dist)
+            combined = combine_bundles(
+                bundle1, bundle2, comb_method="rlap", distance=dist
+            )
             assert_equal(len(combined), (n_stream1 + n_stream2) / 2)
 
-            combined = combine_bundles(bundle2, bundle1, "rlap", dist)
+            combined = combine_bundles(
+                bundle2, bundle1, comb_method="rlap", distance=dist
+            )
             assert_equal(len(combined), (n_stream1 + n_stream2) / 2)
 
-            combined = combine_bundles(bundle1, bundle2, "rlap", dist, n_stream=2000)
+            combined = combine_bundles(
+                bundle1, bundle2, comb_method="rlap", distance=dist, n_stream=2000
+            )
             assert_equal(len(combined), n_stream2)
 
-            combined = combine_bundles(bundle1, bundle1, "rlap", dist)
+            combined = combine_bundles(
+                bundle1, bundle1, comb_method="rlap", distance=dist
+            )
             d = np.diagonal(distance_matrix_mdf(bundle1, combined))
             assert_equal(d, np.zeros(n_stream1))
 
             combined = combine_bundles(
-                bundle1, bundle2, "rlap", dist, n_stream=5, d_max=0.0
+                bundle1,
+                bundle2,
+                comb_method="rlap",
+                distance=dist,
+                n_stream=5,
+                d_max=0.0,
             )
             assert_equal(len(combined), 5)
 
-            combined = combine_bundles(bundle1, bundle2, "rlap", dist, d_max=0.0)
+            combined = combine_bundles(
+                bundle1, bundle2, comb_method="rlap", distance=dist, d_max=0.0
+            )
             assert_equal(len(combined), (n_stream1 + n_stream2) / 2)
 
             combined = combine_bundles(
-                bundle2, bundle1, "rlap", dist, n_stream=38, d_max=10.0
+                bundle2,
+                bundle1,
+                comb_method="rlap",
+                distance=dist,
+                n_stream=38,
+                d_max=10.0,
             )
             assert_equal(len(combined), 38)
 
