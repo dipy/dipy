@@ -289,8 +289,8 @@ def test_max_min_length():
     npt.assert_(np.sum(errors) == 0)
 
 
-def test_buffer_frac():
-    """This tests that the buffer fraction for generate tractogram plays well.
+def test_chunk_size():
+    """This tests that the chunk size for generate tractogram plays well.
     """
     fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
@@ -326,15 +326,15 @@ def test_buffer_frac():
                                               params,
                                               pmf_gen,
                                               affine=affine,
-                                              buffer_frac=1.0))
+                                              chunk_size=500))
 
-    # test the results are identical with various buffer fractions
-    for frac in [0.01, 0.1, 0.5]:
+    # test the results are identical with various chunk sizes
+    for frac in [5, 50, 250]:
         frac_streams = Streamlines(generate_tractogram(seeds,
                                                        directions,
                                                        sc,
                                                        params,
                                                        pmf_gen,
                                                        affine=affine,
-                                                       buffer_frac=frac))
+                                                       chunk_size=frac))
         npt.assert_equal(len(frac_streams), len(streams))
