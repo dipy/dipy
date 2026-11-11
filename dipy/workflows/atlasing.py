@@ -76,9 +76,11 @@ class BundleAtlasFlow(Workflow):
         n_point : int, optional
             All streamlines are set to have ``n_point`` points. Default is 20.
         reg_method : str, optional
-            Registration method to be used ('slr' or 'hslr'). Default is 'hslr'.
+            Registration method to be used ('slr', 'hslr' or 'bundlewarp').
+            Default is 'hslr'.
         x0 : str, optional
-            Transformation type for registration. Default is 'affine'.
+            Transformation type for registration. Not used by 'bundlewarp'.
+            Default is 'affine'.
         distance : str, optional
             Distance metric to be used to combine bundles. Default is 'mdf'.
             The 'mdf_se' distance uses only start/end points of streamlines.
@@ -104,7 +106,7 @@ class BundleAtlasFlow(Workflow):
             is a whole brain transformation and might not be fully accurate
             compared to 'bundle', especially if the bundles cover the brain
             differently from the HCP-842 atlas. HSLR atlases are the most robust
-            to this. With other methods such as SLR use 'bundle' instead.
+            to this. With SLR or BundleWarp use 'bundle' instead.
         final_transform : str, optional
             Transformation type used by ``final_registration`` ('rigid' or
             'affine'). Default is 'rigid', which preserves the shape and size of

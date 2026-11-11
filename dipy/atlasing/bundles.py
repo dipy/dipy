@@ -574,7 +574,8 @@ def compute_atlas_bundle(
         Registration method to be used ('slr', 'hslr', 'bundlewarp').
         Default is 'hslr'.
     x0 : str, optional
-        Transformation type used to register each bundle pair. Default is
+        Transformation type used to register each bundle pair. Not used by
+        'bundlewarp', which runs its own affine registration first. Default is
         'affine'.
     skip_pairs : boolean, optional
         If true bundle combination steps are randomly skipped. This helps to
@@ -642,7 +643,7 @@ def compute_atlas_bundle(
             "transformation, which might not be fully accurate compared to "
             "final_registration='bundle', especially if the bundles cover the "
             "brain differently from the HCP-842 atlas. HSLR atlases are the most "
-            "robust to this. With other methods such as SLR use "
+            "robust to this. With SLR or BundleWarp use "
             "final_registration='bundle' instead."
         )
 

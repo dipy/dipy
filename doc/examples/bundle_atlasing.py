@@ -206,8 +206,8 @@ show_bundles(
 #  - ``"whole_brain"``: all the bundles are registered at once and ``merge_out`` is
 #    enabled. This is a whole brain transformation and might not be fully accurate
 #    compared to ``"bundle"``, especially if the bundles cover the brain differently
-#    from the HCP-842 atlas. HSLR atlases are the most robust to this. With other
-#    methods such as SLR use ``"bundle"`` instead.
+#    from the HCP-842 atlas. HSLR atlases are the most robust to this. With SLR or
+#    BundleWarp use ``"bundle"`` instead.
 #
 # ``final_transform`` selects a ``"rigid"`` (default) or ``"affine"`` registration.
 # Rigid preserves the shape and size of the atlas while affine can distort them.
