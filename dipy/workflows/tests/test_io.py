@@ -15,6 +15,7 @@ import dipy.core.gradients as grad
 from dipy.data import default_sphere, get_fnames
 from dipy.data.fetcher import dipy_home
 from dipy.direction.peaks import PeaksAndMetrics
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import load_pam, save_pam
 from dipy.io.streamline import load_tractogram
@@ -774,6 +775,69 @@ def test_extract_shell_flow(tmp_path):
     res2000, _ = load_nifti(tmp_path / "shell_2000.nii.gz")
     npt.assert_array_equal(np.squeeze(res0), data[..., 0])
     npt.assert_array_equal(res2000[..., 9], data[..., 10])
+
+
+def test_extract_shell_flow_gradients(tmp_path):
+    rng = np.random.default_rng(0)
+    # Four directions per shell: a 3x3 b-vectors file is ambiguous to read back.
+    bvals = np.array([0, *[1000] * 4, *[2000] * 4, 3000], dtype=float)
+    bvecs = rng.standard_normal((bvals.size, 3))
+    bvecs /= np.linalg.norm(bvecs, axis=1, keepdims=True)
+    bvecs[bvals == 0] = 0
+    data = rng.random((4, 4, 4, bvals.size)).astype(np.float32)
+    fdata = tmp_path / "dwi.nii.gz"
+    fbval = tmp_path / "dwi.bval"
+    fbvec = tmp_path / "dwi.bvec"
+    save_nifti(fdata, data, np.eye(4))
+    np.savetxt(fbval, bvals[None], fmt="%d")
+    np.savetxt(fbvec, bvecs.T, fmt="%.8f")
+
+    out_dir = tmp_path / "out"
+    flow = ExtractShellFlow()
+    flow.run(fdata, fbval, fbvec, bvals_to_extract="0,1000", out_dir=out_dir)
+    keep = np.isin(bvals, [0, 1000])
+    res, _ = load_nifti(out_dir / "shell_0_1000.nii.gz")
+    res_bvals, res_bvecs = read_bvals_bvecs(
+        out_dir / "shell_0_1000.bval", out_dir / "shell_0_1000.bvec"
+    )
+    npt.assert_array_equal(res, data[..., keep])
+    npt.assert_array_equal(res_bvals, bvals[keep])
+    npt.assert_almost_equal(res_bvecs, bvecs[keep], decimal=7)
+    # A single shell file is reported under its real, suffixed name.
+    npt.assert_equal(
+        flow.last_generated_outputs,
+        {
+            "out_shell": out_dir / "shell_0_1000.nii.gz",
+            "out_bval": out_dir / "shell_0_1000.bval",
+            "out_bvec": out_dir / "shell_0_1000.bvec",
+        },
+    )
+
+    flow._force_overwrite = True
+    flow.run(
+        fdata,
+        fbval,
+        fbvec,
+        bvals_to_extract="1000,2000",
+        group_shells=False,
+        out_dir=out_dir,
+        out_bval="sub.bval",
+        out_bvec="sub.bvec",
+    )
+    for b in (1000, 2000):
+        keep = bvals == b
+        res, _ = load_nifti(out_dir / f"shell_{b}.nii.gz")
+        res_bvals, res_bvecs = read_bvals_bvecs(
+            out_dir / f"sub_{b}.bval", out_dir / f"sub_{b}.bvec"
+        )
+        npt.assert_array_equal(res, data[..., keep])
+        npt.assert_array_equal(res_bvals, bvals[keep])
+        npt.assert_almost_equal(res_bvecs, bvecs[keep], decimal=7)
+        npt.assert_equal(res.shape[-1], res_bvals.size)
+    # Several shell files per output: the declared names are kept.
+    npt.assert_equal(
+        Path(flow.last_generated_outputs["out_bval"]), out_dir / "sub.bval"
+    )
 
 
 def test_extract_volume_flow(tmp_path):
