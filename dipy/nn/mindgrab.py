@@ -442,7 +442,7 @@ class MindGrab:
                 aff,
                 target_voxsize=(1.0, 1.0, 1.0),
                 final_size=MODEL_SHAPE,
-                order=3,
+                order=1,
             )
             t_img = quantile_normalize(ras_to_lia(t_img))
             prob = lia_to_ras(self._predict_volume(t_img))
