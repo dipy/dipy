@@ -237,16 +237,18 @@ class MindGrab:
         device : {'auto', 'cpu', 'webgpu', 'cuda'}, optional
             Where to run the network.
 
-            - 'auto': CUDA if PyTorch finds an NVIDIA GPU, otherwise a GPU
-              through WebGPU if the ``wgpu`` package finds one, otherwise
-              the CPU.
+            - 'auto': a GPU through WebGPU if the ``wgpu`` package finds
+              one, otherwise CUDA if PyTorch finds an NVIDIA GPU, otherwise
+              the CPU. WebGPU comes first as it is faster and uses less GPU
+              memory than PyTorch.
             - 'cpu': compiled CPU kernel, which needs no extra package.
             - 'webgpu': any GPU through Vulkan, Metal or Direct3D 12, which
               needs the ``wgpu`` package. Software adapters emulating a GPU
               on the CPU are ignored.
             - 'cuda': PyTorch on CUDA, or on the Apple MPS GPU.
 
-            If the requested device is not available, the CPU is used.
+            If the requested GPU is not available, WebGPU is tried before
+            falling back to the CPU.
         half_precision : bool, optional
             Whether to store activations in float16 on WebGPU, halving the
             GPU memory needed at the cost of a few differing voxels. Float16
@@ -268,12 +270,17 @@ class MindGrab:
         self.num_threads = num_threads
         self.torch_device = None
         self.webgpu_device = None
-        if device in ("auto", "cuda") and have_torch and torch.cuda.is_available():
-            self.torch_device = torch.device("cuda")
-        elif device == "cuda" and have_torch and torch.backends.mps.is_available():
-            self.torch_device = torch.device("mps")
-        elif device in ("auto", "webgpu"):
+        if device in ("auto", "webgpu"):
             self.webgpu_device = webgpu_device()
+        if self.webgpu_device is None and device in ("auto", "cuda") and have_torch:
+            if torch.cuda.is_available():
+                self.torch_device = torch.device("cuda")
+            elif device == "cuda" and torch.backends.mps.is_available():
+                self.torch_device = torch.device("mps")
+        if self.torch_device is None and device == "cuda":
+            self.webgpu_device = webgpu_device()
+            if self.webgpu_device is not None:
+                logger.warning("No GPU found by PyTorch, switching to WebGPU")
 
         if self.torch_device is not None:
             self.device = self.torch_device.type
@@ -281,12 +288,10 @@ class MindGrab:
             self.device = "webgpu"
         else:
             self.device = "cpu"
-            if device == "cuda":
-                logger.warning("No GPU found by PyTorch, switching to CPU")
-            elif device == "webgpu":
+            if device in ("cuda", "webgpu"):
                 logger.warning(
-                    "No WebGPU adapter found, switching to CPU. Using WebGPU "
-                    "requires the wgpu package and a GPU driver."
+                    "No GPU found, switching to CPU. Using WebGPU requires the "
+                    "wgpu package and a GPU driver."
                 )
         logger.info(f"MindGrab runs on {self.device}")
 

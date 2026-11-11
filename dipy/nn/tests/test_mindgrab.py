@@ -186,6 +186,24 @@ def test_wrong_inputs():
     npt.assert_raises(ValueError, model.predict, np.zeros((5, 5, 5, 5)), np.eye(4))
 
 
+def test_device_priority():
+    has_webgpu = webgpu_device() is not None
+    has_cuda = have_torch and torch.cuda.is_available()
+    has_mps = have_torch and torch.backends.mps.is_available()
+    fallback = "webgpu" if has_webgpu else "cpu"
+
+    model = mindgrab.MindGrab(device="auto")
+    npt.assert_equal(
+        model.device, "webgpu" if has_webgpu else "cuda" if has_cuda else "cpu"
+    )
+    model = mindgrab.MindGrab(device="cuda")
+    npt.assert_equal(
+        model.device, "cuda" if has_cuda else "mps" if has_mps else fallback
+    )
+    model = mindgrab.MindGrab(device="webgpu")
+    npt.assert_equal(model.device, fallback)
+
+
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
 def test_meshnet():
     model = mindgrab.MeshNet()

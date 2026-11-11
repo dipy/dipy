@@ -693,9 +693,9 @@ class BrainMaskFlow(Workflow):
             and 'mindgrab' methods. For 'mindgrab', same as ``device='cuda'``.
         device : string, optional
             Where to run 'mindgrab': 'auto', 'cpu', 'webgpu' or 'cuda'. 'auto'
-            uses CUDA if PyTorch finds an NVIDIA GPU, otherwise any GPU
-            through WebGPU if the wgpu package is installed, otherwise the
-            CPU. Used only for 'mindgrab' method.
+            uses any GPU through WebGPU if the wgpu package is installed,
+            otherwise CUDA if PyTorch finds an NVIDIA GPU, otherwise the CPU.
+            Used only for 'mindgrab' method.
         num_threads : int, optional
             Number of threads to use on the CPU. If None, the value of the
             ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
