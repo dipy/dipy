@@ -1318,8 +1318,6 @@ class ConcatenateTractogramFlow(Workflow):
 
         """
         valid_extensions = ["trk", "trx", "tck", "fib", "dpy", "vtk"]
-        # Accepted in any case, but the file name carries the lower case one:
-        # ``save_tractogram`` recognises the format by the suffix it reads.
         extension = extension.lower()
         if extension not in valid_extensions:
             raise ValueError(
@@ -1330,11 +1328,6 @@ class ConcatenateTractogramFlow(Workflow):
         if not io_it:
             return
 
-        # ``out_tractogram`` is a basename; the file really written appends
-        # ``extension`` to it, so point the overwrite check at that path.
-        # ``tractogram_files`` takes several inputs, so the iterator holds one
-        # output per input: they all stand for the single file this flow
-        # writes, and the replacement must keep that length.
         out_fpath = Path(f"{self.flat_outputs[0]}.{extension}")
         if not self.update_flat_outputs([out_fpath] * len(self.flat_outputs), io_it):
             return
@@ -1342,8 +1335,6 @@ class ConcatenateTractogramFlow(Workflow):
         trx_list = []
         has_group = False
         for fpath, _ in io_it:
-            # ``extension`` is the output extension parameter, hence the
-            # distinct name for the input one.
             _, in_extension = split_filename_extension(fpath)
             ref = reference
             if in_extension.lower() in [".trx", ".trk"]:

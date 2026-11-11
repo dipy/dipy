@@ -647,8 +647,6 @@ def deprecated_params(
 
             return function(*args, **kwargs)
 
-        # Expose the renames so that introspecting callers (e.g. the workflow
-        # command line parser) can keep accepting the deprecated names.
         wrapper.__deprecated_params__ = tuple(
             getattr(function, "__deprecated_params__", ())
         ) + tuple(zip(old_name, new_name))

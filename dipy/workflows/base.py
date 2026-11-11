@@ -146,6 +146,31 @@ def none_or_dtype(dtype):
     return inner
 
 
+def _warn_deprecated_option(option_string, new_name):
+    """Warn that a command line option was renamed."""
+    logger.warning(
+        "%s is deprecated and will be removed in a future release. Use --%s instead.",
+        option_string,
+        new_name,
+    )
+
+
+class _DeprecatedAlias(argparse.Action):
+    """Store a renamed option under its new name, warning about the old one."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        _warn_deprecated_option(option_string, self.dest)
+        setattr(namespace, self.dest, self.const if self.nargs == 0 else values)
+
+
+class _DeprecatedBooleanOptionalAlias(argparse.BooleanOptionalAction):
+    """``BooleanOptionalAction`` for a renamed option, warning on use."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        _warn_deprecated_option(option_string, self.dest)
+        super().__call__(parser, namespace, values, option_string)
+
+
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
     def __init__(
         self,
@@ -288,8 +313,6 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 f"same order.\n{mismatches}"
             )
 
-        # Renamed parameters keep their old command line name, hidden from the
-        # help, for as long as ``run`` is decorated with ``deprecated_params``.
         deprecated_aliases = {}
         for old_name, new_name in getattr(workflow.run, "__deprecated_params__", ()):
             if new_name is not None:
@@ -349,14 +372,19 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             if is_optional:
                 for old_name in deprecated_aliases.get(arg, []):
-                    # ``dest`` is the old name on purpose: ``run`` receives it
-                    # and ``deprecated_params`` emits the deprecation warning.
                     alias_kwargs = {
                         **_kwargs,
-                        "dest": old_name,
-                        "default": None,
+                        "dest": arg,
+                        "default": argparse.SUPPRESS,
                         "help": argparse.SUPPRESS,
                     }
+                    if _kwargs["action"] is argparse.BooleanOptionalAction:
+                        alias_kwargs["action"] = _DeprecatedBooleanOptionalAlias
+                    else:
+                        alias_kwargs["action"] = _DeprecatedAlias
+                        if _kwargs["action"] == "store_true":
+                            alias_kwargs["nargs"] = 0
+                            alias_kwargs["const"] = True
                     self.add_argument(f"--{old_name}", **alias_kwargs)
 
         if nb_positional_variable > 1:
