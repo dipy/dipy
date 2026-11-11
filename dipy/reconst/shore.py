@@ -8,7 +8,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sh_descoteaux_from_index
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -690,11 +690,12 @@ def create_rspace(gridsize, radius_max):
     """
 
     radius = gridsize // 2
-    vecs = []
-    for i in range(-radius, radius + 1):
-        for j in range(-radius, radius + 1):
-            for k in range(-radius, radius + 1):
-                vecs.append([i, j, k])
+    vecs = [
+        [i, j, k]
+        for i in range(-radius, radius + 1)
+        for j in range(-radius, radius + 1)
+        for k in range(-radius, radius + 1)
+    ]
 
     vecs = np.array(vecs, dtype=np.float32)
     tab = vecs / radius
@@ -750,7 +751,7 @@ def shore_indices(radial_order, index):
     """
 
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     n_i = 0
     l_i = 0
     m_i = 0

@@ -13,7 +13,7 @@ registration of white matter tracts :footcite:p:`Chandio2023`.
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 from time import time
 
 from dipy.align.streamwarp import (
@@ -23,7 +23,7 @@ from dipy.align.streamwarp import (
 )
 from dipy.data import fetch_bundle_warp_dataset
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_trk, save_tractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import (
     Streamlines,
     set_number_of_points,
@@ -37,11 +37,15 @@ from dipy.viz.streamline import viz_displacement_mag, viz_two_bundles, viz_vecto
 # https://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733
 
 bundle_warp_files = fetch_bundle_warp_dataset()
-s_UF_L_path = pjoin(bundle_warp_files[1], "s_UF_L.trk")
-m_UF_L_path = pjoin(bundle_warp_files[1], "m_UF_L.trk")
+s_UF_L_path = Path(bundle_warp_files[1]) / "s_UF_L.trk"
+m_UF_L_path = Path(bundle_warp_files[1]) / "m_UF_L.trk"
 
-uf_subj1 = load_trk(s_UF_L_path, reference="same", bbox_valid_check=False).streamlines
-uf_subj2 = load_trk(m_UF_L_path, reference="same", bbox_valid_check=False).streamlines
+uf_subj1 = load_tractogram(
+    s_UF_L_path, reference="same", bbox_valid_check=False
+).streamlines
+uf_subj2 = load_tractogram(
+    m_UF_L_path, reference="same", bbox_valid_check=False
+).streamlines
 
 ###############################################################################
 # Let's resample the streamlines so that they both have the same number of
@@ -123,7 +127,9 @@ viz_vector_field(
 ###############################################################################
 # We can also visualize the magnitude of deformations in mm mapped over
 # affinely moved bundle. It shows which streamlines were deformed the most
-# after affine registration.
+# after affine registration. Streamlines are coloured from pink (smallest
+# displacement) to green (largest displacement), as shown by the color bar in
+# mm.
 
 fname = "partially_deformation_magnitude_over_linearly_moved.png"
 viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
@@ -132,7 +138,7 @@ viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
 # Saving partially warped bundle.
 
 new_tractogram = StatefulTractogram(deformed_bundle, m_UF_L_path, Space.RASMM)
-save_tractogram(new_tractogram, "partially_deformed_bundle.trk", bbox_valid_check=False)
+save_tractogram(new_tractogram, "partially_deformed_bundle.trx", bbox_valid_check=False)
 
 
 ###############################################################################
@@ -182,7 +188,8 @@ viz_vector_field(
 ###############################################################################
 # Let's visualize the magnitude of deformations in mm mapped over affinely
 # moved bundle. It shows which streamlines were deformed the most after affine
-# registration.
+# registration. Streamlines are coloured from pink (smallest displacement) to
+# green (largest displacement), as shown by the color bar in mm.
 
 fname = "fully_deformation_magnitude_over_linearly_moved.png"
 viz_displacement_mag(moving_aligned, offsets, fname, interactive=False)
@@ -203,7 +210,7 @@ _, _ = bundlewarp_shape_analysis(
 # Saving fully warped bundle.
 
 new_tractogram = StatefulTractogram(deformed_bundle2, m_UF_L_path, Space.RASMM)
-save_tractogram(new_tractogram, "fully_deformed_bundle.trk", bbox_valid_check=False)
+save_tractogram(new_tractogram, "fully_deformed_bundle.trx", bbox_valid_check=False)
 
 ###############################################################################
 # References

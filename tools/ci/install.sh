@@ -15,9 +15,7 @@ fi
 
 #---------- DIPY Installation -----------------
 
-if [ "$INSTALL_TYPE" == "setup" ]; then
-    python setup.py install
-elif [ "$INSTALL_TYPE" == "pip" ]; then
+if [ "$INSTALL_TYPE" == "pip" ]; then
     $PIPI -vv .
 elif [ "$INSTALL_TYPE" == "sdist" ]; then
     # python -m pep517.build
@@ -28,9 +26,6 @@ elif [ "$INSTALL_TYPE" == "wheel" ]; then
     pip install wheel
     python setup_egg.py bdist_wheel
     $PIPI dist/*.whl
-elif [ "$INSTALL_TYPE" == "requirements" ]; then
-    $PIPI -r requirements.txt
-    python setup.py install
 elif [ "$INSTALL_TYPE" == "conda" ]; then
     $PIPI -vv .
 fi

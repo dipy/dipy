@@ -1,5 +1,8 @@
+"""Horizon tab UI components (deprecated)."""
+
 from dipy.viz.horizon.tab.base import (
     HorizonTab,
+    HorizonUIElement,
     TabManager,
     build_checkbox,
     build_label,
@@ -14,16 +17,17 @@ from dipy.viz.horizon.tab.slice import SlicesTab
 from dipy.viz.horizon.tab.surface import SurfaceTab
 
 __all__ = [
-    "HorizonTab",
-    "TabManager",
     "ClustersTab",
+    "HorizonTab",
+    "HorizonUIElement",
     "PeaksTab",
     "ROIsTab",
     "SlicesTab",
-    "build_label",
-    "build_slider",
-    "build_checkbox",
-    "build_switcher",
     "SurfaceTab",
+    "TabManager",
+    "build_checkbox",
+    "build_label",
     "build_radio_button",
+    "build_slider",
+    "build_switcher",
 ]

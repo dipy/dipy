@@ -126,3 +126,42 @@ def test_slr_one_streamline():
         qbx_thr=[2],
         progressive=True,
     )
+
+
+def test_slr_empty_after_length_filtering():
+    """Test that slr_with_qbx raises ValueError when all streamlines are
+    filtered out by length constraints.
+    """
+    fname = get_fnames(name="fornix")
+
+    fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
+
+    f = Streamlines(fornix)
+    f1 = f.copy()
+    f2 = f.copy()
+
+    assert_raises(
+        ValueError,
+        slr_with_qbx,
+        f1,
+        f2,
+        verbose=False,
+        rm_small_clusters=1,
+        greater_than=1000,
+        less_than=np.inf,
+        qbx_thr=[2],
+        progressive=True,
+    )
+
+    assert_raises(
+        ValueError,
+        slr_with_qbx,
+        f1,
+        f2,
+        verbose=False,
+        rm_small_clusters=1,
+        greater_than=0,
+        less_than=1,
+        qbx_thr=[2],
+        progressive=True,
+    )

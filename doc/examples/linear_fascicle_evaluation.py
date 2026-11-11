@@ -21,7 +21,7 @@ variables that were created in that example:
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -34,8 +34,8 @@ import dipy.core.optimize as opt
 from dipy.data import fetch_stanford_tracks, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.io.streamline import load_trk
-import dipy.tracking.life as life
+from dipy.io.streamline import load_tractogram
+from dipy.tracking import life
 from dipy.viz import actor, colormap as cmap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
@@ -56,9 +56,9 @@ cc_slice = labels == 2
 # Read the candidates from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()
-lr_superiorfrontal_path = pjoin(streamlines_files[1], "hardi-lr-superiorfrontal.trk")
+lr_superiorfrontal_path = Path(streamlines_files[1]) / "hardi-lr-superiorfrontal.trk"
 
-candidate_sl_sft = load_trk(lr_superiorfrontal_path, "same")
+candidate_sl_sft = load_tractogram(lr_superiorfrontal_path, "same")
 candidate_sl_sft.to_vox()
 candidate_sl = candidate_sl_sft.streamlines
 
@@ -70,29 +70,30 @@ candidate_sl = candidate_sl_sft.streamlines
 # Let's visualize the initial candidate group of streamlines in 3D, relative
 # to the anatomical structure of this brain:
 
-# Enables/disables interactive visualization
-interactive = False
-
 candidate_streamlines_actor = actor.streamtube(
-    candidate_sl, colors=cmap.line_colors(candidate_sl)
+    candidate_sl, colors=cmap.line_colors(candidate_sl), radius=0.1
 )
-cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.7)
 
-vol_actor = actor.slicer(t1_data)
+vol_actor = actor.volume_slicer(
+    t1_data,
+    visibility=(True, False, True),
+    initial_slices=(40, t1_data.shape[1] // 2, 35),
+    depth_write=True,
+)
 
-vol_actor.display(x=40)
-vol_actor2 = vol_actor.copy()
-vol_actor2.display(z=35)
-
-# Add display objects to canvas
 scene = window.Scene()
-scene.add(candidate_streamlines_actor)
-scene.add(cc_ROI_actor)
-scene.add(vol_actor)
-scene.add(vol_actor2)
-window.record(scene=scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
-if interactive:
-    window.show(scene)
+scene.add(candidate_streamlines_actor, cc_ROI_actor, vol_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; We are simulating a click to `L` to snap the camera
+# to the left side.
+
+show_manager = window.ShowManager(title="life_candidates", size=(800, 800), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -164,14 +165,23 @@ fig.savefig("beta_histogram.png")
 # We use $\beta$ to filter out these redundant streamlines, and generate an
 # optimized group of streamlines:
 
-optimized_sl = [np.vstack(candidate_sl)[np.where(fiber_fit.beta > 0)[0]]]
+optimized_sl = candidate_sl[np.where(fiber_fit.beta > 0)[0]]
+optimized_streamlines_actor = actor.streamtube(
+    optimized_sl, colors=cmap.line_colors(optimized_sl), radius=0.1
+)
+actor.set_group_visibility(vol_actor, (True, False, False))
 scene = window.Scene()
-scene.add(actor.streamtube(optimized_sl, colors=cmap.line_colors(optimized_sl)))
-scene.add(cc_ROI_actor)
-scene.add(vol_actor)
-window.record(scene=scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
-if interactive:
-    window.show(scene)
+scene.add(optimized_streamlines_actor, cc_ROI_actor, vol_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo. The default camera looks
+# from the superior side; We are simulating a click to `L` to snap the camera
+# to the left side.
+
+show_manager = window.ShowManager(title="life_optimized", size=(800, 800), scene=scene)
+gizmo = actor.gizmo(show_manager)
+actor.click_gizmo(show_manager, gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -328,7 +338,7 @@ fig.savefig("spatial_errors.png")
 # streamlines generated in
 # :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`, see
 # `this IPython notebook
-# <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
+# <https://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
 #
 # For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
 # webpage <https://francopestilli.github.io/life/>`_.

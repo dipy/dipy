@@ -11,7 +11,6 @@ from numpy.testing import (
     assert_array_equal,
     assert_equal,
     assert_raises,
-    assert_warns,
 )
 
 from dipy.core.gradients import GradientTable, gradient_table
@@ -31,6 +30,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.odf import OdfFit, OdfModel, gfa
 from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, tournier07_legacy_msg
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.utils import seeds_from_mask
 
@@ -455,7 +455,7 @@ def test_difference_with_minmax():
 
 
 @set_random_number_generator()
-def test_degenerate_cases(rng):
+def test_degenerate_cases(rng=None):
     sphere = default_sphere
 
     # completely isotropic and degenerate case
@@ -788,7 +788,7 @@ def test_peaks_shm_coeff():
 
 
 @set_random_number_generator()
-def test_reshape_peaks_for_visualization(rng):
+def test_reshape_peaks_for_visualization(rng=None):
     data1 = rng.standard_normal((10, 5, 3)).astype("float32")
     data2 = rng.standard_normal((10, 2, 5, 3)).astype("float32")
     data3 = rng.standard_normal((10, 2, 12, 5, 3)).astype("float32")

@@ -1,8 +1,10 @@
 from functools import partial
+from pathlib import Path
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.testing.decorators import is_macOS
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.viz.horizon.tab import (
     HorizonTab,
     build_checkbox,
@@ -13,19 +15,29 @@ from dipy.viz.horizon.tab import (
 
 
 class PeaksTab(HorizonTab):
-    def __init__(self, peak_actor):
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
+    def __init__(self, peak_actor, title, fname):
         """Initialize Interaction tab for peaks visualization.
 
         Parameters
         ----------
         peak_actor : PeaksActor
             Horizon PeaksActor visualize peaks.
+        title : str
+            Title of the tab.
+        fname : str
+            Filename of the peaks file.
         """
         super().__init__()
 
         self._actor = peak_actor
-        self._name = "Peaks"
-
+        self._name = title
+        self._file_name = Path(fname or title).name
         self._tab_id = 0
 
         self._actor_toggle = build_checkbox(
@@ -56,6 +68,14 @@ class PeaksTab(HorizonTab):
         self._slice_x.obj.on_moving_slider = self._change_slice_x
         self._slice_x.obj.on_value_changed = self._adjust_slice_x
 
+        self._change_slice_visibility_x = partial(
+            self._update_slice_visibility, selected_slice=self._slice_x
+        )
+
+        self._slice_x_toggle = build_checkbox(
+            labels=[""], checked_labels=[""], on_change=self._change_slice_visibility_x
+        )
+
         self._slice_y_label, self._slice_y = build_slider(
             initial_value=cross_section[1],
             min_value=min_centers[1],
@@ -68,6 +88,14 @@ class PeaksTab(HorizonTab):
         self._slice_y.obj.on_moving_slider = self._change_slice_y
         self._slice_y.obj.on_value_changed = self._adjust_slice_y
 
+        self._change_slice_visibility_y = partial(
+            self._update_slice_visibility, selected_slice=self._slice_y
+        )
+
+        self._slice_y_toggle = build_checkbox(
+            labels=[""], checked_labels=[""], on_change=self._change_slice_visibility_y
+        )
+
         self._slice_z_label, self._slice_z = build_slider(
             initial_value=cross_section[2],
             min_value=min_centers[2],
@@ -79,6 +107,14 @@ class PeaksTab(HorizonTab):
         self._adjust_slice_z = partial(self._change_slice_z, sync_slice=True)
         self._slice_z.obj.on_moving_slider = self._change_slice_z
         self._slice_z.obj.on_value_changed = self._adjust_slice_z
+
+        self._change_slice_visibility_z = partial(
+            self._update_slice_visibility, selected_slice=self._slice_z
+        )
+
+        self._slice_z_toggle = build_checkbox(
+            labels=[""], checked_labels=[""], on_change=self._change_slice_visibility_z
+        )
 
         low_ranges = self._actor.low_ranges
         high_ranges = self._actor.high_ranges
@@ -126,14 +162,20 @@ class PeaksTab(HorizonTab):
             on_change=self._toggle_view_mode,
         )
 
+        self._file_label = build_label(text="Filename")
+        self._file_name_label = build_label(text=self._file_name)
+
         self._register_elements(
             self._opacity_label,
             self._opacity,
             self._actor_toggle,
+            self._slice_x_toggle,
             self._slice_x_label,
             self._slice_x,
+            self._slice_y_toggle,
             self._slice_y_label,
             self._slice_y,
+            self._slice_z_toggle,
             self._slice_z_label,
             self._slice_z,
             self._range_x_label,
@@ -144,6 +186,8 @@ class PeaksTab(HorizonTab):
             self._range_z,
             self._view_mode_label,
             self._view_mode_toggler,
+            self._file_label,
+            self._file_name_label,
         )
 
     def _change_opacity(self, slider):
@@ -208,11 +252,33 @@ class PeaksTab(HorizonTab):
             )
 
         if self._view_mode_toggler.selected_value[0] == self._view_modes[0]:
+            visibility = [-1, -1, -1]
+            self._slice_x.obj.set_visibility(self._slice_x.visibility)
+            self._slice_y.obj.set_visibility(self._slice_y.visibility)
+            self._slice_z.obj.set_visibility(self._slice_z.visibility)
+
+            if self._slice_x.visibility:
+                visibility[0] = self._slice_x.selected_value
+            if self._slice_y.visibility:
+                visibility[1] = self._slice_y.selected_value
+            if self._slice_z.visibility:
+                visibility[2] = self._slice_z.selected_value
+
             self._actor.display_cross_section(
-                self._slice_x.selected_value,
-                self._slice_y.selected_value,
-                self._slice_z.selected_value,
+                visibility[0],
+                visibility[1],
+                visibility[2],
             )
+
+    def _update_slice_visibility(self, checkboxes, selected_slice, *, visibility=None):
+        if checkboxes is not None and "" in checkboxes.checked_labels:
+            visibility = True
+        elif visibility is None:
+            visibility = False
+
+        selected_slice.visibility = visibility
+        selected_slice.obj.set_visibility(visibility)
+        self._change_slice(selected_slice.obj, selected_slice, sync_slice=True)
 
     def _show_cross_section(self):
         """Show Cross Section view mode. Hide the Range sliders and labels."""
@@ -273,11 +339,23 @@ class PeaksTab(HorizonTab):
             )
             self._show_range()
 
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.on_tab_selected is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def on_tab_selected(self):
         """Trigger when tab becomes active."""
         super().on_tab_selected()
         self._toggle_view_mode(self._view_mode_toggler.obj)
 
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.update_slices is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def update_slices(self, x_slice, y_slice, z_slice):
         """Updates slicer positions.
 
@@ -299,6 +377,27 @@ class PeaksTab(HorizonTab):
         if not self._slice_z.obj.value == z_slice:
             self._slice_z.obj.value = z_slice
 
+    def _toggle_actors(self, checkbox):
+        """Toggle the opacity of the peaks actor and slider.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+            FURY checkbox UI element.
+        """
+        if "" in checkbox.checked_labels:
+            self.show(self._opacity.obj)
+        else:
+            self.hide(self._opacity.obj)
+
+        super()._toggle_actors(checkbox)
+
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Build all the elements under the tab.
 
@@ -311,6 +410,9 @@ class PeaksTab(HorizonTab):
 
         x_pos = 0.02
         self._actor_toggle.position = (x_pos, 0.85)
+        self._slice_x_toggle.position = (x_pos, 0.62)
+        self._slice_y_toggle.position = (x_pos, 0.38)
+        self._slice_z_toggle.position = (x_pos, 0.15)
 
         x_pos = 0.04
         self._opacity_label.position = (x_pos, 0.85)
@@ -334,9 +436,16 @@ class PeaksTab(HorizonTab):
 
         x_pos = 0.52
         self._view_mode_label.position = (x_pos, 0.85)
+        self._file_label.position = (x_pos, 0.28)
 
         x_pos = 0.62
         self._view_mode_toggler.position = (x_pos, 0.80)
+        self._file_name_label.position = (x_pos, 0.28)
+
+        if is_macOS:
+            self._file_name_label.size = (800, "auto")
+        else:
+            self._file_name_label.size = (400, "auto")
 
         cross_section = self._actor.cross_section
         self._actor.display_cross_section(
@@ -344,6 +453,12 @@ class PeaksTab(HorizonTab):
         )
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Name of the tab.
 
@@ -354,6 +469,12 @@ class PeaksTab(HorizonTab):
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.PeaksTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """actors controlled by tab.
 

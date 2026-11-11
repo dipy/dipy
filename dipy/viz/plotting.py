@@ -6,10 +6,188 @@ from warnings import warn
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.core.gradients import GradientTable
+from dipy.core.sphere import Sphere
+from dipy.io.utils import split_filename_extension
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
+fury, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
+if has_fury_v2:
+    from fury import actor, window
+
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
+
+
+def create_shells(gtab, *, colors=None):
+    """Create a FURY point actor for an acquisition's gradient shells.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Gradient scheme to render.
+    colors : tuple or ndarray, optional
+        One RGB color or one RGB color for every plotted point.
+
+    Returns
+    -------
+    shell_actor : fury actor
+        Point glyphs, ready to add to a scene.
+
+    Notes
+    -----
+    Gradient radii are proportional to b-values normalized by the largest value.
+    Default colors are black for b0 and interpolate from blue to cyan across
+    shells. Single-shell directions are blue.
+
+    Raises
+    ------
+    TypeError
+        If ``gtab`` is not a gradient table.
+    ValueError
+        If FURY is unavailable or non-b0 b-values are not finite and positive.
+    """
+    if not has_fury_v2:
+        raise ValueError("fury package needed for visualization.")
+    if not isinstance(gtab, GradientTable):
+        raise TypeError("gtab must be a GradientTable.")
+
+    non_b0_mask = ~gtab.b0s_mask
+    non_b0_bvals = gtab.bvals[non_b0_mask]
+    if (
+        non_b0_bvals.size == 0
+        or not np.all(np.isfinite(non_b0_bvals))
+        or np.any(non_b0_bvals <= 0)
+    ):
+        raise ValueError(
+            "Gradient table must contain finite, positive non-b0 b-values."
+        )
+    points = gtab.gradients / non_b0_bvals.max()
+    if colors is None:
+        colors = np.zeros((len(points), 3))
+        colors[non_b0_mask, 2] = 1.0
+        shell_span = np.ptp(non_b0_bvals)
+        if shell_span > 0:
+            colors[non_b0_mask, 1] = (non_b0_bvals - non_b0_bvals.min()) / shell_span
+    return actor.marker(
+        points,
+        colors=colors,
+        size=8.0,
+        marker="circle",
+        edge_color="black",
+        edge_width=1.0,
+    )
+
+
+def create_gradient_sphere(data, *, colors=None):
+    """Create a FURY point actor for gradients or unit-sphere vertices.
+
+    Parameters
+    ----------
+    data : GradientTable or Sphere
+        Gradient scheme or unit-sphere vertices to render.
+    colors : tuple or ndarray, optional
+        One RGB color or one RGB color for every plotted point.
+
+    Returns
+    -------
+    sphere_actor : fury actor
+        Point glyphs, ready to add to a scene.
+
+    Notes
+    -----
+    Gradient tables use :func:`create_shells`. Sphere vertices are green unless
+    colors are supplied.
+
+    Raises
+    ------
+    TypeError
+        If ``data`` is neither a gradient table nor a sphere.
+    ValueError
+        If FURY is unavailable or non-b0 b-values are not finite and positive.
+    """
+    if isinstance(data, GradientTable):
+        return create_shells(data, colors=colors)
+    if not has_fury_v2:
+        raise ValueError("fury package needed for visualization.")
+    if not isinstance(data, Sphere):
+        raise TypeError("data must be a GradientTable or Sphere.")
+    if colors is None:
+        colors = (0.0, 1.0, 0.0)
+    return actor.marker(
+        data.vertices,
+        colors=colors,
+        size=8.0,
+        marker="circle",
+        edge_color="black",
+        edge_width=1.0,
+    )
+
+
+def plot_gradient_sphere(
+    data, *, scene=None, colors=None, filename=None, show=False, size=None
+):
+    """Add gradient or sphere glyphs to a scene, optionally saving or showing it.
+
+    Parameters
+    ----------
+    data : GradientTable or Sphere
+        Gradient scheme or unit-sphere vertices to render.
+    scene : fury.window.Scene, optional
+        Existing scene to add glyphs to; otherwise a white scene is created.
+    colors : tuple or ndarray, optional
+        One RGB color or one RGB color for every plotted point.
+    filename : str or Path, optional
+        Output image path.
+    show : bool, optional
+        Display the scene for interactive rotation. The filename basename is
+        used as the window title when supplied.
+    size : tuple of int, optional
+        Window and saved-image dimensions as (width, height) in pixels.
+        If None, use FURY's native size and pixel ratio.
+
+    Returns
+    -------
+    scene : fury.window.Scene or None
+        Scene containing the rendered glyphs when ``show=False``; otherwise None.
+
+    See Also
+    --------
+    create_gradient_sphere : Create the glyph actor without a scene.
+
+    Notes
+    -----
+    Glyphs are unlit circular markers with a diameter of 8 logical pixels and a
+    1-pixel black outline, independent of camera distance. Saving and showing do
+    not add a camera light.
+    """
+    sphere_actor = create_gradient_sphere(data, colors=colors)
+    if scene is None:
+        scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    scene.add(sphere_actor)
+    size_options = {} if size is None else {"size": size, "pixel_ratio": 1.0}
+    if filename is not None:
+        snapshot_manager = window.ShowManager(
+            scene=scene, window_type="offscreen", **size_options
+        )
+        scene.add(snapshot_manager.screens[0].camera)
+        snapshot_manager.screens[0].camera.show_object(scene.main_scene)
+        try:
+            snapshot_manager.render()
+            snapshot_manager.window.draw()
+            snapshot_manager.snapshot(fname=filename)
+        finally:
+            snapshot_manager.window.close()
+    if show:
+        title = (
+            split_filename_extension(filename)[0] if filename is not None else "DIPY"
+        )
+        show_manager = window.ShowManager(scene=scene, title=title, **size_options)
+        scene.add(show_manager.screens[0].camera)
+        show_manager.screens[0].camera.show_object(scene.main_scene)
+        show_manager.start()
+    else:
+        return scene
 
 
 @warning_for_keywords()
@@ -239,35 +417,52 @@ def compare_qti_maps(
     plt.show()
 
 
-def bundle_shape_profile(x, shape_profile, std):
-    """Plot bundlewarp bundle shape profile.
+def bundle_profile_plot(
+    x, profile, ylabel, *, title="Bundle Profile", std=None, save_path=None, show=True
+):
+    """Plot bundle profile.
 
     Parameters
     ----------
     x : np.ndarray
         Integer array containing x-axis
-    shape_profile : np.ndarray
-        Float array containing bundlewarp displacement magnitudes along the
-        length of the bundle
-    std : np.ndarray
+    profile : np.ndarray
+        Float array containing bundle profile
+    ylabel : str
+        ylabel for the plot
+    title : str, optional
+        Plot title
+    std : np.ndarray, optional
         Float array containing standard deviations
+    save_path : str, optional
+        If provided, save the figure to this path (e.g., "profile.png")
+    show : bool, optional
+        Whether to display the plot interactively
+
     """
     fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
-    std_1 = shape_profile + std
-    std_2 = shape_profile - std
-    ax.plot(
-        x, shape_profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12
-    )
-    ax.fill_between(x, std_1, std_2, alpha=0.2, label="Std", color="Purple")
+
+    ax.plot(x, profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12)
+
+    if std is not None:
+        std_1 = profile + std
+        std_2 = profile - std
+        ax.fill_between(x, std_1, std_2, alpha=0.2, label="Std", color="Purple")
+        plt.ylim(0, max(std_1) + 2)
 
     plt.xticks(x)
-    plt.ylim(0, max(std_1) + 2)
-
-    plt.ylabel("Average Displacement")
+    plt.ylabel(ylabel)
     plt.xlabel("Segment Number")
-    plt.title("Bundle Shape Profile")
+    plt.title(title)
     plt.legend(loc=2)
-    plt.show()
+
+    if save_path is not None:
+        fig.savefig(save_path, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def image_mosaic(

@@ -4,7 +4,7 @@ from scipy.special import jn
 
 from dipy.core.geometry import sphere2cart, vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
@@ -338,7 +338,7 @@ def cylinders_and_ball_soderman(
 
 
 @warning_for_keywords()
-def single_tensor(gtab, S0=1, *, evals=None, evecs=None, snr=None, rng=None):
+def single_tensor(gtab, *, S0=1, evals=None, evecs=None, snr=None, rng=None):
     """Simulate diffusion-weighted signals with a single tensor.
 
     See :footcite:p:`Stejskal1965`, :footcite:p:`Descoteaux2008b`.
@@ -725,7 +725,7 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 
 @warning_for_keywords()
 def single_tensor_odf(r, *, evals=None, evecs=None):
-    """Simulated ODF with a single tensor.
+    """Simulate a Single-Tensor ODF.
 
     See :footcite:p:`Aganj2010` for further details.
 
@@ -844,7 +844,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
 @warning_for_keywords()
 def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
-    """Simulate a Single-Tensor rtop.
+    """Simulate a Single-Tensor RTOP.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -875,7 +875,7 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor RTOP.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -913,7 +913,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
-    """Simulated ODF with a single tensor.
+    """Simulate a Single-Tensor PDF.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -965,7 +965,7 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor ODF.
+    """Simulate a Multi-Tensor PDF.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -1013,7 +1013,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 
 @warning_for_keywords()
 def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Single-Tensor MSD.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -1044,7 +1044,7 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor MSD.
 
     See :footcite:p:`Cheng2012` for further details.
 

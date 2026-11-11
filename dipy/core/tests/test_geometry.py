@@ -5,12 +5,15 @@ import random
 
 import numpy as np
 from numpy.testing import (
+    assert_allclose,
     assert_almost_equal,
     assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
 )
+import pytest
+from scipy.spatial.transform import Rotation
 
 from dipy.core.geometry import (
     cart2sphere,
@@ -24,6 +27,7 @@ from dipy.core.geometry import (
     lambert_equal_area_projection_polar,
     nearest_pos_semi_def,
     perpendicular_directions,
+    rodrigues_axis_rotation,
     sphere2cart,
     sphere_distance,
     vec2vec_rotmat,
@@ -39,7 +43,7 @@ def test_vector_norm():
     A = np.array([[1, 0, 0], [3, 4, 0], [0, 5, 12], [1, 2, 3]])
     expected = np.array([1, 5, 13, np.sqrt(14)])
     assert_array_almost_equal(vector_norm(A), expected)
-    expected.shape = (4, 1)
+    expected = expected.reshape(4, 1)
     assert_array_almost_equal(vector_norm(A, keepdims=True), expected)
     assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True), expected.T)
 
@@ -83,6 +87,34 @@ def test_invert_transform():
 
     assert_array_almost_equal(theta, new_theta)
     assert_array_almost_equal(phi, new_phi)
+
+
+@pytest.mark.parametrize("axis", [[0, 0, 1], [0, 0, 4], [1, 2, 3]])
+@pytest.mark.parametrize("angle", [0, -90, -30, -1e-32, 1e-32, 30, 90])
+def test_rodrigues_axis_rotation(axis, angle):
+    unit_axis = np.asarray(axis) / np.linalg.norm(axis)
+    expected = Rotation.from_rotvec(unit_axis * np.deg2rad(angle)).as_matrix()
+    actual = rodrigues_axis_rotation(axis, angle)
+
+    assert_allclose(actual, expected, atol=1e-14)
+    assert_allclose(actual.T @ actual, np.eye(3), atol=1e-14)
+    assert_allclose(np.linalg.det(actual), 1, atol=1e-14)
+
+
+@pytest.mark.parametrize("angle", [-1e-32, 1e-32])
+def test_rodrigues_axis_rotation_small_angle(angle):
+    actual = rodrigues_axis_rotation([0, 0, 4], angle)
+    theta = np.deg2rad(angle)
+
+    # Retain the first-order rotation rather than rounding to the identity.
+    assert_allclose(actual[1, 0], theta, atol=0)
+    assert_allclose(actual[0, 1], -theta, atol=0)
+
+
+@pytest.mark.parametrize("angle", [-90, 90, -1e-32, 1e-32])
+def test_rodrigues_axis_rotation_zero_axis(angle):
+    with pytest.raises(ValueError, match="non-zero"):
+        rodrigues_axis_rotation([0, 0, 0], angle)
 
 
 def test_nearest_pos_semi_def():
@@ -149,8 +181,66 @@ def test_sphere_distance():
     assert_raises(ValueError, sphere_distance, [1, 0], [0, 1], radius=2.0)
 
 
+@pytest.mark.parametrize("radius", [None, 2.0])
+def test_sphere_distance_corresponding_rows(radius):
+    pts1 = 2 * np.eye(3)
+    pts2 = [[2, 0, 0], [2, 0, 0], [0, 0, -2]]
+    distances = sphere_distance(pts1, pts2, radius=radius)
+    assert_equal(distances.shape, (3,))
+    assert_array_almost_equal(distances, [0, np.pi, 2 * np.pi])
+
+
+def test_sphere_distance_same_rows():
+    rng = np.random.default_rng(42)
+    pts = rng.normal(size=(1000, 3))
+    pts /= np.linalg.norm(pts, axis=1, keepdims=True)
+    assert_array_almost_equal(sphere_distance(pts, pts), np.zeros(1000))
+
+
+@pytest.mark.parametrize(
+    "function, expected",
+    [(sphere_distance, [0, np.pi / 2, np.pi / 2]), (vector_cosine, [1, 0, 0])],
+)
+@pytest.mark.parametrize("shape", [(3,), (1, 3)])
+@pytest.mark.parametrize("swap", [False, True])
+def test_vector_geometry_broadcast(function, expected, shape, swap):
+    vectors = np.eye(3)
+    vector = np.array([1, 0, 0]).reshape(shape)
+    args = (vectors, vector) if swap else (vector, vectors)
+    result = function(*args)
+    assert_equal(result.shape, (3,))
+    assert_array_almost_equal(result, expected)
+
+
+@pytest.mark.parametrize("function", [vector_cosine, sphere_distance])
+def test_vector_geometry_coordinate_mismatch(function):
+    with pytest.raises(ValueError, match="not aligned"):
+        function([np.sqrt(3)], [1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "function, kwargs",
+    [(vector_cosine, {}), (sphere_distance, {"check_radius": False})],
+)
+@pytest.mark.parametrize(
+    "vecs1, vecs2",
+    [
+        ([0, 0], [0, 0]),
+        ([0, 0], [1, 0]),
+        ([1, 0], [0, 0]),
+        ([[1, 0], [0, 0]], [1, 0]),
+    ],
+)
+def test_vector_geometry_zero_length(function, kwargs, vecs1, vecs2):
+    with (
+        np.errstate(divide="raise", invalid="raise"),
+        pytest.raises(ValueError, match="zero-length"),
+    ):
+        function(vecs1, vecs2, **kwargs)
+
+
 @set_random_number_generator()
-def test_vector_cosine(rng):
+def test_vector_cosine(rng=None):
     a = [0, 1]
     b = [1, 0]
     assert_array_almost_equal(vector_cosine(a, b), 0)
@@ -174,6 +264,15 @@ def test_vector_cosine(rng):
     b_dm = b - np.mean(b)
     vcos = vector_cosine(a_dm, b_dm)
     assert_array_almost_equal(cc, vcos)
+
+
+def test_vector_cosine_corresponding_rows():
+    vecs1 = [[1, 0], [2, 0], [0, 3]]
+    vecs2 = [[4, 0], [0, 5], [0, -6]]
+    cosines = vector_cosine(vecs1, vecs2)
+    assert_equal(cosines.shape, (3,))
+    assert_array_almost_equal(cosines, [1, 0, -1])
+    assert_array_almost_equal(vector_cosine(vecs1, vecs1), np.ones(3))
 
 
 def test_lambert_equal_area_projection_polar():
@@ -266,7 +365,7 @@ def test_compose_transformations():
 
 
 @set_random_number_generator()
-def test_compose_decompose_matrix(rng):
+def test_compose_decompose_matrix(rng=None):
     for translate in permutations(40 * rng.random(3), 3):
         for angles in permutations(np.deg2rad(90 * rng.random(3)), 3):
             for shears in permutations(3 * rng.random(3), 3):
@@ -346,7 +445,7 @@ def _rotation_from_angles(r):
 
 
 @set_random_number_generator()
-def test_dist_to_corner(rng):
+def test_dist_to_corner(rng=None):
     affine = np.eye(4)
     # Calculate the distance with the pythagorean theorem:
     pythagoras = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))

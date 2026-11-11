@@ -20,8 +20,7 @@ This example is an extension of
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py` and
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_stopping_criterion.py`
 examples. We begin by loading the data, fitting a Constrained Spherical
-Deconvolution (CSD) reconstruction model, creating the probabilistic direction
-getter and defining the seeds.
+Deconvolution (CSD) reconstruction model, and defining the seeds.
 """
 
 import numpy as np
@@ -31,16 +30,13 @@ from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import CmcStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import pft_tracking, probabilistic_tracking
-from dipy.viz import actor, colormap, has_fury, window
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.viz import actor, colormap, window
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 label_fname = get_fnames(name="stanford_labels")
@@ -112,7 +108,6 @@ pft_streamline_gen = pft_tracking(
     affine,
     max_cross=1,
     step_size=step_size,
-    max_len=1000,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
     particle_count=15,
@@ -124,14 +119,23 @@ pft_streamline_gen = pft_tracking(
 )
 streamlines = Streamlines(pft_streamline_gen)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_pft.trk")
+save_tractogram(sft, "tractogram_pft.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(scene=scene, out_path="tractogram_pft.png", size=(800, 800))
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+
+###############################################################################
+# Show the streamlines with an orientation gizmo.
+
+show_manager = window.ShowManager(title="tractogram_pft", size=(800, 800), scene=scene)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -144,7 +148,6 @@ prob_streamline_generator = probabilistic_tracking(
     cmc_criterion,
     affine,
     step_size=step_size,
-    max_len=1000,
     return_all=False,
     sh=csd_fit.shm_coeff,
     max_angle=20.0,
@@ -152,16 +155,21 @@ prob_streamline_generator = probabilistic_tracking(
 )
 streamlines = Streamlines(prob_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_cmc.trk")
+save_tractogram(sft, "tractogram_probabilistic_cmc.trx")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colors=colormap.line_colors(streamlines)))
-    window.record(
-        scene=scene, out_path="tractogram_probabilistic_cmc.png", size=(800, 800)
-    )
-    if interactive:
-        window.show(scene)
+streamlines_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
+scene = window.Scene()
+scene.add(streamlines_actor)
+show_manager = window.ShowManager(
+    title="tractogram_probabilistic_cmc", size=(800, 800), scene=scene
+)
+_gizmo = actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

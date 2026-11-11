@@ -7,7 +7,7 @@ Introduction to command line interfaces
 This tutorial provides a basic introduction to DIPY's :footcite:p:`Garyfallidis2014a`
 command line interfaces.
 
-Using a terminal, let's download a dataset. This is multi-shell dataset, which was
+Using a terminal, let's download a dataset. This is a multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
 provided in their paper :footcite:p:`Hansen2016a`). For this tutorial we will use
 a Linux terminal, please adapt accordingly if you are using Mac or Windows.
@@ -149,9 +149,9 @@ We can use ``dipy_info`` to check the bval and nii files ::
     [   0.       0.       0.       1.   ]]
     INFO:Voxel size [2.5 2.5 2.5]
 
-We can visualize the data using ``dipy_horizon`` ::
+We can visualize the data using ``dipy_skyline`` ::
 
-    dipy_horizon dwi.nii
+    dipy_skyline dwi.nii
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic1.png?raw=true
     :width: 70 %
@@ -164,9 +164,12 @@ We can use ``dipy_median_otsu`` to build a brain mask for the diffusion data::
 
     dipy_median_otsu dwi.nii --median_radius 2 --numpass 1 --vol_idx 10-50 --out_dir out_work
 
-Visualize the mask using ``dipy_horizon``::
+In case of holes in the mask, or minor errors, add the option ``--finalize_mask`` to
+apply a final step to the mask, which will remove small holes and fill in small gaps.
 
-    dipy_horizon out_work/brain_mask.nii.gz
+Visualize the mask using ``dipy_skyline``::
+
+    dipy_skyline out_work/brain_mask.nii.gz
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic2.png?raw=true
     :width: 70 %
@@ -175,7 +178,7 @@ Visualize the mask using ``dipy_horizon``::
 
     Visualization of a slice from the generated brain mask
 
-Perform DTI using ``dipy_fit_dti``. The input of this function is the DWI data, b-values and b-vector files and the
+Perform DTI using ``dipy_fit_dti``. The inputs of this function are the DWI data, b-values and b-vector files and the
 brain mask that we calculated in the previous step::
 
     dipy_fit_dti dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
@@ -185,7 +188,7 @@ rgb.nii.gz, fa.nii.gz, mode.nii.gz, tensors.nii.gz, evals.nii.gz, ga.nii.gz and 
 
 Visualize DEC map::
 
-    dipy_horizon out_work/rgb.nii.gz --rgb
+    dipy_skyline out_work/rgb.nii.gz --rgb
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic3.png?raw=true
     :width: 70 %
@@ -208,9 +211,9 @@ Build tractography with the ``peaks.pam5`` file as input using the fast EuDX alg
 
     dipy_track out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
 
-We can visualize the result using ``dipy_horizon``::
+We can visualize the result using ``dipy_skyline``::
 
-    dipy_horizon out_work/tracks_from_peaks.trk
+    dipy_skyline out_work/tracks_from_peaks.trk
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
     :width: 70 %
@@ -221,25 +224,29 @@ We can visualize the result using ``dipy_horizon``::
 
 For more information about each command line, try calling the ``-h`` flag for example ::
 
-    dipy_horizon -h
+    dipy_skyline -h
 
 should provide the available options ::
 
-    usage: dipy_horizon [-h] [--cluster] [--cluster_thr float] [--random_colors]
-                        [--length_gt float] [--length_lt float]
-                        [--clusters_gt int] [--clusters_lt int] [--native_coords]
-                        [--stealth] [--emergency_header str]
-                        [--bg_color [float [float ...]]]
-                        [--disable_order_transparency] [--out_dir str]
+    usage: dipy_skyline [-h] [--rois [str ...]] [--peaks [str ...]]
+                        [--odfs [str ...]] [--sh_basis str] [--cluster]
+                        [--performance_version] [--glass_brain]
+                        [--bg_color [float ...]] [--tract_colors str]
+                        [--cluster_thr float] [--cluster_size_thr int]
+                        [--cluster_length_thr float] [--buan_pvals [str ...]]
+                        [--stealth] [--rgb | --no-rgb] [--out_dir str]
                         [--out_stealth_png str] [--force] [--version]
                         [--out_strat string] [--mix_names] [--log_level string]
                         [--log_file string]
                         input_files [input_files ...]
 
 
-Otherwise please see :ref:`workflows_reference`.
+Otherwise please see :ref:`workflows_reference`. All viewer features are covered in :ref:`viz_flow`.
 
-The commands shown in this tutorial are not by any stretch of imagination what we
+To chain these commands into a pipeline, on one subject or on a whole BIDS
+dataset, see :ref:`auto_flow`.
+
+The commands shown in this tutorial are not by any stretch of the imagination what we
 propose as a complete solution to tracking but a mere introduction to DIPY's command interfaces.
 Medical imaging requires a number of steps that depend on the goal of the analysis strategy.
 

@@ -231,7 +231,7 @@ def test_grayscale_iter():
 
 
 @set_random_number_generator()
-def test_square_iter(rng):
+def test_square_iter(rng=None):
     nclasses = 4
     beta = np.float64(0.0)
     max_iter = 10
@@ -322,7 +322,7 @@ def test_square_iter(rng):
 
 
 @set_random_number_generator()
-def test_icm_square(rng):
+def test_icm_square(rng=None):
     nclasses = 4
     max_iter = 10
 
@@ -409,6 +409,17 @@ def test_classify():
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
+
+    # Heavily masked data (50% zeroed) must not cause non-convergence
+    masked_image = np.copy(image)
+    masked_image[masked_image.shape[0] // 2 :, :, :] = 0
+    seg_init, seg_final, PVE = imgseg.classify(masked_image, nclasses, beta)
+
+    npt.assert_(seg_init.max() == nclasses)
+    npt.assert_(seg_init.min() == 0.0)
+    npt.assert_(seg_final.max() == nclasses)
+    npt.assert_(seg_final.min() == 0.0)
+    npt.assert_(PVE.shape[-1] == nclasses)
 
     # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)

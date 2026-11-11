@@ -359,7 +359,7 @@ def test_disperse_charges_alt():
 
 
 @set_random_number_generator()
-def test_fibonacci_sphere(rng):
+def test_fibonacci_sphere(rng=None):
     # Test that the number of points is correct
     points = fibonacci_sphere(n_points=724, rng=rng)
     nt.assert_equal(len(points), 724)
@@ -375,7 +375,7 @@ def test_fibonacci_sphere(rng):
 
 
 @set_random_number_generator()
-def test_fibonacci_hemisphere(rng):
+def test_fibonacci_hemisphere(rng=None):
     # Test that the number of points is correct
     points = fibonacci_sphere(n_points=724, hemisphere=True, rng=rng)
     nt.assert_equal(len(points), 724)

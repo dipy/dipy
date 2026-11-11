@@ -1,6 +1,5 @@
 import abc
 from itertools import combinations
-import logging
 from time import time
 
 import numpy as np
@@ -13,7 +12,6 @@ from dipy.align.bundlemin import (
 from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
 from dipy.core.optimize import Optimizer
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     center_streamlines,
@@ -23,6 +21,8 @@ from dipy.tracking.streamline import (
     transform_streamlines,
     unlist_streamlines,
 )
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import logger
 
 DEFAULT_BOUNDS = [
     (-35, 35),
@@ -38,8 +38,6 @@ DEFAULT_BOUNDS = [
     (-10, 10),
     (-10, 10),
 ]
-
-logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
@@ -399,7 +397,7 @@ class StreamlineLinearRegistration:
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
         self.x0 = self._set_x0(x0)
         self.metric = metric
 
@@ -515,15 +513,13 @@ class StreamlineLinearRegistration:
         if self.verbose:
             opt.print_summary()
 
-        mat_history = []
-
-        if opt.evolution is not None:
-            for vecs in opt.evolution:
-                mat_history.append(
-                    compose_transformations(
-                        moving_mat, compose_matrix44(vecs), static_mat
-                    )
-                )
+        if opt.evolution is None:
+            mat_history = []
+        else:
+            mat_history = [
+                compose_transformations(moving_mat, compose_matrix44(vecs), static_mat)
+                for vecs in opt.evolution
+            ]
 
         if not self.halfway:
             opt_mat = compose_matrix44(opt.xopt)
@@ -900,7 +896,8 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     return _bundle_minimum_distance_asymmetric(static, moving, rows, cols, block_size)
 
 
-def remove_clusters_by_size(clusters, min_size=0):
+@warning_for_keywords(from_version="1.13.0")
+def remove_clusters_by_size(clusters, *, min_size=0):
     ob = filter(lambda c: len(c) >= min_size, clusters)
 
     centroids = Streamlines()
@@ -971,7 +968,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Translation  (3 parameters)...")
         slr_t = StreamlineLinearRegistration(
-            metric=metric, x0="translation", bounds=bounds[:3], method=method
+            metric=metric,
+            x0="translation",
+            bounds=bounds[:3],
+            method=method,
+            num_threads=num_threads,
         )
 
         slm_t = slr_t.optimize(static, moving)
@@ -983,7 +984,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Rigid  (6 parameters) ...")
         slr_r = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:6], method=method
+            metric=metric,
+            x0=x,
+            bounds=bounds[:6],
+            method=method,
+            num_threads=num_threads,
         )
         slm_r = slr_r.optimize(static, moving)
 
@@ -995,7 +1000,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Similarity (7 parameters) ...")
         slr_s = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:7], method=method
+            metric=metric,
+            x0=x,
+            bounds=bounds[:7],
+            method=method,
+            num_threads=num_threads,
         )
         slm_s = slr_s.optimize(static, moving)
 
@@ -1008,7 +1017,11 @@ def progressive_slr(
             logger.info(" Scaling (9 parameters) ...")
 
         slr_c = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:9], method=method
+            metric=metric,
+            x0=x,
+            bounds=bounds[:9],
+            method=method,
+            num_threads=num_threads,
         )
         slm_c = slr_c.optimize(static, moving)
 
@@ -1021,7 +1034,11 @@ def progressive_slr(
             logger.info(" Affine (12 parameters) ...")
 
         slr_a = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:12], method=method
+            metric=metric,
+            x0=x,
+            bounds=bounds[:12],
+            method=method,
+            num_threads=num_threads,
         )
         slm_a = slr_a.optimize(static, moving)
 
@@ -1134,7 +1151,7 @@ def slr_with_qbx(
         logger.info(f"Static streamlines size {len(static)}")
         logger.info(f"Moving streamlines size {len(moving)}")
 
-    def check_range(streamline, gt=greater_than, lt=less_than):
+    def check_range(streamline, *, gt=greater_than, lt=less_than):
         if (length(streamline) > gt) & (length(streamline) < lt):
             return True
         else:
@@ -1142,6 +1159,25 @@ def slr_with_qbx(
 
     streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
     streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
+
+    if len(streamlines1) == 0:
+        msg = (
+            "No streamlines remain in 'static' after length filtering. "
+            f"All streamlines have length outside the range "
+            f"({greater_than}, {less_than}). "
+            "Please adjust the 'greater_than' and 'less_than' parameters."
+        )
+        raise ValueError(msg)
+
+    if len(streamlines2) == 0:
+        msg = (
+            "No streamlines remain in 'moving' after length filtering. "
+            f"All streamlines have length outside the range "
+            f"({greater_than}, {less_than}). "
+            "Please adjust the 'greater_than' and 'less_than' parameters."
+        )
+        raise ValueError(msg)
+
     if verbose:
         logger.info(f"Static streamlines after length reduction {len(streamlines1)}")
         logger.info(f"Moving streamlines after length reduction {len(streamlines2)}")
@@ -1158,7 +1194,7 @@ def slr_with_qbx(
     rstreamlines1._data.astype("f4")
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
-    qb_centroids1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
+    qb_centroids1 = remove_clusters_by_size(cluster_map1, min_size=rm_small_clusters)
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(
@@ -1172,7 +1208,7 @@ def slr_with_qbx(
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
-    qb_centroids2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
+    qb_centroids2 = remove_clusters_by_size(cluster_map2, min_size=rm_small_clusters)
 
     if verbose:
         t = time()
@@ -1309,17 +1345,17 @@ def groupwise_slr(
     n_bundle = len(bundles)
 
     if verbose:
-        logging.info("Groupwise bundle registration running.")
-        logging.info(f"Number of bundles found: {n_bundle}.")
+        logger.info("Groupwise bundle registration running.")
+        logger.info(f"Number of bundles found: {n_bundle}.")
 
     # Preprocess bundles: streamline selection, centering and clustering
     centroids = []
     aff_list = []
     for i in range(n_bundle):
         if verbose:
-            logging.info(
+            logger.info(
                 f"Preprocessing: bundle {i}/{n_bundle}: "
-                + f"{len(bundles[i])} streamlines found."
+                f"{len(bundles[i])} streamlines found."
             )
 
         if select_random is not None:
@@ -1334,7 +1370,7 @@ def groupwise_slr(
 
         if qbx_thr is not None:
             cluster_map = qbx_and_merge(bundle, thresholds=qbx_thr, rng=rng)
-            bundle = remove_clusters_by_size(cluster_map, 1)
+            bundle = remove_clusters_by_size(cluster_map, min_size=1)
 
         centroids.append(bundle)
 
@@ -1342,7 +1378,7 @@ def groupwise_slr(
     d = group_distance(centroids, n_bundle)
 
     if verbose:
-        logging.info(f"Initial group distance: {np.mean(d)}.")
+        logger.info(f"Initial group distance: {np.mean(d)}.")
 
     # Make pairs and start iterating
     pairs, excluded = get_unique_pairs(n_bundle)
@@ -1369,7 +1405,7 @@ def groupwise_slr(
             centroids[ind2] = centroids2
 
             if verbose:
-                logging.info(f"Iteration: {i_iter} pair: {i_pair + 1}/{n_pair}.")
+                logger.info(f"Iteration: {i_iter} pair: {i_pair + 1}/{n_pair}.")
 
         d = np.vstack((d, group_distance(centroids, n_bundle)))
 
@@ -1378,12 +1414,12 @@ def groupwise_slr(
         d_improve = np.mean(d[prev_iter, :]) - np.mean(d[i_iter, :])
 
         if verbose:
-            logging.info(f"Iteration {i_iter} group distance: {np.mean(d[i_iter, :])}")
-            logging.info(f"Iteration {i_iter} improvement previous 3: {d_improve}")
+            logger.info(f"Iteration {i_iter} group distance: {np.mean(d[i_iter, :])}")
+            logger.info(f"Iteration {i_iter} improvement previous 3: {d_improve}")
 
         if d_improve < tol:
             if verbose:
-                logging.info(f"Registration converged {d_improve} < {tol}")
+                logger.info(f"Registration converged {d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)

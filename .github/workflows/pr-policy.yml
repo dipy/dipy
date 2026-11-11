@@ -1,0 +1,37 @@
+name: Pull request policy
+
+# Scheduled rather than triggered by pull requests: no contributor action can
+# start a run that holds a write token.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  enforce:
+    if: github.repository == 'dipy/dipy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/github/contribution_policy.py
+          sparse-checkout-cone-mode: false
+      - name: Check recently updated pull requests
+        run: python3 -I tools/github/contribution_policy.py scan-pull-requests --window 35
+      - name: Warn and close pull requests labeled autoclose
+        if: ${{ !cancelled() }}
+        run: python3 -I tools/github/contribution_policy.py autoclose

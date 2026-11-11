@@ -1,6 +1,5 @@
 """Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)"""
 
-import logging
 import warnings
 
 import numpy as np
@@ -11,15 +10,16 @@ from dipy.core.onetime import auto_attr
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 from dipy.reconst.csdeconv import AxSymShResponse
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
 from dipy.sims.voxel import all_tensor_evecs, single_tensor
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import logger
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
-logger = logging.getLogger(__name__)
 
 
 class RumbaSDModel(OdfModel):
@@ -141,7 +141,7 @@ class RumbaSDModel(OdfModel):
         if R < 1 or n_iter < 1 or n_coils < 1:
             raise ValueError(
                 f"R, n_iter, and n_coils must be >= 1, but R={R},"
-                + f"n_iter={n_iter}, and n_coils={n_coils} "
+                f"n_iter={n_iter}, and n_coils={n_coils} "
             )
 
         self.R = R
@@ -166,16 +166,43 @@ class RumbaSDModel(OdfModel):
         else:
             self.sphere = sphere
 
-        if voxelwise:
-            self.fit = self._voxelwise_fit
-        else:
-            self.fit = self._global_fit
-
         # Fitting parameters
         self.kernel = None
 
+    def fit(self, data, *, mask=None, **kwargs):
+        """
+        Fit fODF and GM/CSF volume fractions.
+
+        Parameters
+        ----------
+        data : ndarray (x, y, z, N) or ([x, y, z], N)
+            Signal values for each voxel. Must be 4D for global fit and 2D for
+            voxelwise fit.
+        mask : ndarray (x, y, z), optional
+            Binary mask specifying voxels of interest with 1; results will only
+            be fit at these voxels (0 elsewhere). If `None`, fits all voxels.
+            Default: None.
+
+        Returns
+        -------
+        model_fit : RumbaFit
+            Fit object storing model parameters.
+
+        """
+        if self.voxelwise:
+            self.kernel = generate_kernel(
+                self.gtab,
+                self.sphere,
+                self.wm_response,
+                self.gm_response,
+                self.csf_response,
+            )
+            return self._voxelwise_fit(data, mask=mask, **kwargs)
+        else:
+            return self._global_fit(data, mask=mask, **kwargs)
+
     @warning_for_keywords()
-    def _global_fit(self, data, *, mask=None):
+    def _global_fit(self, data, *, mask=None, **kwargs):
         """
         Fit fODF and GM/CSF volume fractions globally.
 
@@ -205,8 +232,8 @@ class RumbaSDModel(OdfModel):
         if data.shape[:3] != mask.shape:
             raise ValueError(
                 "Mask shape should match first 3 dimensions of "
-                + f"data, but data dimensions are f{data.shape} "
-                + f"while mask dimensions are f{mask.shape}"
+                f"data, but data dimensions are f{data.shape} "
+                f"while mask dimensions are f{mask.shape}"
             )
 
         # Signal repair, normalization
@@ -248,7 +275,8 @@ class RumbaSDModel(OdfModel):
         return model_fit
 
     @warning_for_keywords()
-    def _voxelwise_fit(self, data, *, mask=None):
+    @multi_voxel_fit
+    def _voxelwise_fit(self, data, *, mask=None, **kwargs):
         """
         Fit fODF and GM/CSF volume fractions voxelwise.
 
@@ -267,48 +295,31 @@ class RumbaSDModel(OdfModel):
             Fit object storing model parameters.
 
         """
+        # Normalize data to mean b0 image
+        vox_data = normalize_data(data, self.where_b0s, min_signal=_EPS)
+        # Rearrange data to match corrected gradient table
+        vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
+        vox_data[vox_data > 1] = 1  # clip values between 0 and 1
 
-        if mask is None:  # default mask includes all voxels
-            mask = np.ones(data.shape[:-1])
-
-        if data.shape[:-1] != mask.shape:
-            raise ValueError(
-                "Mask shape should match first dimensions of "
-                + f"data, but data dimensions are f{data.shape} "
-                + f"while mask dimensions are f{mask.shape}"
-            )
-
-        self.kernel = generate_kernel(
-            self.gtab,
-            self.sphere,
-            self.wm_response,
-            self.gm_response,
-            self.csf_response,
+        # Fitting
+        model_param = rumba_deconv(
+            vox_data,
+            self.kernel,
+            n_iter=self.n_iter,
+            recon_type=self.recon_type,
+            n_coils=self.n_coils,
         )
+        model_params = np.zeros(
+            (
+                1,
+                1,
+                1,
+                len(self.sphere.vertices) + 2,
+            )
+        )
+        model_params[0, 0, 0, ...] = model_param
 
-        model_params = np.zeros(data.shape[:-1] + (len(self.sphere.vertices) + 2,))
-
-        for ijk in np.ndindex(data.shape[:-1]):
-            if mask[ijk]:
-                vox_data = data[ijk]
-                # Normalize data to mean b0 image
-                vox_data = normalize_data(vox_data, self.where_b0s, min_signal=_EPS)
-                # Rearrange data to match corrected gradient table
-                vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
-                vox_data[vox_data > 1] = 1  # clip values between 0 and 1
-
-                # Fitting
-                model_param = rumba_deconv(
-                    vox_data,
-                    self.kernel,
-                    n_iter=self.n_iter,
-                    recon_type=self.recon_type,
-                    n_coils=self.n_coils,
-                )
-
-                model_params[ijk] = model_param
-
-        model_fit = RumbaFit(self, model_params)
+        model_fit = RumbaFit(self, model_param)
         return model_fit
 
 
@@ -351,8 +362,7 @@ class RumbaFit(OdfFit):
         """
         if sphere is not None and sphere != self.model.sphere:
             raise ValueError(
-                "Reconstruction sphere must be the same as used"
-                + " in the RUMBA-SD model."
+                "Reconstruction sphere must be the same as used in the RUMBA-SD model."
             )
 
         odf = self.model_params[..., :-2]
@@ -931,8 +941,8 @@ def rumba_deconv_global(
     if np.any(np.array(data.shape[:3]) == 1) and use_tv:
         raise ValueError(
             "Cannot use TV regularization if any spatial"
-            + "dimensions are 1; "
-            + f"provided dimensions were {data.shape[:3]}"
+            "dimensions are 1; "
+            f"provided dimensions were {data.shape[:3]}"
         )
 
     epsilon = 1e-7
@@ -960,13 +970,7 @@ def rumba_deconv_global(
     index_mask = np.atleast_1d(np.squeeze(np.argwhere(mask_vec)))
     n_v_true = len(index_mask)  # number of target voxels
 
-    data_2d = np.zeros((n_v_true, n_grad), dtype=np.float32)
-    for i in range(n_grad):
-        data_2d[:, i] = np.ravel(data[:, :, :, i])[
-            index_mask
-        ]  # only keep voxels of interest
-
-    data_2d = data_2d.T
+    data_2d = data.reshape(-1, n_grad)[index_mask].T
     fodf = np.tile(fodf0, (1, n_v_true))
     reblurred = np.matmul(kernel, fodf)
 
@@ -1024,12 +1028,12 @@ def rumba_deconv_global(
         sigma2_i = np.minimum((1 / 8) ** 2, np.maximum(sigma2_i, (1 / 80) ** 2))
 
         if verbose:
-            logger.info("Iteration %d of %d", i + 1, n_iter)
+            logger.info(f"Iteration {i + 1} of {n_iter}")
 
             snr_mean = np.mean(1 / np.sqrt(sigma2_i))
             snr_std = np.std(1 / np.sqrt(sigma2_i))
             logger.info(
-                "Mean SNR (S0/sigma) estimated to be %.3f +/- %.3f", snr_mean, snr_std
+                f"Mean SNR (S0/sigma) estimated to be {snr_mean:3f} +/- {snr_std:.3f}"
             )
         # Expand into matrix
         sigma2 = np.tile(sigma2_i[None, :], (data_2d.shape[0], 1))
@@ -1106,13 +1110,9 @@ def _divergence(F):
 @warning_for_keywords()
 def _reshape_2d_4d(M, mask, *, out=None):
     """
-    Faster reshape from 2D to 4D.
+    Reshape from 2D to 4D using numpy fancy indexing.
     """
     if out is None:
         out = np.zeros((*mask.shape, M.shape[-1]), dtype=M.dtype)
-    n = 0
-    for i, j, k in np.ndindex(mask.shape):
-        if mask[i, j, k]:
-            out[i, j, k, :] = M[n, :]
-            n += 1
+    out[mask.astype(bool)] = M
     return out

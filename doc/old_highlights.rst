@@ -4,6 +4,18 @@
 Older Highlights
 ****************
 
+**DIPY 1.11.0** is now available. New features include:
+
+- NF: Refactoring of the tracking API.
+- Deprecation of Tensorflow backend in favor of PyTorch.
+- Performance improvements of multiple functionalities.
+- DIPY Horizon improvements and minor features added.
+- Added support for Python 3.13.
+- Drop support for Python 3.9.
+- Multiple Workflows updated and added (15 workflows).
+- Documentation update.
+- Closed 73 issues and merged 47 pull requests.
+
 **DIPY 1.10.0** is now available. New features include:
 
 - NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
@@ -280,7 +292,7 @@ DIPY was an **official exhibitor** for OHBM 2015.
 .. raw :: html
 
   <div style="width: 80% max-width=800px">
-    <a href="http://www.humanbrainmapping.org/i4a/pages/index.cfm?pageID=3625" target="_blank"><img alt=" " class="align-center" src="_static/hbm2015_exhibitors.jpg" style="width: 90%;max-height: 90%"></a>
+    <a href="https://www.humanbrainmapping.org/i4a/pages/index.cfm?pageID=3625" target="_blank"><img alt=" " class="align-center" src="_static/hbm2015_exhibitors.jpg" style="width: 90%;max-height: 90%"></a>
   </div>
 
 
@@ -305,7 +317,7 @@ For more information about DIPY_, read the `DIPY paper`_  in Frontiers in Neuroi
 .. raw :: html
 
   <div style="width: 80% max-width=800px">
-    <a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%"></a>
+    <a href="https://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%"></a>
   </div>
 
 So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.
@@ -315,7 +327,7 @@ In DIPY_ we care about methods which can solve complex problems efficiently and 
 
 .. raw:: html
 
-    <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
+    <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 
 
 .. include:: links_names.inc

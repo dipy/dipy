@@ -6,7 +6,7 @@ import math
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # epsilon for testing whether a number is close to zero
 _EPS = np.finfo(float).eps * 4.0
@@ -147,8 +147,8 @@ def cart2sphere(x, y, z):
 
     """
     r = np.sqrt(x * x + y * y + z * z)
-    cos = np.divide(z, r, where=r > 0)
-    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1))
+    cos = np.divide(z, r, where=r > 0, out=None)
+    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1), out=None)
     theta = np.where(r > 0, theta, 0.0)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
@@ -272,23 +272,24 @@ def rodrigues_axis_rotation(r, theta):
 
     where :math:`n = r / ||r||`
 
-    In case the angle :math:`||r||` is very small, the above formula may lead
+    In case the angle :math:`\theta` is very small, the above formula may lead
     to numerical instabilities. We instead use a Taylor expansion
-    around :math:`theta=0`:
+    around :math:`\theta=0`, with the skew-symmetric matrix of
+    :math:`\theta n`:
 
     .. math::
         :nowrap:
 
-        R = I + \sin(\theta)/\theta \mathbf{S}_r +
-        (1-\cos(\theta))/\theta^2 \mathbf{S}_r^2
+        R = I + \sin(\theta)/\theta \mathbf{S}_{\theta n} +
+        (1-\cos(\theta))/\theta^2 \mathbf{S}_{\theta n}^2
 
     leading to:
 
     .. math::
         :nowrap:
 
-        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_r +
-        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_r^2
+        R = \mathbf{I} + (1-\theta^2/6)*\mathbf{S}_{\theta n} +
+        (\frac{1}{2}-\theta^2/24)*\mathbf{S}_{\theta n}^2
 
     Parameters
     ----------
@@ -315,11 +316,17 @@ def rodrigues_axis_rotation(r, theta):
 
     """
     theta = np.deg2rad(theta)
-    if theta > 1e-30:
-        n = r / np.linalg.norm(r)
+    if theta == 0:
+        return np.eye(3)
+    norm = np.linalg.norm(r)
+    if norm == 0:
+        raise ValueError("Rotation axis must be non-zero")
+    n = r / norm
+    if abs(theta) > 1e-30:
         Sn = np.array([[0, -n[2], n[1]], [n[2], 0, -n[0]], [-n[1], n[0], 0]])
         R = np.eye(3) + np.sin(theta) * Sn + (1 - np.cos(theta)) * np.dot(Sn, Sn)
     else:
+        r = theta * n
         Sr = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
         theta2 = theta * theta
         R = np.eye(3) + (1 - theta2 / 6.0) * Sr + (0.5 - theta2 / 24.0) * np.dot(Sr, Sr)
@@ -413,6 +420,12 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
        Distances between corresponding points in `pts1` and `pts2`
        across the spherical surface, i.e. the great circle distance
 
+    Raises
+    ------
+    ValueError
+       If a point vector has zero length, or the radii do not match when
+       `check_radius` is True.
+
     See Also
     --------
     cart_distance : cartesian distance between points
@@ -420,9 +433,9 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
 
     Examples
     --------
-    >>> print('%.4f' % sphere_distance([0,1],[1,0]))
+    >>> print(f'{sphere_distance([0,1],[1,0]):.4f}')
     1.5708
-    >>> print('%.4f' % sphere_distance([0,3],[3,0]))
+    >>> print(f'{sphere_distance([0,3],[3,0]):.4f}')
     4.7124
     """
     pts1 = np.asarray(pts1)
@@ -435,9 +448,7 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
         if not (np.allclose(radius, lens1) and np.allclose(radius, lens2)):
             raise ValueError("Radii do not match sphere surface")
     # Get angle with vector cosine
-    dots = np.inner(pts1, pts2)
-    lens = lens1 * lens2
-    angle_cos = np.arccos(dots / lens)
+    angle_cos = np.arccos(np.clip(vector_cosine(pts1, pts2), -1, 1))
     return angle_cos * radius
 
 
@@ -492,7 +503,7 @@ def vector_cosine(vecs1, vecs2):
     ----------
     vecs1 : (N, R) or (R,) array_like
        N vectors (as rows) or single vector.  Vectors have R elements.
-    vecs1 : (N, R) or (R,) array_like
+    vecs2 : (N, R) or (R,) array_like
        N vectors (as rows) or single vector.  Vectors have R elements.
        It should be possible to broadcast `vecs1` against `vecs2`
 
@@ -500,6 +511,11 @@ def vector_cosine(vecs1, vecs2):
     -------
     vcos : (N,) or (0,) array
        Vector cosines.  To get the angles you will need ``np.arccos``
+
+    Raises
+    ------
+    ValueError
+       If either input contains a zero-length vector, whose angle is undefined.
 
     Notes
     -----
@@ -511,8 +527,12 @@ def vector_cosine(vecs1, vecs2):
     vecs2 = np.asarray(vecs2)
     lens1 = np.sqrt(np.sum(vecs1**2, axis=-1))
     lens2 = np.sqrt(np.sum(vecs2**2, axis=-1))
-    dots = np.inner(vecs1, vecs2)
+    if vecs1.ndim and vecs2.ndim and vecs1.shape[-1] != vecs2.shape[-1]:
+        raise ValueError(f"shapes {vecs1.shape} and {vecs2.shape} not aligned")
+    dots = np.sum(vecs1 * vecs2, axis=-1)
     lens = lens1 * lens2
+    if np.any(lens == 0):
+        raise ValueError("Cannot compute cosine with a zero-length vector")
     return dots / lens
 
 
@@ -980,8 +1000,8 @@ def perpendicular_directions(v, *, num=30, half=False):
 
     Returns
     -------
-    psamples : array (n, 3)
-        array of vectors perpendicular to v
+    psamples : ndarray, shape (n, 3)
+        Array of vectors perpendicular to v.
 
     Notes
     -----
@@ -1033,8 +1053,7 @@ def perpendicular_directions(v, *, num=30, half=False):
 
     For more details on this calculation, see
     `here <https://gsoc2015dipydki.blogspot.com/2015/07/rnh-post-8-computing-perpendicular.html>`_.
-
-    """  # noqa: E501
+    """
     v = np.array(v, dtype=float)
 
     # Float error used for floats comparison
@@ -1116,7 +1135,7 @@ def is_hemispherical(vecs):
     ----------
     https://rstudio-pubs-static.s3.amazonaws.com/27121_a22e51b47c544980bad594d5e0bb2d04.html
 
-    """  # noqa: E501
+    """
     if vecs.shape[1] != 3:
         raise ValueError("Input vectors must be 3D vectors")
     if not np.allclose(1, np.linalg.norm(vecs, axis=1)):

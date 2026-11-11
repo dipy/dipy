@@ -19,11 +19,94 @@ from dipy.reconst.weights_method import (
     weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.parallel import paramap
+
+
+def lower_triangular_to_cholesky(tensor_elements):
+    """Convert diffusion-tensor elements to Cholesky elements.
+
+    Parameters
+    ----------
+    tensor_elements : array (6,)
+        Six independent elements of the diffusion tensor in lower-triangular
+        order.
+
+    Returns
+    -------
+    cholesky_elements : array (6,)
+        Six elements of the Cholesky decomposition, ordered as
+        ``(R0, R1, R2, R3, R4, R5)`` :footcite:p:`Koay2006b`.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    R0 = np.sqrt(tensor_elements[0])
+    R3 = tensor_elements[1] / R0
+    R1 = np.sqrt(tensor_elements[2] - R3**2)
+    R5 = tensor_elements[3] / R0
+    R4 = (tensor_elements[4] - R3 * R5) / R1
+    R2 = np.sqrt(tensor_elements[5] - R4**2 - R5**2)
+
+    return np.array([R0, R1, R2, R3, R4, R5])
+
+
+def cholesky_to_lower_triangular(R):
+    """Convert Cholesky elements to diffusion-tensor elements.
+
+    Parameters
+    ----------
+    R : array (6,)
+        Six elements of the Cholesky decomposition, ordered as
+        ``(R0, R1, R2, R3, R4, R5)`` :footcite:p:`Koay2006b`.
+
+    Returns
+    -------
+    tensor_elements : array (6,)
+        Six independent elements of the diffusion tensor in lower-triangular
+        order.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    Dxx = R[0] ** 2
+    Dxy = R[0] * R[3]
+    Dyy = R[1] ** 2 + R[3] ** 2
+    Dxz = R[0] * R[5]
+    Dyz = R[1] * R[4] + R[3] * R[5]
+    Dzz = R[2] ** 2 + R[4] ** 2 + R[5] ** 2
+    return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
+
 
 MIN_POSITIVE_SIGNAL = 0.0001
 
 ols_resort_msg = "Resorted to OLS solution in some voxels"
+
+
+def _cholesky_to_lower_triangular_jacobian(R):
+    """Jacobian of the Cholesky-to-tensor transformation."""
+    R0, R1, R2, R3, R4, R5 = R
+
+    jacobian = np.zeros((6, 6), dtype=np.result_type(R, float))
+
+    jacobian[0, 0] = 2 * R0
+    jacobian[1, 0] = R3
+    jacobian[1, 3] = R0
+    jacobian[2, 1] = 2 * R1
+    jacobian[2, 3] = 2 * R3
+    jacobian[3, 0] = R5
+    jacobian[3, 5] = R0
+    jacobian[4, 1] = R4
+    jacobian[4, 3] = R5
+    jacobian[4, 4] = R1
+    jacobian[4, 5] = R3
+    jacobian[5, 2] = 2 * R2
+    jacobian[5, 4] = 2 * R4
+    jacobian[5, 5] = 2 * R5
+
+    return jacobian
 
 
 @warning_for_keywords()
@@ -107,7 +190,7 @@ def geodesic_anisotropy(evals, *, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor.
     axis : int, optional
-        Axis of `evals` which contains 3 eigenvalues.
+        Axis of evals which contains 3 eigenvalues.
 
     Returns
     -------
@@ -376,7 +459,7 @@ def isotropic(q_form):
     :footcite:p:`Ennis2006`):
 
     .. math::
-        \bar{A} = \frac{1}{2} tr(A) I
+        \bar{A} = \frac{1}{3} tr(A) I
 
     References
     ----------
@@ -414,7 +497,7 @@ def deviatoric(q_form):
     .. math::
         \widetilde{A} = A - \bar{A}
 
-    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the isotropic
     part of the tensor.
 
     References
@@ -478,8 +561,11 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing isotropy. Mode is calculated with the following
-    equation (equation 9 in :footcite:p:`Ennis2006`):
+    with 0 representing orthotropy. Mode is undefined for isotropic tensors:
+    0 is returned when the deviatoric part is exactly zero, but nearly
+    isotropic tensors can give unstable values anywhere in [-1, 1]. Mode is
+    calculated with the following equation (equation 9 in
+    :footcite:p:`Ennis2006`):
 
     .. math::
 
@@ -560,8 +646,8 @@ def planarity(evals, *, axis=-1):
 
     Returns
     -------
-    linearity : array
-        Calculated linearity of the diffusion tensor.
+    planarity : array
+        Calculated planarity of the diffusion tensor.
 
     Notes
     -----
@@ -607,7 +693,7 @@ def sphericity(evals, *, axis=-1):
 
     .. math::
 
-        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
     References
     ----------
@@ -697,6 +783,7 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """A Diffusion Tensor Model.
 
@@ -868,6 +955,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
+    """Stores the fit result of the Diffusion Tensor model."""
+
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
@@ -948,7 +1037,7 @@ class TensorFit:
     @auto_attr
     def mode(self):
         """
-        Tensor mode calculated from cached eigenvalues.
+        Tensor mode calculated from the tensor quadratic form.
         """
         return mode(self.quadratic_form)
 
@@ -1042,17 +1131,17 @@ class TensorFit:
         r"""
         Returns
         -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor
+        planarity : array
+            Calculated planarity of the diffusion tensor
             :footcite:p:`Westin1997`.
 
         Notes
         -----
-        Sphericity is calculated with the following equation:
+        Planarity is calculated with the following equation:
 
         .. math::
 
-            Sphericity =
+            Planarity =
             \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         References
@@ -1138,7 +1227,7 @@ class TensorFit:
         .. footbibliography::
 
         """
-        odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
+        odf = np.zeros(self.evals.shape[:-1] + (sphere.vertices.shape[0],))
         if len(self.evals.shape) > 1:
             mask = np.where(
                 (self.evals[..., 0] > 0)
@@ -1294,6 +1383,9 @@ def iter_fit_tensor(*, step=1e4):
         """
 
         @functools.wraps(fit_tensor)
+        # Innermost: functools.wraps swaps in fit_tensor's signature, which has
+        # no keyword-only parameter, making the decorator above it a no-op.
+        @warning_for_keywords(from_version="1.12.0")
         def wrapped_fit_tensor(
             design_matrix, data, *args, return_S0_hat=False, step=step, **kwargs
         ):
@@ -1336,6 +1428,8 @@ def iter_fit_tensor(*, step=1e4):
                 weights = weights.reshape(-1, weights.shape[-1])
             if design_matrix.shape[-1] == 22:  # DKI
                 sz = 22
+            elif design_matrix.shape[-1] == 28:  # QTI
+                sz = 28
             else:  # DTI
                 sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
@@ -1369,6 +1463,9 @@ def iter_fit_tensor(*, step=1e4):
             if extra:
                 for key in extra:
                     extra[key] = extra[key].reshape(shape + (-1,))
+            else:
+                # Make sure extra is None if there is no extra
+                extra = None
 
             if return_S0_hat:
                 return (
@@ -1620,7 +1717,10 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq passes these arguments positionally.
+    def err_func(
+        self, tensor, design_matrix, data, weights=None, cholesky=False
+    ):  # pep3102: ignore
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1640,6 +1740,13 @@ class _NllsHelper:
             squared residuals such that $S = \sum_i w_i r_i^2$.
 
         """
+
+        if cholesky:
+            r_params = tensor[:6]
+            neg_log_s0 = tensor[6:]
+            d_params = cholesky_to_lower_triangular(r_params)
+            tensor = np.concatenate((d_params, neg_log_s0))
+
         # This is the predicted signal given the params:
         y = np.exp(np.dot(design_matrix, tensor))
         self.y = y  # cache the results
@@ -1663,7 +1770,10 @@ class _NllsHelper:
                     self.sqrt_w = self.sqrt_w[:, None]
                 return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def jacobian_func(
+        self, tensor, design_matrix, data, weights=None, cholesky=False
+    ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
         Parameters
@@ -1693,11 +1803,20 @@ class _NllsHelper:
         """
         # minus sign, because derivative of residuals = data - y
         # sqrt(w) because w corresponds to the squared residuals
+        if cholesky:
+            r_params = tensor[:6]
+            chol_jacobian = _cholesky_to_lower_triangular_jacobian(r_params)
+
+            effective_design_matrix = design_matrix.copy()
+            effective_design_matrix[:, :6] = design_matrix[:, :6] @ chol_jacobian
+
+        else:
+            effective_design_matrix = design_matrix
 
         if weights is None:
-            return -self.y[:, None] * design_matrix
+            return -self.y[:, None] * effective_design_matrix
         else:
-            return -self.y[:, None] * design_matrix * self.sqrt_w
+            return -self.y[:, None] * effective_design_matrix * self.sqrt_w
 
 
 @warning_for_keywords()
@@ -1758,6 +1877,7 @@ def nlls_fit_tensor(
     return_lower_triangular=False,
     return_leverages=False,
     init_params=None,
+    cholesky=False,
 ):
     r"""
     Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
@@ -1797,10 +1917,21 @@ def nlls_fit_tensor(
     init_params : array ([X, Y, Z, ...], Npar), optional
         Parameters in lower triangular form as initial optimization guess.
 
+    cholesky : bool, optional
+        If True, use a Cholesky parameterization for fitting the tensor.
+        Default: False.
+
     Returns
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
         voxel.
+
+    Notes
+    -----
+    For DKI and CTI fits, if the squared mean diffusivity is zero, the
+    normalized kurtosis tensor elements are set to zero without a division
+    warning. This is a numerical convention, not a physically defined
+    kurtosis at zero diffusivity. The CTI covariance elements are retained.
     """
     tol = 1e-6
 
@@ -1811,11 +1942,16 @@ def nlls_fit_tensor(
     # Detect if number of parameters corresponds to dti
     dti = npa == 12
 
-    # Flatten for the iteration over voxels:
+    # Flatten data for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
 
+    # Flatten weights for the iteration over voxels:
+    weights = weights.reshape((-1, weights.shape[-1])) if weights is not None else None
+    if weights is not None:
+        assert weights.shape == flat_data.shape, "Weights shape mismatch"
+
+    # Use the OLS method parameters as the starting point for nlls
     if init_params is None:
-        # Use the OLS method parameters as the starting point for nlls
         D, extra = ols_fit_tensor(
             design_matrix,
             flat_data,
@@ -1847,22 +1983,47 @@ def nlls_fit_tensor(
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
+
+    # Start processing voxels
     for vox in range(flat_data.shape[0]):
+        # Check if voxel only contains zeros
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
 
         start_params = ols_params[vox]
 
+        if cholesky:
+            tensor_ols = start_params[:6]
+            neg_log_s0 = start_params[6:]
+
+            # remove possible zero eigen-value in starting pars for cholesky
+            evals, evecs = decompose_tensor(from_lower_triangular(tensor_ols))
+            evals = np.maximum(evals, 2e-7)
+
+            dt_clean = lower_triangular(vec_val_vect(evecs, evals))
+
+            r_params = lower_triangular_to_cholesky(dt_clean)
+            start_params = np.concatenate((r_params, neg_log_s0))
+
         weights_vox = weights[vox] if weights is not None else None
 
         try:
             # Do the optimization in this voxel:
+            fit_args = (design_matrix, flat_data[vox], weights_vox)
+            if cholesky:
+                fit_args += (True,)
+
             this_param, status = opt.leastsq(
                 err_func,
                 start_params,
-                args=(design_matrix, flat_data[vox], weights_vox),
+                args=fit_args,
                 Dfun=jac_func,
             )
+
+            if cholesky:
+                r_result = this_param[:6]
+                d_result = cholesky_to_lower_triangular(r_result)
+                this_param = np.concatenate((d_result, this_param[6:]))
 
             flat_params[vox] = this_param
 
@@ -1871,6 +2032,7 @@ def nlls_fit_tensor(
                 from_lower_triangular(this_param[:6]),
                 min_diffusivity=tol / -design_matrix.min(),
             )
+
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
 
@@ -1880,10 +2042,13 @@ def nlls_fit_tensor(
             resort_to_OLS = True
             this_param = start_params
 
-            flat_params[vox] = this_param  # NOTE: ignores fail_is_nan
+            if cholesky:
+                this_param = this_param.copy()
+                this_param[:6] = cholesky_to_lower_triangular(this_param[:6])
+
+            flat_params[vox] = this_param
 
             if not fail_is_nan:
-                # Convert diffusion tensor parameters to evals and evecs
                 evals, evecs = decompose_tensor(
                     from_lower_triangular(this_param[:6]),
                     min_diffusivity=tol / -design_matrix.min(),
@@ -1899,7 +2064,18 @@ def nlls_fit_tensor(
             model_S0[vox] = np.exp(-this_param[-1])
         if not dti:
             md2 = evals.mean(0) ** 2
-            params[vox, 12:] = this_param[6:-1] / md2
+            if md2 > 0:
+                if npa == 27:  # DKI (12 DTI + 15 DKI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                elif npa == 48:  # CTI (12 DTI + 15 DKI + 21 CTI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                    params[vox, 27:48] = this_param[21:42]
+            else:
+                if npa == 27:
+                    params[vox, 12:27] = 0.0
+                elif npa == 48:
+                    params[vox, 12:27] = 0.0
+                    params[vox, 27:48] = this_param[21:42]
 
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
@@ -1912,9 +2088,9 @@ def nlls_fit_tensor(
     if return_lower_triangular:
         return flat_params, leverages
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], None
     else:
         return params, None
@@ -2116,10 +2292,10 @@ def restore_fit_tensor(
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
@@ -2186,6 +2362,7 @@ def iterative_fit_tensor(
     # Detect if number of parameters corresponds to dti
     npa = p + 5
     dti = npa == 12
+    qti = p == 28
 
     w, robust = None, None  # w = None means wls_fit_tensor uses WLS weights
     D, extra, leverages = None, None, None  # initialize, for clarity
@@ -2221,11 +2398,15 @@ def iterative_fit_tensor(
             if rdx == 1:  # for NLLS, leverages from OLS, so they never change
                 leverages = extra["leverages"]
 
+    if qti:
+        extra = {"robust": robust}
+        return D, extra
+
     # Convert diffusion tensor parameters to the evals and the evecs:
     evals, evecs = decompose_tensor(
         from_lower_triangular(D[:, :6]), min_diffusivity=tol / -design_matrix.min()
     )
-    params = np.empty((data.shape[0:-1] + (npa,)))
+    params = np.empty(data.shape[0:-1] + (npa,))
     params[:, :3] = evals
     params[:, 3:12] = evecs.reshape(params.shape[0:-1] + (-1,))
 
@@ -2237,7 +2418,7 @@ def iterative_fit_tensor(
 
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
@@ -2367,11 +2548,14 @@ def lower_triangular(tensor, *, b0=None):
         raise ValueError("Diffusion tensors should be (..., 3, 3)")
     if b0 is None:
         return tensor[..., _lt_rows, _lt_cols]
-    else:
-        D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
-        D[..., 6] = -np.log(b0)
-        D[..., :6] = tensor[..., _lt_rows, _lt_cols]
-        return D
+
+    if not isinstance(b0, (int, float, np.ndarray)):
+        raise TypeError("b0 should be a number")
+
+    D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
+    D[..., 6] = -np.log(np.where(b0 > MIN_POSITIVE_SIGNAL, b0, MIN_POSITIVE_SIGNAL))
+    D[..., :6] = tensor[..., _lt_rows, _lt_cols]
+    return D
 
 
 @warning_for_keywords()
@@ -2472,30 +2656,61 @@ def design_matrix(gtab, *, dtype=None):
 
 
 @warning_for_keywords()
-def quantize_evecs(evecs, *, odf_vertices=None):
+def quantize_evecs(evecs, *, odf_vertices=None, idx=0, n_jobs=-1, engine="serial"):
     """Find the closest orientation of an evenly distributed sphere
 
     Parameters
     ----------
     evecs : ndarray
-        Eigenvectors.
+        Eigenvectors of shape (..., 3, n_evecs)
     odf_vertices : ndarray, optional
         If None, then set vertices from symmetric362 sphere.  Otherwise use
         passed ndarray as vertices
+    idx : int, optional
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
+        If 0, uses the largest eigenvalue.
+    n_jobs : int, optional
+        Number of parallel jobs.
+    engine : str, optional
+        Parallel engine to use.  Choose from {"serial", "ray", "dask", "joblib"}.
+        "ray" is recommended but requires the ray library to be installed.
 
     Returns
     -------
-    IN : ndarray
-
+    ndarray
+        Indices of the closest vertices in the odf_vertices for each
+        principal eigenvector.
     """
-    max_evecs = evecs[..., :, 0]
+    if idx < 0 or idx > evecs.shape[-1] - 1:
+        raise ValueError(f"idx must be in range [0, {evecs.shape[-1] - 1}]")
+
+    if evecs.ndim < 2 or evecs.shape[-2] != 3:
+        raise ValueError(
+            "evecs must be at least 2D with second-to-last dimension of size 3"
+        )
+
+    def _find_closest_vertex(eigenvector):
+        """Helper function to find closest vertex for a single eigenvector."""
+        return np.argmax(np.dot(odf_vertices, eigenvector))
+
+    principal_eigenvectors = evecs[..., :, idx]
     if odf_vertices is None:
         odf_vertices = get_sphere(name="symmetric362").vertices
-    tup = max_evecs.shape[:-1]
-    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
-    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
-    IN = IN.reshape(tup)
-    return IN
+
+    if evecs.ndim == 2:
+        return _find_closest_vertex(principal_eigenvectors)
+
+    original_shape = principal_eigenvectors.shape[:-1]
+    flattened_eigenvectors = principal_eigenvectors.reshape(
+        np.prod(np.array(original_shape)), 3
+    )
+
+    vertex_indices = paramap(
+        _find_closest_vertex, flattened_eigenvectors, n_jobs=n_jobs, engine=engine
+    )
+
+    vertex_indices = np.array(vertex_indices).reshape(original_shape)
+    return vertex_indices
 
 
 @warning_for_keywords()

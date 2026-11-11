@@ -21,5 +21,3 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/align/tests'
 )
-
-

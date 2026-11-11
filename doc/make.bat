@@ -81,7 +81,11 @@ if "%1" == "html" (
     :html
     echo "build full docs including examples"
     call :api
+	setlocal
+	set "DIPY_OFFSCREEN=1"
+	set "FURY_OFFSCREEN=1"
 	%SPHINXBUILD% -b html %ALLSPHINXOPTS% _build/html
+	endlocal
 	echo.
 	echo.Build finished. The HTML pages are in _build/html.
     exit /B

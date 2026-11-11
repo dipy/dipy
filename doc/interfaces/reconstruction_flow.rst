@@ -48,7 +48,10 @@ output directory (``out_dir``).
 To get the mask file, we will use the median Otsu thresholding method by
 calling the ``dipy_median_otsu`` command::
 
-    dipy_median_otsu data/stanford_hardi/HARDI150.nii.gz --vol_idx 10-50 --out_dir "stanford_hardi_mask"
+    dipy_median_otsu data/stanford_hardi/HARDI150.nii.gz --vol_idx "10-50" --out_dir "stanford_hardi_mask"
+
+In case of holes in the mask, or minor errors, add the option ``--finalize_mask`` to
+apply a final step to the mask, which will remove small holes and fill in small gaps.
 
 Then, to perform the CSD reconstruction we will run the ``dipy_fit_csd``
 command as::
@@ -189,6 +192,9 @@ the ``dipy_median_otsu`` command::
 
     dipy_median_otsu data/cfin_multib/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii --vol_idx 3-6 --out_dir "cfin_multib_mask"
 
+In case of holes in the mask, or minor errors, add the option ``--finalize_mask`` to
+apply a final step to the mask, which will remove small holes and fill in small gaps.
+
 To run the DKI reconstruction method on the data, execute the ``dipy_fit_dki``
 command, e.g.::
 
@@ -257,6 +263,9 @@ To get the mask file, we will use the median Otsu thresholding method by calling
 the ``dipy_median_otsu`` command::
 
     dipy_median_otsu data/ivim/HARDI150.nii.gz --vol_idx 10-50 --out_dir "ivim_mask"
+
+In case of holes in the mask, or minor errors, add the option ``--finalize_mask`` to
+apply a final step to the mask, which will remove small holes and fill in small gaps.
 
 Then, to perform the IVIM reconstruction we will run the command as::
 

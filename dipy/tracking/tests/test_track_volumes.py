@@ -57,9 +57,7 @@ def test_track_volumes():
     assert_array_equal(tes, ex_els)
     # points with non-unit voxel sizes
     vox_sizes = [1.4, 2.1, 3.7]
-    float_tracks = []
-    for t in tracks:
-        float_tracks.append(t * vox_sizes)
+    float_tracks = [t * vox_sizes for t in tracks]
     tcs, tes = tvo.track_counts(float_tracks, vol_dims, vox_sizes=vox_sizes)
     assert_array_equal(tcs, ex_counts)
     assert_array_equal(tes, ex_els)

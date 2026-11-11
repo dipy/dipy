@@ -37,7 +37,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 sphere = unit_icosahedron.subdivide(n=5)
 
 nd = sphere.vertices.shape[0]
-print("The number of directions on the sphere is {}".format(nd))
+print(f"The number of directions on the sphere is {nd}")
 
 ###############################################################################
 # Step 1. ODF estimation
@@ -70,19 +70,13 @@ csd_fit = csd_model.fit(data_small)
 
 csd_odf = csd_fit.odf(sphere)
 
-interactive = False
-
 scene = window.Scene()
 
-fodf_spheres = actor.odf_slicer(
-    csd_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
-)
+fodf_spheres = actor.odf_slicer(sh_func=csd_odf, sphere=sphere, scale=0.9, norm=False)
 scene.add(fodf_spheres)
 
-print("Saving the illustration as csd_odfs.png")
-window.record(scene, out_path="csd_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="csd_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -108,7 +102,7 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 #
 # - amplitude_lobe (the maximum value for each lobe. Also known as Bingham's
 #       f_0 parameter.)
-# - fd_lobe (fiber densitiy: as defined in :footcite:p:`Riffert2014`,
+# - fd_lobe (fiber density: as defined in :footcite:p:`Riffert2014`,
 #       one for each peak.)
 # - fs_lobe (fiber spread: as defined in :footcite:p:`Riffert2014`,
 #       one for each peak.)
@@ -137,17 +131,13 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 
 bim_odf = BinghamMetrics.odf(sphere)
 
-scene.rm(fodf_spheres)
+scene.clear()
 
-fodf_spheres = actor.odf_slicer(
-    bim_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
-)
+fodf_spheres = actor.odf_slicer(sh_func=bim_odf, sphere=sphere, scale=0.9, norm=False)
 scene.add(fodf_spheres)
 
-print("Saving the illustration as Bingham_odfs.png")
-window.record(scene, out_path="Bingham_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="Bingham_odfs", size=(600, 600), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

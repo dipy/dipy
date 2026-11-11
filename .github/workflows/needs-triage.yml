@@ -1,0 +1,37 @@
+name: Needs triage
+
+# Label blank issues with "type:needs triage" and keep the "not ready for a
+# pull request" banner of the issue description in sync with that label.
+on:
+  issues:
+    types: [opened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+
+jobs:
+  sync:
+    if: >-
+      github.repository == 'dipy/dipy' &&
+      (github.event.action == 'opened' ||
+      github.event.label.name == 'type:needs triage')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NUMBER: ${{ github.event.issue.number }}
+      EVENT_ACTION: ${{ github.event.action }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/github/contribution_policy.py
+          sparse-checkout-cone-mode: false
+      - name: Sync triage label and banner
+        run: python3 -I tools/github/contribution_policy.py sync-triage-warning

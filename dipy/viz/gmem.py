@@ -1,7 +1,15 @@
+from dipy.utils.deprecator import deprecate_with_version
+
 # Shared objects across Horizon's systems
 
 
 class GlobalHorizon:
+    @deprecate_with_version(
+        "GlobalHorizon is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self):
         # window level sharing
         self.window_timer_cnt = 0

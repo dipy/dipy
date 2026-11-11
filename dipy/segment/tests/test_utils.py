@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.segment.utils import remove_holes_and_islands
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -18,17 +19,16 @@ def test_remove_holes_and_islands(rng=None):
 
 
 def test_remove_holes_and_islands_warnings():
-    # Not binary test
     non_binary_img = np.concatenate(
         [np.zeros((30, 30, 10)), np.ones((30, 30, 10)), np.ones((30, 30, 10)) * 2],
         axis=-1,
     )
-    np.testing.assert_warns(UserWarning, remove_holes_and_islands, non_binary_img)
+    assert_warns(UserWarning, remove_holes_and_islands, non_binary_img)
 
-    # No background test
     no_background_img = np.ones((40, 40, 40))
-    np.testing.assert_warns(UserWarning, remove_holes_and_islands, no_background_img)
+    result = remove_holes_and_islands(no_background_img)
+    np.testing.assert_array_equal(result, no_background_img)
 
-    # No foreground test
     no_foreground_img = np.zeros((40, 40, 40))
-    np.testing.assert_warns(UserWarning, remove_holes_and_islands, no_foreground_img)
+    result = remove_holes_and_islands(no_foreground_img)
+    np.testing.assert_array_equal(result, no_foreground_img)

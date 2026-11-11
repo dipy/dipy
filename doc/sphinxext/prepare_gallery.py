@@ -8,10 +8,7 @@ import sys
 
 from sphinx.util import logging
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
+import tomllib
 
 logger = logging.getLogger(__name__)
 
@@ -197,8 +194,7 @@ def preprocess_include_directive(input_rst, output_rst):
 
 
 def prepare_gallery(app=None):
-    srcdir = app.srcdir if app else os.path.abspath(pjoin(
-        os.path.dirname(__file__), '..'))
+    srcdir = app.srcdir if app else os.path.abspath(Path(os.path.dirname(__file__)) / '..')
     examples_dir = os.path.join(srcdir, 'examples')
     examples_revamp_dir = os.path.join(srcdir, 'examples_revamped')
     os.makedirs(examples_revamp_dir, exist_ok=True)

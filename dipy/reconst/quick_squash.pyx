@@ -64,7 +64,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
         object [:] flat_obj
         char [:] flat_mask
         cnp.dtype [:] dtypes
-        int have_mask = not mask is None
+        int have_mask = mask is not None
         int search_for
         cnp.ndarray result
         cnp.dtype dtype, last_dtype
@@ -77,8 +77,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     # Find first valid value
     for i in range(N):
         e = flat_obj[i]
-        if ((have_mask and flat_mask[i] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[i] == 0) or (not have_mask and e is None)):
             continue
         t = type(e)
         if issubclass(t, np.generic) or t in SCALAR_TYPES:
@@ -91,9 +90,9 @@ def quick_squash(obj_arr, mask=None, fill=0):
             common_shape = e.shape
             dtype = e.dtype
             break
-        else: # something other than scalar or array
+        else:  # something other than scalar or array
             return obj_arr
-    else: # Nothing outside mask / all None
+    else:  # Nothing outside mask / all None
         return obj_arr
     # Check rest of values to confirm common type / shape, and collect dtypes
     last_dtype = dtype
@@ -101,15 +100,14 @@ def quick_squash(obj_arr, mask=None, fill=0):
     dtypes_i = 1
     for j in range(i+1, N):
         e = flat_obj[j]
-        if ((have_mask and flat_mask[j] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[j] == 0) or (not have_mask and e is None)):
             continue
         t = type(e)
         if search_for == SCALAR:
-            if not issubclass(t, np.generic) and not t in SCALAR_TYPES:
+            if not issubclass(t, np.generic) and t not in SCALAR_TYPES:
                 return obj_arr
             dtype = np.dtype(t)
-        else: # search_for == ARRAY:
+        else:  # search_for == ARRAY:
             if not t == cnp.ndarray:
                 return obj_arr
             if not e.shape == common_shape:
@@ -127,8 +125,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     result = np.empty((N,) + common_shape, dtype=dtype)
     for i in range(N):
         e = flat_obj[i]
-        if ((have_mask and flat_mask[i] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[i] == 0) or (not have_mask and e is None)):
             result[i] = fill
         else:
             result[i] = e

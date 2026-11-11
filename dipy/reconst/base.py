@@ -10,7 +10,7 @@ particular set of data (different voxels, for example).
 
 """
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class ReconstModel:

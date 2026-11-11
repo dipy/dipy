@@ -7,12 +7,18 @@ set -ex
 
 echo "Display Python version"
 python -c "import sys; print(sys.version)"
-python -m pip install -U pip 'setuptools~=69.5' wheel
+python -m pip install -U pip 'setuptools~=77.0.3'
 
 
 echo "Install Dependencies"
 if [ "$INSTALL_TYPE" == "conda" ]; then
-    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    # Install llvm-openmp to ensure consistent OpenMP runtime across all packages
+    # This prevents "OMP: Error #15: Initializing libomp.dylib" conflicts on macOS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        conda install -yq --name venv llvm-openmp $DEPENDS $EXTRA_DEPENDS pytest
+    else
+        conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    fi
 else
     PIPI="pip install --timeout=60 "
 
@@ -22,7 +28,7 @@ else
         PIPI="$PIPI --pre --index-url $PRE_WHEELS --extra-index-url https://pypi.org/simple";
     fi
 
-    $PIPI pytest==8.0.0
+    $PIPI "pytest>=8.0.0"
     $PIPI numpy
     if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
     if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" = true ]; then pip install coverage coveralls; fi

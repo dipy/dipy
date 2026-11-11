@@ -20,10 +20,11 @@ from warnings import warn
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
-def gaussian_kernel(X, beta, Y=None):
+@warning_for_keywords(from_version="1.13.0")
+def gaussian_kernel(X, beta, *, Y=None):
     if Y is None:
         Y = X
     diff = X[:, None, :] - Y[None, :, :]

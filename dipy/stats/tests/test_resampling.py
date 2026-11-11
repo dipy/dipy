@@ -6,7 +6,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(1741332)
-def test_bootstrap(rng):
+def test_bootstrap(rng=None):
     # Generate a sample data
     x = rng.standard_normal(size=100)
 
@@ -24,7 +24,7 @@ def test_bootstrap(rng):
 
 
 @set_random_number_generator(1741333)
-def test_jackknife(rng):
+def test_jackknife(rng=None):
     # Generate a sample data
     pdf = rng.standard_normal(size=100)
 

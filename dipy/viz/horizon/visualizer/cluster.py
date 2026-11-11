@@ -1,13 +1,14 @@
-import logging
-
 import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import length
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import actor
@@ -16,6 +17,12 @@ if has_fury:
 
 
 class ClustersVisualizer:
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(self, show_manager, scene, tractograms, *, enable_callbacks=True):
         # TODO: Avoid passing the entire show manager to the visualizer
@@ -52,7 +59,8 @@ class ClustersVisualizer:
         )
 
         @calldata_type(VTK_OBJECT)
-        def uniform_selected_callback(caller, event, calldata=None):
+        # VTK invokes observers positionally.
+        def uniform_selected_callback(caller, event, calldata=None):  # pep3102: ignore
             program = calldata
             if program is not None:
                 program.SetUniformf("selected", dict_element["selected"])
@@ -81,16 +89,22 @@ class ClustersVisualizer:
         # TODO: Find another way to rerender
         self.__show_man.render()
 
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.add_cluster_actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def add_cluster_actors(self, tract_idx, streamlines, thr, colors):
         # Saving the tractogram colors in case of reclustering
         if self.__first_time:
             self.__tractogram_colors.append(colors)
 
-        logging.info(f"Clustering threshold {thr}")
+        logger.info(f"Clustering threshold {thr}")
         clusters = qbx_and_merge(streamlines, [40, 30, 25, 20, thr])
         self.__tractogram_clusters[tract_idx] = clusters
         centroids = clusters.centroids
-        logging.info(f"Total number of centroids = {len(centroids)}")
+        logger.info(f"Total number of centroids = {len(centroids)}")
 
         lengths = [length(c) for c in centroids]
         self.__lengths.extend(lengths)
@@ -101,10 +115,10 @@ class ClustersVisualizer:
         sizes = np.array(sizes)
         linewidths = np.interp(sizes, [np.min(sizes), np.max(sizes)], [0.1, 2.0])
 
-        logging.info(f"Minimum number of streamlines in cluster {np.min(sizes)}")
-        logging.info(f"Maximum number of streamlines in cluster {np.max(sizes)}")
+        logger.info(f"Minimum number of streamlines in cluster {np.min(sizes)}")
+        logger.info(f"Maximum number of streamlines in cluster {np.max(sizes)}")
 
-        logging.info("Building cluster actors\n")
+        logger.info("Building cluster actors\n")
         for idx, cent in enumerate(centroids):
             centroid_actor = actor.streamtube(
                 [cent], colors=colors, linewidth=linewidths[idx], lod=False
@@ -150,6 +164,12 @@ class ClustersVisualizer:
                     "LeftButtonPressEvent", self.__left_click_cluster_callback, 1.0
                 )
 
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.recluster_tractograms is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def recluster_tractograms(self, thr):
         for cent in self.__centroid_actors:
             self.__scene.rm(self.__centroid_actors[cent]["actor"])
@@ -169,21 +189,51 @@ class ClustersVisualizer:
             self.add_cluster_actors(t, streamlines, thr, self.__tractogram_colors[t])
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.centroid_actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def centroid_actors(self):
         return self.__centroid_actors
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.cluster_actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def cluster_actors(self):
         return self.__cluster_actors
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.lengths is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def lengths(self):
         return np.array(self.__lengths)
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.sizes is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def sizes(self):
         return np.array(self.__sizes)
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.ClustersVisualizer.tractogram_clusters is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def tractogram_clusters(self):
         return self.__tractogram_clusters

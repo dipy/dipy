@@ -1,11 +1,13 @@
 python_sources = [
   '__init__.py',
+  'bids.py',
   'dpy.py',
   'gradients.py',
   'image.py',
   'peaks.py',
   'pickles.py',
   'stateful_tractogram.py',
+  'stateful_surface.py',
   'streamline.py',
   'surface.py',
   'utils.py',

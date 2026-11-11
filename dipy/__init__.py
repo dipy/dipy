@@ -39,7 +39,7 @@ from dipy.version import version as __version__
 
 
 def get_info():
-    from os.path import dirname
+    from pathlib import Path
     import sys
 
     import numpy
@@ -47,7 +47,7 @@ def get_info():
     import dipy
 
     return {
-        "pkg_path": dirname(__file__),
+        "pkg_path": Path(__file__).resolve().parent,
         "commit_hash": dipy.version.git_revision,
         "sys_version": sys.version,
         "sys_executable": sys.executable,

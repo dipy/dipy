@@ -7,6 +7,7 @@ DIPY Developer Guide
    :maxdepth: 2
 
    intro
+   contribution_policy
    installation_from_source
    gitwash/index
    make_release
@@ -15,4 +16,3 @@ DIPY Developer Guide
    bibliography
    benchmarking
    toolchain
-

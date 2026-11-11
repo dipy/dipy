@@ -3,14 +3,17 @@
 Class and helper functions for fitting the Synb0 model.
 """
 
-import logging
-
 import numpy as np
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, set_logger_level, unnormalize
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
@@ -32,7 +35,7 @@ else:
     class Layer:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
@@ -40,13 +43,24 @@ else:
                     https://github.com/apple/tensorflow_macos"
     )
 
-logging.basicConfig()
-logger = logging.getLogger("synb0")
-
 
 class EncoderBlock(Layer):
+    """Encoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
-        super(EncoderBlock, self).__init__()
+        super().__init__()
         self.conv3d = Conv3D(
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )
@@ -54,6 +68,18 @@ class EncoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the EncoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -62,8 +88,22 @@ class EncoderBlock(Layer):
 
 
 class DecoderBlock(Layer):
+    """Decoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
-        super(DecoderBlock, self).__init__()
+        super().__init__()
         self.conv3d = Conv3DTranspose(
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )
@@ -71,6 +111,18 @@ class DecoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the DecoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -79,6 +131,18 @@ class DecoderBlock(Layer):
 
 
 def UNet3D(input_shape):
+    """3D U-Net architecture for the Synb0 model.
+
+    Parameters
+    ----------
+    input_shape : tuple
+        Shape of the input tensor.
+
+    Returns
+    -------
+    tf.keras.Model
+        The 3D U-Net model.
+    """
     inputs = tf.keras.Input(input_shape)
     # Encode
     x = EncoderBlock(32, kernel_size=3, strides=1, padding="same")(inputs)
@@ -183,7 +247,7 @@ class Synb0:
             The idx of the default weights. It can be from 0~4.
         """
         fetch_model_weights_path = get_fnames(name="synb0_default_weights")
-        print(f"fetched {fetch_model_weights_path[idx]}")
+        logger.info(f"fetched {fetch_model_weights_path[idx]}")
         self.load_model_weights(fetch_model_weights_path[idx])
 
     def load_model_weights(self, weights_path):
@@ -288,9 +352,8 @@ class Synb0:
         if dim == 3:
             if batch_size is not None:
                 logger.warning(
-                    "Batch size specified, but not used",
-                    "due to the input not having \
-                               a batch dimension",
+                    "Batch size specified, but not used due to the input not having "
+                    "a batch dimension"
                 )
             batch_size = 1
 

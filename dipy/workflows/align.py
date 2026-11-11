@@ -1,5 +1,4 @@
-import logging
-from os.path import join as pjoin
+from pathlib import Path
 from warnings import warn
 
 import nibabel as nib
@@ -8,14 +7,22 @@ import numpy as np
 from dipy.align import affine_registration, motion_correction
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
-from dipy.align.reslice import reslice
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
+from dipy.align.reslice import isotropic_voxel_size, reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
-from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
+from dipy.core.gradients import (
+    gradient_table,
+    mask_non_weighted_bvals,
+    reorient_bvecs,
+)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -42,8 +49,7 @@ def check_dimensions(static, moving):
     """
     if len(static.shape) != len(moving.shape):
         raise ValueError(
-            "Dimension mismatch: The input images must "
-            "have same number of dimensions."
+            "Dimension mismatch: The input images must have same number of dimensions."
         )
 
     if len(static.shape) > 3 and len(moving.shape) > 3:
@@ -57,64 +63,123 @@ class ResliceFlow(Workflow):
     def get_short_name(cls):
         return "reslice"
 
+    @warning_for_keywords()
+    @deprecated_params(["vox_factor"], since="1.13", until="1.15")
     def run(
         self,
         input_files,
-        new_vox_size,
+        *,
+        new_vox_size=None,
         order=1,
         mode="constant",
         cval=0,
         num_processes=1,
+        vox_factor=None,
         out_dir="",
         out_resliced="resliced.nii.gz",
     ):
-        """Reslice data with new voxel resolution defined by ``new_vox_sz``
+        """Reslice data to a new voxel resolution with automatic or manual sizing.
+
+        This workflow resamples volumetric data to a specified voxel size or
+        automatically determines an isotropic resolution that preserves the
+        original voxel volume, so the resliced image keeps roughly the same
+        number of voxels and the same signal per voxel.
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        new_vox_size : variable float
-            new voxel size.
-        order : int, optional
-            order of interpolation, from 0 to 5, for resampling/reslicing,
-            0 nearest interpolation, 1 trilinear etc.. if you don't want any
-            smoothing 0 is the option you need.
+        new_vox_size : variable float, optional
+            New voxel size as (x, y, z) in mm. If None, an isotropic voxel
+            size is computed from the original voxel volume
+            ``V = x * y * z``: the geometric mean ``V ** (1 / 3)`` is snapped
+            to the grid value whose cubed volume is closest to ``V``. The grid
+            is 0.25mm for voxels between 1 and 10mm and 0.025mm for voxels
+            between 0.1 and 1mm (e.g. 1x1x3mm gives 1.5mm, 0.1x0.1x0.2mm
+            gives 0.125mm, 2x2x2mm is kept as is).
+        order : str, optional
+            Interpolation order. Integer values 0–5 select spline order via
+            scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
+            ``'lanczos2'`` select a 2-lobe Lanczos kernel; ``'lanczos3'``
+            selects a 3-lobe Lanczos kernel. Use 0 to avoid smoothing.
         mode : string, optional
             Points outside the boundaries of the input are filled according
             to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
         cval : float, optional
-            Value used for points outside the boundaries of the input if
+            Fill value for points outside the input boundaries when
             mode='constant'.
         num_processes : int, optional
             Split the calculation to a pool of children processes. This only
             applies to 4D `data` arrays. Default is 1. If < 0 the maximal
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
+        vox_factor : float, optional
+            .. deprecated:: 1.13.0
+               This parameter is ignored and will be removed in 1.15.0. The
+               automatic voxel size now preserves the original voxel volume.
+
+            Former interpolation factor for automatic voxel size calculation.
         out_dir : string, optional
-            Output directory.
+            Output directory for saving results.
         out_resliced : string, optional
-            Name of the resliced dataset to be saved.
+            Filename for the resliced output volume.
+
         """
 
-        io_it = self.get_io_iterator()
+        if isinstance(order, str) and order.lstrip("-").isdigit():
+            order = int(order)
 
-        for inputfile, outpfile in io_it:
-            data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
-            logging.info(f"Processing {inputfile}")
-            new_data, new_affine = reslice(
-                data,
-                affine,
-                vox_sz,
-                new_vox_size,
-                order=order,
-                mode=mode,
-                cval=cval,
-                num_processes=num_processes,
-            )
-            save_nifti(outpfile, new_data, new_affine)
-            logging.info(f"Resliced file save in {outpfile}")
+        io_it = self.get_io_iterator()
+        corrected_outputs = list(self.flat_outputs)
+
+        for i, (inputfile, outpfile) in enumerate(io_it):
+            img = nib.load(inputfile)
+            zooms = img.header.get_zooms()[:3]
+            logger.info(f"Processing {inputfile}")
+
+            if new_vox_size is None:
+                new_vox_size_to_use = [isotropic_voxel_size(zooms)] * 3
+                logger.warning(
+                    f"new_vox_size not provided. Automatically calculated as "
+                    f"{new_vox_size_to_use} to preserve the original voxel "
+                    f"volume of {float(np.prod(zooms)):.4f}mm^3 "
+                    f"(voxel size {tuple(float(z) for z in zooms)})."
+                )
+            else:
+                new_vox_size_to_use = new_vox_size
+
+            new_vox_size_to_use = np.asarray(new_vox_size_to_use)
+            zooms_spatial = np.asarray(zooms[:3])
+
+            if np.allclose(zooms_spatial, new_vox_size_to_use, rtol=1e-3, atol=1e-3):
+                logger.info(
+                    f"Voxel size {tuple(zooms)} already matches target "
+                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing, "
+                    f"returning original path."
+                )
+                corrected_outputs[i] = Path(inputfile)
+                img.uncache()
+                continue
+            else:
+                data = np.asanyarray(img.dataobj)
+                affine = img.affine
+                img.uncache()
+                new_data, new_affine = reslice(
+                    data,
+                    affine,
+                    zooms,
+                    new_zooms=new_vox_size_to_use,
+                    order=order,
+                    mode=mode,
+                    cval=cval,
+                    num_processes=num_processes,
+                )
+                save_nifti(outpfile, new_data, new_affine)
+                logger.info(f"Resliced file save in {outpfile}")
+
+        if corrected_outputs != self.flat_outputs:
+            self.update_flat_outputs(corrected_outputs, io_it)
 
 
 class SlrWithQbxFlow(Workflow):
@@ -134,12 +199,14 @@ class SlrWithQbxFlow(Workflow):
         less_than=250,
         nb_pts=20,
         progressive=True,
+        bbox_valid_check=True,
+        remove_invalid_streamlines=False,
         out_dir="",
-        out_moved="moved.trk",
+        out_moved="moved.trx",
         out_affine="affine.txt",
-        out_stat_centroids="static_centroids.trk",
-        out_moving_centroids="moving_centroids.trk",
-        out_moved_centroids="moved_centroids.trk",
+        out_stat_centroids="static_centroids.trx",
+        out_moving_centroids="moving_centroids.trx",
+        out_moved_centroids="moved_centroids.trx",
     ):
         """Streamline-based linear registration.
 
@@ -151,9 +218,9 @@ class SlrWithQbxFlow(Workflow):
 
         Parameters
         ----------
-        static_files : string
+        static_files : string or Path
             List of reference/fixed bundle tractograms.
-        moving_files : string
+        moving_files : string or Path
             List of target bundle tractograms that will be moved/registered to
             match the static bundles.
         x0 : string, optional
@@ -178,6 +245,13 @@ class SlrWithQbxFlow(Workflow):
             Number of points for discretizing each streamline.
         progressive : boolean, optional
             True to enable progressive registration.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
+        remove_invalid_streamlines : bool, optional
+            If True, streamlines outside the volume bounding box are removed
+            before saving. When enabled, ``bbox_valid_check`` is automatically
+            set to False.
         out_dir : string, optional
             Output directory.
         out_moved : string, optional
@@ -205,8 +279,8 @@ class SlrWithQbxFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        logging.info("QuickBundlesX clustering is in use")
-        logging.info(f"QBX thresholds {qbx_thr}")
+        logger.info("QuickBundlesX clustering is in use")
+        logger.info(f"QBX thresholds {qbx_thr}")
 
         for (
             static_file,
@@ -217,59 +291,104 @@ class SlrWithQbxFlow(Workflow):
             moving_centroids_file,
             moved_centroids_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
-            static_obj = nib.streamlines.load(static_file)
-            moving_obj = nib.streamlines.load(moving_file)
-
-            static, static_header = static_obj.streamlines, static_obj.header
-            moving, moving_header = moving_obj.streamlines, moving_obj.header
-
-            moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static,
-                moving,
-                x0=x0,
-                rm_small_clusters=rm_small_clusters,
-                greater_than=greater_than,
-                less_than=less_than,
-                qbx_thr=qbx_thr,
+            static_obj = load_tractogram(
+                static_file, "same", bbox_valid_check=bbox_valid_check
+            )
+            moving_obj = load_tractogram(
+                moving_file, "same", bbox_valid_check=bbox_valid_check
             )
 
-            logging.info(f"Saving output file {out_moved_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                moved, affine_to_rasmm=np.eye(4)
-            )
-            nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
+            if not len(static_obj.streamlines):
+                logger.error(f"Static file {static_file} is empty")
+                continue
+            if not len(moving_obj.streamlines):
+                logger.error(f"Moving file {moving_file} is empty")
+                continue
 
-            logging.info(f"Saving output file {out_affine_file}")
+            try:
+                moved, affine, centroids_static, centroids_moving = slr_with_qbx(
+                    static_obj.streamlines,
+                    moving_obj.streamlines,
+                    x0=x0,
+                    rm_small_clusters=rm_small_clusters,
+                    greater_than=greater_than,
+                    less_than=less_than,
+                    qbx_thr=qbx_thr,
+                    progressive=progressive,
+                    nb_pts=nb_pts,
+                    num_threads=num_threads,
+                )
+            except Exception as e:
+                logger.error(f"SLR with QBX failed: {e}")
+                logger.warning(
+                    "Skipping this pair of tractograms, continuing with next pair."
+                )
+                continue
+
+            logger.info(f"Saving output file {out_moved_file}")
+
+            new_tractogram = StatefulTractogram(
+                moved,
+                moving_obj,
+                moving_obj.space,
+            )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
+            save_tractogram(
+                new_tractogram,
+                str(out_moved_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
+            )
+
+            logger.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
-            logging.info(f"Saving output file {static_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_static, affine_to_rasmm=np.eye(4)
+            logger.info(f"Saving output file {static_centroids_file}")
+            new_tractogram = StatefulTractogram(
+                centroids_static,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, static_centroids_file, header=static_header
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
+            save_tractogram(
+                new_tractogram,
+                str(static_centroids_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
-            logging.info(f"Saving output file {moving_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moving, affine_to_rasmm=np.eye(4)
+            logger.info(f"Saving output file {moving_centroids_file}")
+            new_tractogram = StatefulTractogram(
+                centroids_moving,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, moving_centroids_file, header=moving_header
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
+            save_tractogram(
+                new_tractogram,
+                str(moving_centroids_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            logging.info(f"Saving output file {moved_centroids_file}")
+            logger.info(f"Saving output file {moved_centroids_file}")
 
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moved, affine_to_rasmm=np.eye(4)
+            new_tractogram = StatefulTractogram(
+                centroids_moved,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, moved_centroids_file, header=moving_header
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
+            save_tractogram(
+                new_tractogram,
+                str(moved_centroids_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
 
@@ -296,7 +415,8 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
-        level_iters=(10000, 1000, 100),
+        radius=4,
+        level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
         progressive=True,
@@ -311,9 +431,9 @@ class ImageRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path to the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path to the moving image file.
         transform : string, optional
             ``'com'``: center of mass; ``'trans'``: translation; ``'rigid'``:
@@ -321,12 +441,18 @@ class ImageRegistrationFlow(Workflow):
             ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
             including translation, rotation, shearing and scaling.
         nbins : int, optional
-            Number of bins to discretize the joint and marginal PDF.
-        sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF. None implies all
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
             voxels.
         metric : string, optional
-            Similarity metric for gathering mutual information.
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        radius : int, optional
+            Radius of the square (2D) or cubic (3D) neighborhood used by the
+            local cross-correlation metric.
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
             `level_iters[0]` corresponds to the coarsest scale,
@@ -352,7 +478,7 @@ class ImageRegistrationFlow(Workflow):
             `moving` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
             input is required for 4D volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix
         out_moved : string, optional
             Name for the saved transformed image.
@@ -361,14 +487,32 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
         metric = metric.upper()
-        if metric != "MI":
+        supported_metrics = {"CC", "MI"}
+        if metric not in supported_metrics:
+            supported = ", ".join(sorted(supported_metrics))
             raise ValueError(
-                "Invalid similarity metric: Please provide a" "valid metric."
+                f"Unsupported affine metric {metric!r}. Supported metrics are: "
+                f"{supported}."
             )
+
+        if metric == "MI":
+            metric_kwargs = {
+                "nbins": nbins,
+                "sampling_proportion": sampling_prop,
+            }
+        else:
+            metric_kwargs = {"radius": radius}
 
         if progressive:
             pipeline_opt = {
@@ -434,8 +578,7 @@ class ImageRegistrationFlow(Workflow):
                     level_iters=level_iters,
                     sigmas=sigmas,
                     factors=factors,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
             else:
                 moved_image, affine_matrix, xopt, fopt = affine_registration(
@@ -450,15 +593,14 @@ class ImageRegistrationFlow(Workflow):
                     sigmas=sigmas,
                     factors=factors,
                     ret_metric=True,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
 
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logging.info(f"Optimal parameters: {str(xopt)}")
-                logging.info(f"Similarity metric: {str(fopt)}")
+                logger.info(f"Optimal parameters: {xopt}")
+                logger.info(f"Similarity metric: {fopt}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -474,18 +616,19 @@ class ApplyTransformFlow(Workflow):
         moving_image_files,
         transform_map_file,
         transform_type="affine",
+        interpolation="linear",
         out_dir="",
         out_file="transformed.nii.gz",
     ):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path of the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path of the moving image(s). It can be a single image or a
             folder containing multiple images.
-        transform_map_file : string
+        transform_map_file : string or Path
             For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
@@ -493,7 +636,10 @@ class ApplyTransformFlow(Workflow):
         transform_type : string, optional
             Select the transformation type to apply between 'affine' or
             'diffeomorphic'.
-        out_dir : string, optional
+        interpolation : string, optional
+            the type of interpolation to be used, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor.
+        out_dir : string or Path, optional
             Directory to save the transformed files.
         out_file : string, optional
             Name of the transformed file.
@@ -506,6 +652,13 @@ class ApplyTransformFlow(Workflow):
                 "Invalid transformation type: Please"
                 " provide a valid transform like 'affine'"
                 " or 'diffeomorphic'"
+            )
+
+        if interpolation.lower() not in ["linear", "nearest"]:
+            raise ValueError(
+                "Invalid interpolation type: Please "
+                "provide 'linear' or 'nearest' as "
+                "valid option."
             )
 
         io = self.get_io_iterator()
@@ -559,11 +712,15 @@ class ApplyTransformFlow(Workflow):
 
             # Transforming the image
             if moving_image_full is None:
-                transformed = mapping.transform(moving_image)
+                transformed = mapping.transform(
+                    moving_image, interpolation=interpolation
+                )
             else:
                 transformed = np.concatenate(
                     [
-                        mapping.transform(moving_image)[..., None]
+                        mapping.transform(moving_image, interpolation=interpolation)[
+                            ..., None
+                        ]
                         for moving_image in moving_image_full
                     ],
                     axis=-1,
@@ -588,6 +745,7 @@ class SynRegistrationFlow(Workflow):
         mopt_q_levels=256,
         mopt_double_gradient=True,
         mopt_step_type="",
+        mopt_nbins=32,
         step_length=0.25,
         ss_sigma_factor=0.2,
         opt_tol=1e-5,
@@ -601,11 +759,11 @@ class SynRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path of the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path to the moving image file.
-        prealign_file : string, optional
+        prealign_file : string or Path, optional
             The text file containing pre alignment information via an affine matrix.
         inv_static : boolean, optional
             Apply the inverse mapping to the static image.
@@ -614,7 +772,7 @@ class SynRegistrationFlow(Workflow):
         metric : string, optional
             The metric to be used.
             metric available: cc (Cross Correlation), ssd (Sum Squared
-            Difference), em (Expectation-Maximization).
+            Difference), em (Expectation-Maximization), mi (Mutual Information).
         mopt_sigma_diff : float, optional
             Metric option applied on Cross correlation (CC).
             The standard deviation of the Gaussian smoothing kernel to be
@@ -624,10 +782,11 @@ class SynRegistrationFlow(Workflow):
             the radius of the squared (cubic) neighborhood at each voxel to
             be considered to compute the cross correlation.
         mopt_smooth : float, optional
-            Metric option applied on Sum Squared Difference (SSD) and
-            Expectation Maximization (EM). Smoothness parameter, the
-            larger the value the smoother the deformation field.
-            (default 1.0 for EM, 4.0 for SSD)
+            Smoothness parameter for Sum Squared Difference (SSD),
+            Expectation Maximization (EM), and Mutual Information (MI).
+            Controls deformation-field smoothness for SSD and EM, and the
+            Gaussian standard deviation for update-field smoothing for MI.
+            Larger values produce smoother fields.
         mopt_inner_iter : int, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). This is number of iterations to be
@@ -651,6 +810,8 @@ class SynRegistrationFlow(Workflow):
             (not used if Demons Step is selected). Possible value:
             ('gauss_newton', 'demons'). default: 'gauss_newton' for EM,
             'demons' for SSD.
+        mopt_nbins : int, optional
+            Number of histogram bins for Mutual Information (MI).
         step_length : float, optional
             the length of the maximum displacement vector of the update
             displacement field at each iteration.
@@ -667,7 +828,7 @@ class SynRegistrationFlow(Workflow):
         inv_tol : float, optional
             the displacement field inversion algorithm will stop iterating
             when the inversion error falls below this threshold.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Directory to save the transformed files.
         out_warped : string, optional
             Name of the warped file.
@@ -680,14 +841,14 @@ class SynRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
-        if metric not in ["ssd", "cc", "em"]:
+        if metric not in ["ssd", "cc", "em", "mi"]:
             raise ValueError(
                 "Invalid similarity metric: Please"
-                " provide a valid metric like 'ssd', 'cc', 'em'"
+                " provide a valid metric like 'ssd', 'cc', 'em', 'mi'"
             )
 
-        logging.info("Starting Diffeomorphic Registration")
-        logging.info(f"Using {metric.upper()} Metric")
+        logger.info("Starting Diffeomorphic Registration")
+        logger.info(f"Using {metric.upper()} Metric")
 
         # Init parameter if they are not setup
         init_param = {
@@ -701,6 +862,7 @@ class SynRegistrationFlow(Workflow):
                 "mopt_inner_iter": 5,
                 "mopt_step_type": "gauss_newton",
             },
+            "mi": {"mopt_smooth": 0.0},
         }
 
         mopt_smooth = (
@@ -710,15 +872,15 @@ class SynRegistrationFlow(Workflow):
         )
         mopt_inner_iter = (
             mopt_inner_iter
-            if mopt_inner_iter or metric == "cc"
+            if mopt_inner_iter or metric in ["cc", "mi"]
             else init_param[metric]["mopt_inner_iter"]
         )
 
-        # If using the 'cc' metric, force the `mopt_step_type` parameter to an
-        # empty value since the 'cc' metric does not use it; for the rest of
-        # the metrics, the `step_type` parameter will be initialized to their
-        # corresponding default values in `init_param`.
-        if metric == "cc":
+        # If using the 'cc' or 'mi' metric, force the `mopt_step_type`
+        # parameter to an empty value since neither metric uses it; for the
+        # rest of the metrics, `step_type` will be initialized to its
+        # corresponding default value in `init_param`.
+        if metric in ["cc", "mi"]:
             mopt_step_type = ""
 
         for (
@@ -728,8 +890,8 @@ class SynRegistrationFlow(Workflow):
             oinv_static_file,
             omap_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -766,6 +928,7 @@ class SynRegistrationFlow(Workflow):
                     q_levels=mopt_q_levels,
                     double_gradient=mopt_double_gradient,
                 ),
+                "mi": MIMetric(static_image.ndim, nbins=mopt_nbins, smooth=mopt_smooth),
             }
 
             current_metric = l_metric.get(metric.lower())
@@ -794,11 +957,13 @@ class SynRegistrationFlow(Workflow):
             inv_static = mapping.transform(static_image)
 
             # Saving
-            logging.info(f"Saving warped {owarped_file}")
+            logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(
+                f"Saving inverse static (backward warp applied to static) {oinv_static_file}"
+            )
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logging.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -815,20 +980,26 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
+        level_iters=(1000, 500, 100),
+        metric="mi",
+        nbins=32,
+        sampling_prop=None,
+        radius=4,
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
+        out_bvecs="moved.bvec",
     ):
         """
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         b0_threshold : float, optional
@@ -836,19 +1007,50 @@ class MotionCorrectionFlow(Workflow):
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
-        out_dir : string, optional
+        level_iters : variable int, optional
+            The number of iterations at each level of the Gaussian pyramid.
+        metric : string, optional
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        nbins : int, optional
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
+            voxels.
+        radius : int, optional
+            Neighborhood radius for local cross-correlation.
+        out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
             Name for the saved transformed image.
         out_affine : string, optional
             Name for the saved affine matrix.
+        out_bvecs : string, optional
+            Name for the saved reoriented b-vectors.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
+        metric = metric.upper()
+        if metric not in {"MI", "CC"}:
+            raise ValueError(f"Unsupported affine metric {metric!r}. Use MI or CC.")
+        metric_kwargs = (
+            {"nbins": nbins, "sampling_proportion": sampling_prop}
+            if metric == "MI"
+            else {"radius": radius}
+        )
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, omoved, oafffine in io_it:
+        for dwi, bval, bvec, omoved, oafffine, obvecs in io_it:
             # Load the data from the input files and store into objects.
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -867,7 +1069,16 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine
+                data=data,
+                gtab=gtab,
+                affine=affine,
+                level_iters=level_iters,
+                metric=metric,
+                **metric_kwargs,
+            )
+
+            reoriented_gtab = reorient_bvecs(
+                gtab, reg_affines[..., ~gtab.b0s_mask], atol=bvecs_tol
             )
 
             # Saving the corrected image file
@@ -878,6 +1089,8 @@ class MotionCorrectionFlow(Workflow):
                 for affine_slice in reg_affines:
                     np.savetxt(outfile, affine_slice, fmt="%-7.2f")
                     outfile.write("# New slice\n")
+            np.savetxt(obvecs, reoriented_gtab.bvecs.T, fmt="%.8f")
+            logger.info(f"Reoriented b-vectors saved as {obvecs}")
 
 
 class BundleWarpFlow(Workflow):
@@ -894,9 +1107,10 @@ class BundleWarpFlow(Workflow):
         beta=20,
         max_iter=15,
         affine=True,
+        bbox_valid_check=True,
         out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_linear_moved="linearly_moved.trx",
+        out_nonlinear_moved="nonlinearly_moved.trx",
         out_warp_transform="warp_transform.npy",
         out_warp_kernel="warp_kernel.npy",
         out_dist="distance_matrix.npy",
@@ -909,10 +1123,10 @@ class BundleWarpFlow(Workflow):
 
         Parameters
         ----------
-        static_file : string
-            Path to the static (reference) .trk file.
-        moving_file : string
-            Path to the moving (target to be registered) .trk file.
+        static_file : string or Path
+            Path to the static (reference) .trx file.
+        moving_file : string or Path
+            Path to the moving (target to be registered) .trx file.
         dist : string, optional
             Path to the precalculated distance matrix file.
         alpha : float, optional
@@ -929,8 +1143,11 @@ class BundleWarpFlow(Workflow):
             Maximum number of iterations for deformation process in ml-CPD
             method.
         affine : boolean, optional
-            If False, use rigid registration as starting point. (default True)
-        out_dir : string, optional
+            If False, use rigid registration as starting point.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
+        out_dir : string or Path, optional
             Output directory.
         out_linear_moved : string, optional
             Filename of linearly moved bundle.
@@ -951,19 +1168,23 @@ class BundleWarpFlow(Workflow):
         .. footbibliography::
         """
 
-        logging.info(f"Loading static file {static_file}")
-        logging.info(f"Loading moving file {moving_file}")
+        logger.info(f"Loading static file {static_file}")
+        logger.info(f"Loading moving file {moving_file}")
 
-        static_obj = nib.streamlines.load(static_file)
-        moving_obj = nib.streamlines.load(moving_file)
+        static_obj = load_tractogram(
+            static_file, "same", bbox_valid_check=bbox_valid_check
+        )
+        moving_obj = load_tractogram(
+            moving_file, "same", bbox_valid_check=bbox_valid_check
+        )
 
-        static, _ = static_obj.streamlines, static_obj.header
-        moving, moving_header = moving_obj.streamlines, moving_obj.header
+        static = static_obj.streamlines
+        moving = moving_obj.streamlines
 
         static = set_number_of_points(static, nb_points=20)
         moving = set_number_of_points(moving, nb_points=20)
 
-        deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
+        deformed_bundle, affine_bundle, _, mp, warp = bundlewarp(
             static,
             moving,
             dist=dist,
@@ -973,30 +1194,36 @@ class BundleWarpFlow(Workflow):
             affine=affine,
         )
 
-        logging.info(f"Saving output file {out_linear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            affine_bundle, affine_to_rasmm=np.eye(4)
+        logger.info(f"Saving output file {out_linear_moved}")
+        new_tractogram = StatefulTractogram(
+            affine_bundle,
+            moving_obj,
+            moving_obj.space,
         )
-        nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
-        )
-
-        logging.info(f"Saving output file {out_nonlinear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            deformed_bundle, affine_to_rasmm=np.eye(4)
-        )
-        nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
+        save_tractogram(
+            new_tractogram,
+            str(Path(out_dir) / out_linear_moved),
+            bbox_valid_check=bbox_valid_check,
         )
 
-        logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
+        logger.info(f"Saving output file {out_nonlinear_moved}")
+        new_tractogram = StatefulTractogram(
+            deformed_bundle, moving_obj, moving_obj.space
+        )
+        save_tractogram(
+            new_tractogram,
+            str(Path(out_dir) / out_nonlinear_moved),
+            bbox_valid_check=bbox_valid_check,
+        )
 
-        logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
+        logger.info(f"Saving output file {out_warp_transform}")
+        np.save(Path(out_dir) / out_warp_transform, np.array(warp["transforms"]))
 
-        logging.info(f"Saving output file {out_dist}")
-        np.save(pjoin(out_dir, out_dist), dist)
+        logger.info(f"Saving output file {out_warp_kernel}")
+        np.save(Path(out_dir) / out_warp_kernel, np.array(warp["gaussian_kernel"]))
 
-        logging.info(f"Saving output file {out_matched_pairs}")
-        np.save(pjoin(out_dir, out_matched_pairs), mp)
+        logger.info(f"Saving output file {out_dist}")
+        np.save(Path(out_dir) / out_dist, dist)
+
+        logger.info(f"Saving output file {out_matched_pairs}")
+        np.save(Path(out_dir) / out_matched_pairs, mp)

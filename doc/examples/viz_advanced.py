@@ -14,7 +14,7 @@ import numpy as np
 
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import actor, ui, window
+from dipy.viz import actor, colormap, ui, window
 
 ###############################################################################
 # In ``window`` we have all the objects that connect what needs to be rendered
@@ -83,38 +83,37 @@ if not world_coords:
 # function and an image plane using the ``slice`` function.
 
 scene = window.Scene()
-stream_actor = actor.line(streamlines)
+stream_actor = actor.streamlines(
+    streamlines,
+    colors=colormap.line_colors(streamlines),
+    thickness=0.05,
+    outline_thickness=0,
+)
 
 if not world_coords:
-    image_actor_z = actor.slicer(data, affine=np.eye(4))
+    image_actor = actor.volume_slicer(data, affine=np.eye(4))
 else:
-    image_actor_z = actor.slicer(data, affine=affine)
+    image_actor = actor.volume_slicer(data, affine=affine)
 
 ###############################################################################
 # We can also change also the opacity of the slicer.
 
 slicer_opacity = 0.6
-image_actor_z.opacity(slicer_opacity)
+actor.set_group_opacity(image_actor, slicer_opacity)
 
 ###############################################################################
-# We can add additional slicers by copying the original and adjusting the
-# ``display_extent``.
+# The ``volume_slicer`` actor already holds the three orthogonal planes,
+# centered in the volume. We keep track of their positions in world
+# coordinates to move them later.
 
-image_actor_x = image_actor_z.copy()
-x_midpoint = int(np.round(shape[0] / 2))
-image_actor_x.display_extent(x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
-
-image_actor_y = image_actor_z.copy()
-y_midpoint = int(np.round(shape[1] / 2))
-image_actor_y.display_extent(0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
+bounds = image_actor.get_bounding_box()
+slice_positions = bounds.mean(axis=0)
 
 ###############################################################################
 # Connect the actors with the Scene.
 
 scene.add(stream_actor)
-scene.add(image_actor_z)
-scene.add(image_actor_x)
-scene.add(image_actor_y)
+scene.add(image_actor)
 
 ###############################################################################
 # Now we would like to change the position of each ``image_actor`` using a
@@ -123,33 +122,32 @@ scene.add(image_actor_y)
 # ``show``. The more appropriate way is to use them with the ``ShowManager``
 # object which allows accessing the pipeline in different areas. Here is how:
 
-show_m = window.ShowManager(scene=scene, size=(1200, 900))
-show_m.initialize()
+show_m = window.ShowManager(title="bundles_and_3_slices", size=(1200, 900), scene=scene)
 
 ###############################################################################
-# After we have initialized the ``ShowManager`` we can go ahead and create
-# sliders to move the slices and change their opacity.
+# Now we can go ahead and create sliders to move the slices and change their
+# opacity. The slice sliders work in world coordinates.
 
 line_slider_z = ui.LineSlider2D(
-    min_value=0,
-    max_value=shape[2] - 1,
-    initial_value=shape[2] / 2,
+    min_value=bounds[0, 2],
+    max_value=bounds[1, 2],
+    initial_value=slice_positions[2],
     text_template="{value:.0f}",
     length=140,
 )
 
 line_slider_x = ui.LineSlider2D(
-    min_value=0,
-    max_value=shape[0] - 1,
-    initial_value=shape[0] / 2,
+    min_value=bounds[0, 0],
+    max_value=bounds[1, 0],
+    initial_value=slice_positions[0],
     text_template="{value:.0f}",
     length=140,
 )
 
 line_slider_y = ui.LineSlider2D(
-    min_value=0,
-    max_value=shape[1] - 1,
-    initial_value=shape[1] / 2,
+    min_value=bounds[0, 1],
+    max_value=bounds[1, 1],
+    initial_value=slice_positions[1],
     text_template="{value:.0f}",
     length=140,
 )
@@ -159,29 +157,30 @@ opacity_slider = ui.LineSlider2D(
 )
 
 ###############################################################################
-# Now we will write callbacks for the sliders and register them.
+# Now we will write callbacks for the sliders and register them. A translucent
+# slicer must not write depth, otherwise it hides the bundles behind it; a
+# fully opaque one must write depth so that it does hide them.
 
 
 def change_slice_z(slider):
-    z = int(np.round(slider.value))
-    image_actor_z.display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
+    slice_positions[2] = slider.value
+    actor.show_slices(image_actor, slice_positions)
 
 
 def change_slice_x(slider):
-    x = int(np.round(slider.value))
-    image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
+    slice_positions[0] = slider.value
+    actor.show_slices(image_actor, slice_positions)
 
 
 def change_slice_y(slider):
-    y = int(np.round(slider.value))
-    image_actor_y.display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
+    slice_positions[1] = slider.value
+    actor.show_slices(image_actor, slice_positions)
 
 
 def change_opacity(slider):
-    slicer_opacity = slider.value
-    image_actor_z.opacity(slicer_opacity)
-    image_actor_x.opacity(slicer_opacity)
-    image_actor_y.opacity(slicer_opacity)
+    actor.set_group_opacity(image_actor, slider.value)
+    for plane in image_actor.children:
+        plane.material.depth_write = bool(slider.value >= 1)
 
 
 line_slider_z.on_change = change_slice_z
@@ -194,7 +193,7 @@ opacity_slider.on_change = change_opacity
 
 
 def build_label(text):
-    label = ui.TextBlock2D()
+    label = ui.TextBlock2D(dynamic_bbox=True)
     label.message = text
     label.font_size = 18
     label.font_family = "Arial"
@@ -202,7 +201,6 @@ def build_label(text):
     label.bold = False
     label.italic = False
     label.shadow = False
-    label.background_color = (0, 0, 0)
     label.color = (1, 1, 1)
 
     return label
@@ -216,72 +214,42 @@ opacity_slider_label = build_label(text="Opacity")
 ###############################################################################
 # Now we will create a ``panel`` to contain the sliders and labels.
 
-panel = ui.Panel2D(size=(300, 200), color=(1, 1, 1), opacity=0.1, align="right")
-panel.center = (1030, 120)
+panel = ui.Panel2D(size=(300, 280), color=(1, 1, 1), opacity=0.1, align="right")
 
-panel.add_element(line_slider_label_x, (0.1, 0.75))
-panel.add_element(line_slider_x, (0.38, 0.75))
-panel.add_element(line_slider_label_y, (0.1, 0.55))
-panel.add_element(line_slider_y, (0.38, 0.55))
-panel.add_element(line_slider_label_z, (0.1, 0.35))
-panel.add_element(line_slider_z, (0.38, 0.35))
-panel.add_element(opacity_slider_label, (0.1, 0.15))
-panel.add_element(opacity_slider, (0.38, 0.15))
+panel.add_element(line_slider_label_x, (0.1, 0.2))
+panel.add_element(line_slider_x, (0.38, 0.2))
+panel.add_element(line_slider_label_y, (0.1, 0.415))
+panel.add_element(line_slider_y, (0.38, 0.415))
+panel.add_element(line_slider_label_z, (0.1, 0.63))
+panel.add_element(line_slider_z, (0.38, 0.63))
+panel.add_element(opacity_slider_label, (0.1, 0.845))
+panel.add_element(opacity_slider, (0.38, 0.845))
 
 scene.add(panel)
 
 ###############################################################################
-# Then, we can render all the widgets and everything else in the screen and
-# start the interaction using ``show_m.start()``.
-#
-#
-# However, if you change the window size, the panel will not update its
-# position properly. The solution to this issue is to update the position of
-# the panel using its ``re_align`` method every time the window size changes.
-
-global size
-size = scene.GetSize()
+# The panel is placed in pixels from the top-left corner of the window. To keep
+# it on the right side when the window is resized, we reposition it from the
+# show manager's resize callback.
 
 
-def win_callback(obj, event):
-    global size
-    if size != obj.GetSize():
-        size_old = size
-        size = obj.GetSize()
-        size_change = [size[0] - size_old[0], 0]
-        panel.re_align(size_change)
+def place_panel(window_size):
+    panel.set_position((window_size[0] - 320, 20))
 
 
-show_m.initialize()
+place_panel(show_m.size)
+show_m.resize_callback(place_panel)
 
 ###############################################################################
-# Finally, please set the following variable to ``True`` to interact with the
-# datasets in 3D.
+# Finally, start the interaction with the datasets in 3D. Use the sliders to
+# move the slices and change their opacity.
 
-interactive = False
-
-scene.zoom(1.5)
-scene.reset_clipping_range()
-
-if interactive:
-    show_m.add_window_callback(win_callback)
-    show_m.render()
-    show_m.start()
-
-else:
-    window.record(
-        scene=scene,
-        out_path="bundles_and_3_slices.png",
-        size=(1200, 900),
-        reset_camera=False,
-    )
+show_m.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # A few bundles with interactive slicing.
-
-del show_m
 
 ###############################################################################
 # References

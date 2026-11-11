@@ -1,9 +1,16 @@
 from pathlib import Path
 
+from dipy.utils.deprecator import deprecate_with_version
 from dipy.viz.horizon.tab import HorizonTab, build_checkbox, build_label, build_slider
 
 
 class SurfaceTab(HorizonTab):
+    @deprecate_with_version(
+        "horizon.tab.SurfaceTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, visualizer, tab_name, file_name):
         """Surface Tab.
 
@@ -59,6 +66,27 @@ class SurfaceTab(HorizonTab):
         for actor in self.actors:
             actor.GetProperty().SetOpacity(self._surface_opacity.selected_value)
 
+    def _toggle_actors(self, checkbox):
+        """Toggle the opacity of the surface actor and slider.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+            FURY checkbox UI element.
+        """
+        if "" in checkbox.checked_labels:
+            self.show(self._surface_opacity.obj)
+        else:
+            self.hide(self._surface_opacity.obj)
+
+        super()._toggle_actors(checkbox)
+
+    @deprecate_with_version(
+        "horizon.tab.SurfaceTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Build all the elements under the tab.
 
@@ -79,6 +107,12 @@ class SurfaceTab(HorizonTab):
         self._file_name_label.position = (0.13, y_pos)
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.SurfaceTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Name of the tab.
 
@@ -89,6 +123,12 @@ class SurfaceTab(HorizonTab):
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.SurfaceTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """Actors controlled by this tab."""
         return self._visualizer.actors

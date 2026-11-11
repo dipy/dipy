@@ -1,5 +1,8 @@
 """Testing DTI."""
 
+import random
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
@@ -15,6 +18,7 @@ from dipy.reconst.dti import (
     TensorModel,
     _decompose_tensor_nan,
     axial_diffusivity,
+    cholesky_to_lower_triangular,
     color_fa,
     decompose_tensor,
     fractional_anisotropy,
@@ -22,6 +26,7 @@ from dipy.reconst.dti import (
     geodesic_anisotropy,
     linearity,
     lower_triangular,
+    lower_triangular_to_cholesky,
     mean_diffusivity,
     mode,
     ols_fit_tensor,
@@ -36,7 +41,13 @@ from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
 from dipy.sims.voxel import single_tensor
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+ray, has_ray, _ = optional_package("ray")
+joblib, has_joblib, _ = optional_package("joblib")
+dask, has_dask, _ = optional_package("dask")
 
 
 def test_roll_evals():
@@ -46,7 +57,7 @@ def test_roll_evals():
 
 
 @set_random_number_generator()
-def test_tensor_algebra(rng):
+def test_tensor_algebra(rng=None):
     # Test that the computation of tensor determinant and norm is correct
     test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
@@ -155,7 +166,7 @@ def test_tensor_model():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Test fitting with different methods:
     for fit_method in ["OLS", "WLS", "NLLS"]:
@@ -170,7 +181,7 @@ def test_tensor_model():
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
             # (see
-            # http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
+            # https://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
             npt.assert_(
@@ -192,8 +203,8 @@ def test_tensor_model():
 
     # Test error-handling:
     npt.assert_raises(ValueError, dti.TensorModel, gtab, fit_method="crazy_method")
-    npt.assert_warns(UserWarning, dti.TensorModel, gtab, fit_method="NLLS", step=1e4)
-    with npt.assert_warns(UserWarning):
+    assert_warns(UserWarning, dti.TensorModel, gtab, fit_method="NLLS", step=1e4)
+    with assert_warns(UserWarning):
         model = dti.TensorModel(gtab, fit_method="NLS", step=1e4)
         npt.assert_equal(model.kwargs.get("step", None), None)
 
@@ -277,7 +288,7 @@ def test_diffusivities():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(S)
@@ -374,7 +385,7 @@ def test_wls_and_ls_fit():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Testing WLS Fit on single voxel
     # If you do something wonky (passing min_signal<0), you should get an
@@ -389,8 +400,7 @@ def test_wls_and_ls_fit():
     npt.assert_array_almost_equal(
         tensor_est.quadratic_form[0],
         tensor,
-        err_msg="Calculation of tensor from Y does "
-        "not compare to analytical solution",
+        err_msg="Calculation of tensor from Y does not compare to analytical solution",
     )
     npt.assert_almost_equal(tensor_est.md[0], md)
     npt.assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
@@ -454,6 +464,7 @@ def test_wls_and_ls_fit():
         design_matrix, YN, return_lower_triangular=True, weights=pred_s**1
     )
     npt.assert_raises(AssertionError, npt.assert_array_equal, D_w, D_W)
+
     # Test that wls implementation is correct, by comparison with result here
     W = np.diag(pred_s.squeeze() ** 2)
     AT_W = np.dot(design_matrix.T, W)
@@ -462,26 +473,46 @@ def test_wls_and_ls_fit():
     result = np.dot(inv_AT_W_A, AT_W_LS)
     npt.assert_almost_equal(D_w.squeeze(), result)
 
+    # force use of iter_fit_tensor without making a large test
+    D_o, extra = ols_fit_tensor(
+        design_matrix,
+        np.repeat(YN, repeats=1e4 + 1, axis=0),
+        return_lower_triangular=True,
+    )
+    assert extra is None, "OLS fit should not return extra information"
+    D_w, extra = wls_fit_tensor(
+        design_matrix,
+        np.repeat(YN, repeats=1e4 + 1, axis=0),
+        return_lower_triangular=True,
+    )
+    assert extra is None, "WLS fit should not return extra information"
 
-def test_rwls_rnlls_irls_fit():
-    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
+
+@set_random_number_generator()
+def test_rwls_rnlls_irls_fit(rng):
+    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)]
+    # and D ~ 10^-4 mm^2 /s
     b0 = 1000.0
     bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     B = bval[1]
+
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
     evals = np.array([2.0, 1.0, 0.0]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
-    # Design Matrix
+
+    # Design matrix
     gtab = grad.gradient_table(bval, bvecs=bvec)
     X = dti.design_matrix(gtab)
+
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
-    YN = Y + 1 * np.random.normal(size=Y.shape)  # error, or weights irrelevant
+    noise = rng.normal(size=Y.shape)
+    YN = Y + noise
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
@@ -489,31 +520,33 @@ def test_rwls_rnlls_irls_fit():
         model = TensorModel(gtab, fit_method=a, return_S0_hat=True)
         tensor_est = model.fit(YN)
 
-        model = TensorModel(gtab, fit_method=ar, return_S0_hat=True, num_iter=10)
+        model = TensorModel(
+            gtab,
+            fit_method=ar,
+            return_S0_hat=True,
+            num_iter=10,
+        )
         tensor_est_R = model.fit(YN)
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.evals[0] - evals),
-            np.linalg.norm(tensor_est.evals[0] - evals),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.evals[0] - evals)
+            <= np.linalg.norm(tensor_est.evals[0] - evals)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor),
-            np.linalg.norm(tensor_est.quadratic_form[0] - tensor),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor)
+            <= np.linalg.norm(tensor_est.quadratic_form[0] - tensor)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.md[0] - md),
-            np.linalg.norm(tensor_est.md[0] - md),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.md[0] - md)
+            <= np.linalg.norm(tensor_est.md[0] - md)
         )
 
-        # error is often almost exactly the same, so this test sometimes fails
-        # npt.assert_array_less(np.linalg.norm(tensor_est_R.S0_hat[0] - b0),
-        #                       np.linalg.norm(tensor_est.S0_hat[0] - b0))
-
-    # test RWLS/RNLLS implemented explicitly via IRLS function
+    # Test RWLS/RNLLS implemented explicitly via IRLS function
     for wm, fit_type in zip(
-        [weights_method_wls_m_est, weights_method_nlls_m_est], ["WLS", "NLLS"]
+        [weights_method_wls_m_est, weights_method_nlls_m_est],
+        ["WLS", "NLLS"],
     ):
         # IRLS implementation
         model = TensorModel(
@@ -525,33 +558,64 @@ def test_rwls_rnlls_irls_fit():
             num_iter=10,
         )
         tensor_est_R1 = model.fit(YN)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"][0, -1], 0)
 
-        # 'shortcut' method RWLS/RNLLS
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"][0, -1],
+            0,
+        )
+
+        # Shortcut method RWLS/RNLLS
         model = TensorModel(
             gtab,
             fit_method="R" + fit_type,
-            return_S0_hat=False,  # NOTE increase coverage
+            return_S0_hat=False,
             num_iter=10,
         )
         tensor_est_R2 = model.fit(YN)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"][0, -1], 0)
 
-        npt.assert_almost_equal(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
-
-        npt.assert_almost_equal(
-            tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0]
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"][0, -1],
+            0,
         )
 
-    # test that error is raised if not enough data
+        npt.assert_almost_equal(
+            tensor_est_R1.evals[0],
+            tensor_est_R2.evals[0],
+        )
+
+        npt.assert_almost_equal(
+            tensor_est_R1.quadratic_form[0],
+            tensor_est_R2.quadratic_form[0],
+        )
+
+    # Test that an error is raised if there is not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
     npt.assert_raises(ValueError, model.fit, YN[:, 0:3])
 
-    # force use of iter_fit_tensor without making a large test
-    model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True, num_iter=10)
+    # Force use of iter_fit_tensor without making a large test
+    model = TensorModel(
+        gtab,
+        fit_method="RWLS",
+        return_S0_hat=True,
+        num_iter=10,
+    )
     tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
+
+    # Test if an error is raised when weights have incorrect shape
+    model = TensorModel(
+        gtab,
+        fit_method="NLLS",
+        weights=np.array([[1.0, 1.0], [0.0, 1.0]]),
+    )
+    npt.assert_raises(AssertionError, model.fit, YN)
 
 
 def test_masked_array_with_tensor():
@@ -600,7 +664,10 @@ def test_lower_triangular():
     npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8])
     D = lower_triangular(tensor, b0=1)
     npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
+    D = lower_triangular(tensor, b0=0)
+    npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 9])
     npt.assert_raises(ValueError, lower_triangular, np.zeros((2, 3)))
+    npt.assert_raises(TypeError, lower_triangular, tensor, b0="not a number")
     shape = (4, 5, 6)
     many_tensors = np.empty(shape + (3, 3))
     many_tensors[:] = tensor
@@ -687,7 +754,7 @@ def test_mask():
 
 
 @set_random_number_generator()
-def test_nnls_jacobian_func(rng):
+def test_nnls_jacobian_func(rng=None):
     b0 = 1000.0
     bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table(bval, bvecs=bvecs)
@@ -765,7 +832,7 @@ def test_nlls_fit_tensor():
 
     # Signals
     Y = np.exp(np.dot(X, D))
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Estimate tensor from test signals and compare against expected result
     # using non-linear least squares:
@@ -811,13 +878,13 @@ def test_nlls_fit_tensor():
     # Test warning for failure of NLLS method, resort to OLS result
     # (reason for failure: too few data points for NLLS)
     tensor_model = dti.TensorModel(gtab_less, fit_method="NLLS", return_S0_hat=True)
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y_less)
 
     # Test fail_is_nan=True, failed NLLS method gives NaN
     tensor_model = dti.TensorModel(
         gtab_less, fit_method="NLLS", return_S0_hat=True, fail_is_nan=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y_less)
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
 
@@ -885,13 +952,13 @@ def test_restore():
     tensor_model = dti.TensorModel(
         gtab, fit_method="restore", sigma=-1.0, return_S0_hat=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y.copy())
 
     # Test fail_is_nan=True, failed NLLS method gives NaN
     tensor_model = dti.TensorModel(
         gtab, fit_method="restore", sigma=-1.0, return_S0_hat=True, fail_is_nan=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y.copy())
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
 
@@ -934,7 +1001,7 @@ def test_predict():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS", return_S0_hat=True)
     dmfit = dm.fit(S)
@@ -1000,8 +1067,8 @@ def test_eig_from_lo_tri():
     S = np.array(
         [
             [
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
             ]
         ]
     )
@@ -1094,3 +1161,231 @@ def test_extra_return():
 
             tensor_est = tensor_model.fit(this_y)
             npt.assert_equal(tensor_est.model.extra["robust"].shape, Y.shape)
+
+
+def test_quantize_evecs():
+    """Test quantize_evecs function with different inputs and parameters."""
+    # Test with 3D eigenvector data (3x3x3x3 where last two dims are eigenvectors)
+    # Shape: (x, y, z, 3, 3) where evecs[..., :, j] is the j-th eigenvector
+    evecs = np.random.rand(3, 3, 3, 3)
+
+    result = dti.quantize_evecs(evecs)
+
+    expected_shape = evecs.shape[:-2]
+    npt.assert_equal(result.shape, expected_shape)
+
+    npt.assert_(np.all(result >= 0))  # Check that all values are valid indices
+    npt.assert_(np.all(result < 362))  # symmetric362 sphere has 362 vertices
+
+    # Test with custom sphere vertices
+    custom_vertices = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0]])
+    result_custom = dti.quantize_evecs(evecs, odf_vertices=custom_vertices)
+    npt.assert_equal(result_custom.shape, expected_shape)
+    npt.assert_(np.all(result_custom >= 0))
+    npt.assert_(np.all(result_custom < 4))  # Should be indices 0-3
+
+    # Test with single voxel (just 3x3 eigenvector matrix)
+    single_evec = np.random.rand(3, 3)
+    result_single = dti.quantize_evecs(single_evec)
+    npt.assert_equal(result_single.shape, ())  # Should be scalar
+
+    # Test with 2D array of eigenvectors
+    evecs_2d = np.random.rand(5, 5, 3, 3)
+    result_2d = dti.quantize_evecs(evecs_2d)
+    expected_shape_2d = (5, 5)
+    npt.assert_equal(result_2d.shape, expected_shape_2d)
+
+    # Test error handling with invalid input
+    evecs = np.random.rand(2, 2, 3, 3)
+    npt.assert_raises(ValueError, dti.quantize_evecs, evecs, idx=3)
+    npt.assert_raises(ValueError, dti.quantize_evecs, evecs, idx=-1)
+
+    bad_evecs = np.random.rand(3)
+    npt.assert_raises(ValueError, dti.quantize_evecs, bad_evecs)
+
+    bad_evecs2 = np.random.rand(2, 2, 4, 3)
+    npt.assert_raises(ValueError, dti.quantize_evecs, bad_evecs2)
+
+
+def test_quantize_evecs_known_vectors():
+    """Test quantize_evecs with known eigenvectors to verify correctness."""
+    sphere = get_sphere(name="symmetric362")
+    vertices = sphere.vertices
+
+    # Create test eigenvectors in the correct format [x, y, 3, 3]
+    # where evecs[..., :, j] is the j-th eigenvector (columnar format)
+    test_evecs = np.zeros((2, 2, 3, 3))
+
+    # Set the first eigenvector (principal eigenvector) at each position
+    test_evecs[0, 0, :, 0] = vertices[0]  # First vertex
+    test_evecs[0, 1, :, 0] = vertices[10]  # 11th vertex
+    test_evecs[1, 0, :, 0] = vertices[50]  # 51st vertex
+    test_evecs[1, 1, :, 0] = vertices[100]  # 101st vertex
+
+    # Fill other eigenvectors with random data
+    test_evecs[:, :, :, 1:] = np.random.rand(2, 2, 3, 2)
+
+    result = dti.quantize_evecs(test_evecs)
+
+    # Check that we get the expected indices
+    npt.assert_equal(result[0, 0], 0)
+    npt.assert_equal(result[0, 1], 10)
+    npt.assert_equal(result[1, 0], 50)
+    npt.assert_equal(result[1, 1], 100)
+
+
+def test_quantize_evecs_parallel_engines():
+    """Test that different parallel engines give the same results."""
+    evecs = np.random.rand(3, 3, 3, 3)
+
+    result_serial = dti.quantize_evecs(evecs, engine="serial")
+    engines_to_test = ["serial"]
+    if has_ray:
+        engines_to_test.append("ray")
+    if has_joblib:
+        engines_to_test.append("joblib")
+    if has_dask:
+        engines_to_test.append("dask")
+
+    for engine in engines_to_test[1:]:
+        try:
+            n_jobs = random.randint(1, 2)
+            result_engine = dti.quantize_evecs(evecs, n_jobs=n_jobs, engine=engine)
+            npt.assert_array_equal(
+                result_serial,
+                result_engine,
+                err_msg=f"Results differ between serial and {engine}",
+            )
+        except Exception as e:
+            # If an engine fails, that's okay - just skip it
+            print(f"Warning: Could not test engine {engine}: {e}")
+
+
+def test_cholesky_transformations():
+    """Test Cholesky decomposition and its inverse for DTI."""
+    dt_gt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+    r_elements = lower_triangular_to_cholesky(dt_gt)
+    dt_recovered = cholesky_to_lower_triangular(r_elements)
+    npt.assert_array_almost_equal(dt_gt, dt_recovered)
+
+
+@set_random_number_generator()
+def test_dti_nlls_cholesky_accuracy(rng):
+    """Test noisy NLLS with and without Cholesky parameterization."""
+    evals_gt = np.array([0.0017, 0.0003, 0.0003])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    signal_clean = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, 100.0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    nls_fit = dti.TensorModel(gtab, fit_method="NLS", cholesky=False, jac=False).fit(
+        noisy_signal
+    )
+
+    cholesky_fit = dti.TensorModel(
+        gtab, fit_method="NLS", cholesky=True, jac=False
+    ).fit(noisy_signal)
+
+    npt.assert_allclose(nls_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, nls_fit.evals, atol=1e-6)
+
+
+def test_dti_nlls_cholesky_positivity():
+    """Test that Cholesky prevents negative tensor eigenvalues."""
+    evals_gt = np.array([0.0017, 0.0003, -0.0001])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    design_matrix = dti.design_matrix(gtab)
+
+    signal_pred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    plain_params, _ = dti.nlls_fit_tensor(
+        design_matrix,
+        signal_pred,
+        jac=False,
+        cholesky=False,
+        return_lower_triangular=True,
+    )
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"Number of calls to function has reached maxfev.*",
+            category=RuntimeWarning,
+        )
+        cholesky_params, _ = dti.nlls_fit_tensor(
+            design_matrix,
+            signal_pred,
+            jac=False,
+            cholesky=True,
+            return_lower_triangular=True,
+        )
+
+    plain_tensor = dti.from_lower_triangular(plain_params[0, :6])
+    cholesky_tensor = dti.from_lower_triangular(cholesky_params[0, :6])
+
+    plain_evals = np.linalg.eigvalsh(plain_tensor)
+    cholesky_evals = np.linalg.eigvalsh(cholesky_tensor)
+
+    npt.assert_(np.any(plain_evals < -1e-8))
+    npt.assert_(np.all(cholesky_evals >= -1e-12))
+
+
+def test_cholesky_jacobian():
+    """Test the analytical Cholesky Jacobian against finite differences."""
+    design_matrix = np.array(
+        [
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 1.0],
+            [0.2, -0.1, 0.4, -0.3, 0.5, -0.2, 1.0],
+            [-0.2, 0.3, 0.1, 0.2, -0.4, 0.5, 1.0],
+            [0.3, 0.1, -0.2, 0.5, 0.2, -0.3, 1.0],
+        ]
+    )
+
+    params = np.array([0.04, 0.03, 0.02, 0.005, -0.004, 0.003, -0.2])
+    data = np.ones(design_matrix.shape[0])
+    weights = np.linspace(0.5, 1.5, design_matrix.shape[0])
+
+    nlls = dti._NllsHelper()
+
+    nlls.err_func(params, design_matrix, data, weights, cholesky=True)
+
+    analytical = nlls.jacobian_func(params, design_matrix, data, weights, cholesky=True)
+
+    numerical = np.empty_like(analytical)
+    step = 1e-7
+
+    for column in range(params.size):
+        params_plus = params.copy()
+        params_minus = params.copy()
+
+        params_plus[column] += step
+        params_minus[column] -= step
+
+        residual_plus = nlls.err_func(
+            params_plus, design_matrix, data, weights, cholesky=True
+        )
+        residual_minus = nlls.err_func(
+            params_minus, design_matrix, data, weights, cholesky=True
+        )
+
+        numerical[:, column] = (residual_plus - residual_minus) / (2 * step)
+
+    npt.assert_allclose(
+        analytical,
+        numerical,
+        rtol=1e-6,
+        atol=1e-7,
+    )

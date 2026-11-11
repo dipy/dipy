@@ -48,20 +48,25 @@ mevals = np.array([[0.0015, 0.00015, 0.00015], [0.0015, 0.00015, 0.00015]])
 angles = [(0, 0), (60, 0)]
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
-# Enables/disables interactive visualization
-interactive = False
+###############################################################################
+# A spherical function is displayed as a deformed sphere: each vertex of the
+# sphere is pushed along its direction by the value of the function and colored
+# by that direction, using ``actor.surface``. SH coefficients are displayed with
+# the ODF actor, ``actor.odf_slicer``. When both describe the same function,
+# they show the same shape. The hemispheres are split along the z axis, so we
+# look at the x-z plane.
 
 scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-
-odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
-
-print("Saving illustration as symm_signal.png")
-window.record(scene=scene, out_path="symm_signal.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.surface(
+        sphere.vertices * (odf / odf.max())[:, None],
+        sphere.faces,
+        colors=np.abs(sphere.vertices).astype(np.float32),
+    )
+)
+show_manager = window.ShowManager(title="symm_signal", size=(200, 200), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -95,20 +100,32 @@ reconst = sh_to_sf(
 )
 
 scene.clear()
-odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
-
-print("Saving output as symm_reconst.png")
-window.record(scene=scene, out_path="symm_reconst.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.odf_slicer(
+        sh_coeffs=sh_coeffs[None, None, None, :],
+        basis_type="descoteaux07_legacy",
+        l_max=sh_order_max,
+        visibility=(False, True, False),
+    )
+)
+scene.add(
+    actor.surface(
+        high_res_sph.vertices * (reconst / reconst.max())[:, None]
+        + np.array([2.5, 0, 0]),
+        high_res_sph.faces,
+        colors=np.abs(high_res_sph.vertices).astype(np.float32),
+    )
+)
+show_manager = window.ShowManager(title="symm_reconst", size=(300, 200), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Reconstruction of a symmetric signal on a high resolution sphere using a
-# symmetric basis
+# SH coefficients drawn with the ODF actor (left) and the signal reconstructed
+# on a high resolution sphere drawn as a surface (right), using a symmetric
+# basis
 #
 #
 # While a symmetric SH basis works well for reconstructing symmetric SF, it
@@ -123,14 +140,16 @@ n_pts_hemisphere = int(sphere.vertices.shape[0] / 2)
 asym_odf = np.append(odf[:n_pts_hemisphere], odf2[n_pts_hemisphere:])
 
 scene.clear()
-odf_actor = actor.odf_slicer(asym_odf[None, None, None, :], sphere=sphere)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
-
-print("Saving output as asym_signal.png")
-window.record(scene=scene, out_path="asym_signal.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.surface(
+        sphere.vertices * (asym_odf / asym_odf.max())[:, None],
+        sphere.faces,
+        colors=np.abs(sphere.vertices).astype(np.float32),
+    )
+)
+show_manager = window.ShowManager(title="asym_signal", size=(200, 200), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -147,19 +166,31 @@ reconst = sh_to_sf(
 )
 
 scene.clear()
-odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
-
-print("Saving output as asym_reconst.png")
-window.record(scene=scene, out_path="asym_reconst.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.odf_slicer(
+        sh_coeffs=sh_coeffs[None, None, None, :],
+        basis_type="descoteaux07_legacy",
+        l_max=sh_order_max,
+        visibility=(False, True, False),
+    )
+)
+scene.add(
+    actor.surface(
+        high_res_sph.vertices * (reconst / reconst.max())[:, None]
+        + np.array([2.5, 0, 0]),
+        high_res_sph.faces,
+        colors=np.abs(high_res_sph.vertices).astype(np.float32),
+    )
+)
+show_manager = window.ShowManager(title="asym_reconst", size=(300, 200), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Reconstruction of an asymmetric signal using a symmetric SH basis
+# SH coefficients (left) and reconstruction (right) of an asymmetric signal
+# using a symmetric SH basis
 #
 #
 # As we can see, a symmetric basis fails to properly represent asymmetric SF.
@@ -179,20 +210,48 @@ reconst = sh_to_sf(
     full_basis=True,
 )
 
-scene.clear()
-odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
+###############################################################################
+# The ODF actor draws full basis coefficients only in FURY's ``standard`` basis
+# (non-legacy ``tournier07``), so we re-express the reconstructed SF in that
+# basis for display.
 
-print("Saving output as asym_reconst_full.png")
-window.record(scene=scene, out_path="asym_reconst_full.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+display_coeffs = sf_to_sh(
+    reconst,
+    high_res_sph,
+    sh_order_max=sh_order_max,
+    basis_type="tournier07",
+    full_basis=True,
+    legacy=False,
+)
+
+scene.clear()
+scene.add(
+    actor.odf_slicer(
+        sh_coeffs=display_coeffs[None, None, None, :],
+        basis_type="standard",
+        l_max=sh_order_max,
+        visibility=(False, True, False),
+    )
+)
+scene.add(
+    actor.surface(
+        high_res_sph.vertices * (reconst / reconst.max())[:, None]
+        + np.array([2.5, 0, 0]),
+        high_res_sph.faces,
+        colors=np.abs(high_res_sph.vertices).astype(np.float32),
+    )
+)
+show_manager = window.ShowManager(
+    title="asym_reconst_full", size=(300, 200), scene=scene
+)
+window.set_camera_from_axis(show_manager.screens[0], (0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Reconstruction of an asymmetric signal using a full SH basis
+# SH coefficients (left) and reconstruction (right) of an asymmetric signal
+# using a full SH basis
 #
 #
 # As we can see, a full SH basis properly reconstruct asymmetric signal.

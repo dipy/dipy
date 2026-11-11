@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.reconst.base import ReconstFit, ReconstModel
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base

@@ -239,9 +239,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 # :ref:`sphx_glr_examples_built_preprocessing_denoise_nlmeans.py` or the
 # local pca :ref:`sphx_glr_examples_built_preprocessing_denoise_localpca.py`).
 
-maskdata, mask = median_otsu(
-    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
-)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2, dilate=1)
 
 ###############################################################################
 # Now that we have loaded and pre-processed the data we can go forward

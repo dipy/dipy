@@ -2,6 +2,7 @@ import logging
 import warnings
 
 from dipy import __version__ as dipy_version
+from dipy.utils.logging import configure_logger
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 #  Disabling the FutureWarning from h5py below.
@@ -10,13 +11,25 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def get_level(lvl):
-    """Transforms the logging level passed on the commandline into a proper
-    logging level name.
+    """Transform the logging level passed on the commandline into a logging
+    level value.
+
+    Parameters
+    ----------
+    lvl : str or int
+        Level name, e.g. ``"DEBUG"``, or an integer logging level.
+        Unknown names fall back to ``INFO``.
+
+    Returns
+    -------
+    int
+        The numeric logging level.
     """
-    try:
-        return logging._levelNames[lvl]
-    except Exception:
+    if isinstance(lvl, int):
+        return lvl
+    if not isinstance(lvl, str):
         return logging.INFO
+    return logging.getLevelNamesMapping().get(lvl.upper(), logging.INFO)
 
 
 def run_flow(flow, *, extra_args=None):
@@ -87,9 +100,9 @@ def run_flow(flow, *, extra_args=None):
 
     args = parser.get_flow_args()
 
-    logging.basicConfig(
+    configure_logger(
         filename=args["log_file"],
-        format="%(levelname)s:%(message)s",
+        fmt="%(levelname)s: %(message)s",
         level=get_level(args["log_level"]),
     )
 

@@ -2,6 +2,7 @@ import itertools
 
 import numpy as np
 from numpy.testing import assert_array_equal, assert_equal, assert_raises
+import pytest
 
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.clustering_algorithms import quickbundles
@@ -65,7 +66,7 @@ def test_quickbundles_shape_incompatibility():
 
 
 @set_random_number_generator(7)
-def test_quickbundles_2D(rng):
+def test_quickbundles_2D(rng=None):
     # Test quickbundles clustering using 2D points and the Eulidean metric.
     data = []
     data += [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]
@@ -197,8 +198,11 @@ def test_quickbundles_memory_leaks():
     qb = QuickBundles(threshold=2 * threshold)
 
     type_name_pattern = "memoryview"
-    initial_types_refcount = get_type_refcount(type_name_pattern)
+    with pytest.warns(DeprecationWarning, match="get_type_refcount"):
+        initial_types_refcount = get_type_refcount(pattern=type_name_pattern)
 
     qb.cluster(data)
     # At this point, all memoryviews created during clustering should be freed.
-    assert_equal(get_type_refcount(type_name_pattern), initial_types_refcount)
+    with pytest.warns(DeprecationWarning, match="get_type_refcount"):
+        final_types_refcount = get_type_refcount(pattern=type_name_pattern)
+    assert_equal(final_types_refcount, initial_types_refcount)

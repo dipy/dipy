@@ -17,6 +17,9 @@ https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
 https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495
 https://github.com/nipy/nibabel/pull/556
 """
+
+os.environ["RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"] = "0"
+
 np.set_printoptions(legacy="1.13")
 
 warnings.simplefilter(action="default", category=FutureWarning)
@@ -68,10 +71,11 @@ def pytest_collect_file(parent, file_path):
 class PyxFile(pytest.File):
     def collect(self):
         try:
-            match = re.search(r"(dipy/[^\/]+/tests/test_\w+)", str(self.path))
+            path_str = self.path.as_posix()
+            match = re.search(r"(dipy/[^\/]+/tests/test_\w+)", path_str)
             mod_name = match.group(1) if match else None
             if mod_name is None:
-                raise PyxException("Could not find test module for " f"{self.path}.")
+                raise PyxException(f"Could not find test module for {self.path}.")
             mod_name = mod_name.replace("/", ".")
             mod = importlib.import_module(mod_name)
             for name in dir(mod):

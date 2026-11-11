@@ -40,6 +40,7 @@ from dipy.reconst.weights_method import (
 )
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.testing import check_for_warnings
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 
@@ -884,6 +885,40 @@ def test_MK_singularities():
         assert_almost_equal(MK_an, MK_nm, decimal=3)
 
 
+@set_random_number_generator()
+def test_dki_nls_cholesky_with_noise(rng):
+    """Test Cholesky NLS on a noisy DKI signal."""
+    if not have_cvxpy:
+        return
+
+    mevals = mevals_cross
+
+    signal_clean, dt_gt, kt_gt = multi_tensor_dki(
+        gtab_2s,
+        mevals,
+        S0=S0,
+        angles=angles_cross,
+        fractions=frac_cross,
+        snr=None,
+    )
+
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, S0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    model = dki.DiffusionKurtosisModel(
+        gtab_2s, fit_method="NLS", cholesky=True, jac=False
+    )
+    fit = model.fit(noisy_signal)
+
+    evals_gt, _ = decompose_tensor(from_lower_triangular(dt_gt))
+
+    assert np.all(np.isfinite(fit.model_params))
+    assert np.all(fit.evals > 0)
+    assert np.linalg.norm(fit.evals - evals_gt) < 5e-4
+
+
 def test_dki_errors():
     # first error of DKI module is if a unknown fit method is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s, fit_method="JOANA")
@@ -1146,3 +1181,56 @@ def test_kurtosis_fa():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
     assert_almost_equal(dkiF.kfa, 0)
+
+
+def test_fast_vs_python_analytical():
+    """Verify that Cython (fast=True) and Python (fast=False) analytical
+    implementations produce identical results for MK, AK, RK, and KFA."""
+
+    # Use crossing fiber simulation from module setup
+    params = multi_params
+
+    # --- MK ---
+    mk_fast = mean_kurtosis(params, analytical=True, fast=True)
+    mk_slow = mean_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(mk_fast, mk_slow)
+
+    # --- AK ---
+    ak_fast = axial_kurtosis(params, analytical=True, fast=True)
+    ak_slow = axial_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(ak_fast, ak_slow)
+
+    # --- RK ---
+    rk_fast = radial_kurtosis(params, analytical=True, fast=True)
+    rk_slow = radial_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(rk_fast, rk_slow)
+
+    # --- KFA ---
+    kfa_fast = kurtosis_fractional_anisotropy(params, fast=True)
+    kfa_slow = kurtosis_fractional_anisotropy(params, fast=False)
+    assert_array_almost_equal(kfa_fast, kfa_slow)
+
+    # Also test single-voxel (1D input)
+    single = crossing_ref
+    mk_fast_1d = mean_kurtosis(single, analytical=True, fast=True)
+    mk_slow_1d = mean_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(mk_fast_1d, mk_slow_1d)
+
+    ak_fast_1d = axial_kurtosis(single, analytical=True, fast=True)
+    ak_slow_1d = axial_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(ak_fast_1d, ak_slow_1d)
+
+    rk_fast_1d = radial_kurtosis(single, analytical=True, fast=True)
+    rk_slow_1d = radial_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(rk_fast_1d, rk_slow_1d)
+
+    kfa_fast_1d = kurtosis_fractional_anisotropy(single, fast=True)
+    kfa_slow_1d = kurtosis_fractional_anisotropy(single, fast=False)
+    assert_almost_equal(kfa_fast_1d, kfa_slow_1d)
+
+    # Test via class methods
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(DWI)
+    assert_array_almost_equal(dkiF.mk(fast=True), dkiF.mk(fast=False))
+    assert_array_almost_equal(dkiF.ak(fast=True), dkiF.ak(fast=False))
+    assert_array_almost_equal(dkiF.rk(fast=True), dkiF.rk(fast=False))

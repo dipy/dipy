@@ -1,5 +1,4 @@
 from itertools import chain
-import logging
 from time import time
 
 from nibabel.affines import apply_affine
@@ -12,7 +11,6 @@ from dipy.align.streamlinear import (
     StreamlineLinearRegistration,
 )
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.distances import bundles_distances_mam, bundles_distances_mdf
 from dipy.tracking.streamline import (
     Streamlines,
@@ -21,6 +19,8 @@ from dipy.tracking.streamline import (
     select_random_set_of_streamlines,
     set_number_of_points,
 )
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 def check_range(streamline, gt, lt):
@@ -29,9 +29,6 @@ def check_range(streamline, gt, lt):
         return True
     else:
         return False
-
-
-logger = logging.getLogger(__name__)
 
 
 def bundle_adjacency(dtracks0, dtracks1, threshold):
@@ -268,7 +265,7 @@ class RecoBundles:
         """
         map_ind = np.zeros(len(streamlines))
         for i in range(len(streamlines)):
-            map_ind[i] = check_range(streamlines[i], greater_than, less_than)
+            map_ind[i] = check_range(streamlines[i], gt=greater_than, lt=less_than)
         map_ind = map_ind.astype(bool)
 
         self.orig_indices = np.array(list(range(0, len(streamlines))))
@@ -372,10 +369,11 @@ class RecoBundles:
             (default True)
         num_threads : int, optional
             Number of threads to be used for OpenMP parallelization. If None
-            (default) the value of OMP_NUM_THREADS environment variable is used
-            if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus $|num_threads + 1|$ is used (enter
-            -1 to use as many threads as possible). 0 raises an error.
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is None or ``"symmetric"``.
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
@@ -474,9 +472,7 @@ class RecoBundles:
             pruning_distance=pruning_distance,
         )
         if self.verbose:
-            logger.info(
-                f"Total duration of recognition time" f" is {time()-t:0.3f} s\n"
-            )
+            logger.info(f"Total duration of recognition time is {time() - t:0.3f} s\n")
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -497,6 +493,7 @@ class RecoBundles:
         slr_method="L-BFGS-B",
         pruning_thr=6,
         pruning_distance="mdf",
+        num_threads=None,
     ):
         """Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
@@ -569,6 +566,13 @@ class RecoBundles:
             Pruning after reducing the search space.
         pruning_distance : string
             Pruning distance type can be mdf or mam.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is None or ``"symmetric"``.
 
         Returns
         -------
@@ -615,7 +619,11 @@ class RecoBundles:
                 select_model=slr_select[0],
                 select_target=slr_select[1],
                 method=slr_method,
+                num_threads=num_threads,
             )
+        else:
+            transf_streamlines = neighb_streamlines
+
         if self.verbose:
             logger.info("pruning after 2nd local Slr")
 
@@ -628,9 +636,7 @@ class RecoBundles:
         )
 
         if self.verbose:
-            logger.info(
-                f"Total duration of recognition time" f" is {time()-t:0.3f} s\n"
-            )
+            logger.info(f"Total duration of recognition time is {time() - t:0.3f} s\n")
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -747,7 +753,7 @@ class RecoBundles:
                 logger.info("You have no neighbor streamlines... No bundle recognition")
             return Streamlines([]), []
         if self.verbose:
-            logger.info(f" Number of neighbor streamlines" f" {nb_neighb_streamlines}")
+            logger.info(f" Number of neighbor streamlines {nb_neighb_streamlines}")
             logger.info(f" Duration {time() - t:0.3f} s\n")
 
         return neighb_streamlines, neighb_indices
@@ -899,7 +905,7 @@ class RecoBundles:
         if self.verbose:
             logger.info(f" Number of centroids: {len(rtransf_centroids)}")
             logger.info(
-                f" Number of streamlines after pruning:" f" {len(pruned_streamlines)}"
+                f" Number of streamlines after pruning: {len(pruned_streamlines)}"
             )
             logger.info(f" Duration {time() - t:0.3f} s\n")
 

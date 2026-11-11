@@ -87,7 +87,7 @@ class ArcLengthFeature(Feature):
 
     def __init__(self):
         # The arc length stays the same even if the streamline is reversed.
-        super(ArcLengthFeature, self).__init__(is_order_invariant=True)
+        super().__init__(is_order_invariant=True)
 
     def infer_shape(self, streamline):
         """Infers the shape of features extracted from `streamline`."""
@@ -129,15 +129,16 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters_arclength.png", size=(600, 600))
-
-# Enables/disables interactive visualization
-interactive = False
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="fornix_clusters_arclength", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -171,7 +172,7 @@ class CosineMetric(Metric):
     def __init__(self):
         # For simplicity, features will be the vector between endpoints of a
         # streamline.
-        super(CosineMetric, self).__init__(feature=VectorOfEndpointsFeature())
+        super().__init__(feature=VectorOfEndpointsFeature())
 
     def are_compatible(self, shape1, shape2):
         """Check if two features are vectors of same dimension.
@@ -187,7 +188,7 @@ class CosineMetric(Metric):
         def norm(x):
             return np.sqrt(np.sum(x**2))
 
-        cos_theta = np.dot(v1, v2.T) / (norm(v1) * norm(v2))
+        cos_theta = np.dot(v1.flatten(), v2.flatten()) / (norm(v1) * norm(v2))
 
         # Make sure it's in [-1, 1], i.e. within domain of arccosine
         cos_theta = np.minimum(cos_theta, 1.0)
@@ -223,12 +224,16 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters_cosine.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="fornix_clusters_cosine", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

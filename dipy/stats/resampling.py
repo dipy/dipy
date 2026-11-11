@@ -3,7 +3,7 @@
 import numpy as np
 import scipy as sp
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def bs_se(bs_pdf):

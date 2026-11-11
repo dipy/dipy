@@ -56,9 +56,8 @@ def test_default_weights_batch(monkeypatch):
 
         evac_model = evac.EVACPlus()
         fake_affine = np.array([np.eye(4), np.eye(4)])
-        fake_voxsize = np.ones((2, 3))
         results_arr = evac_model.predict(
-            input_arr, fake_affine, voxsize=fake_voxsize, batch_size=2, return_prob=True
+            input_arr, fake_affine, batch_size=2, return_prob=True
         )
         npt.assert_almost_equal(results_arr, output_arr, decimal=2)
 

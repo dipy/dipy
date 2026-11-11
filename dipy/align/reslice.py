@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 from scipy.ndimage import affine_transform
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 
@@ -14,9 +14,206 @@ def _affine_transform(kwargs):
         return affine_transform(**kwargs)
 
 
+def _lanczos_kernel(values, num_lobes):
+    """Lanczos kernel: sinc(x) * sinc(x/a) for |x| < a, else 0.
+
+    Parameters
+    ----------
+    values : array-like
+        Input values.
+    num_lobes : int
+        Kernel support half-width. Values where ``|x| >= num_lobes`` are
+        set to 0 regardless of position in the array. Typically 2 or 3.
+
+    Returns
+    -------
+    result : ndarray
+        Kernel values at values.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    mask = np.abs(values) < num_lobes
+    return np.where(mask, np.sinc(values) * np.sinc(values / num_lobes), 0.0)
+
+
+def _lanczos_resample_1d_axis0(
+    data, scale, out_size, *, num_lobes=2, mode="constant", cval=0
+):
+    """Apply 1D Lanczos resampling along axis 0 of an N-dimensional array.
+
+    Parameters
+    ----------
+    data : ndarray, shape (in_size, ...)
+        Input array. Must be float64.
+    scale : float
+        Ratio new_zoom / old_zoom for this axis.
+    out_size : int
+        Number of output samples along axis 0.
+    num_lobes : int, optional
+        Lanczos kernel lobes (2 or 3).
+    mode : str, optional
+        Boundary mode: 'constant', 'nearest', 'reflect', or 'wrap'.
+    cval : float, optional
+        Fill value for mode='constant'.
+
+    Returns
+    -------
+    out : ndarray, shape (out_size, ...), float64
+        Resampled array.
+    """
+    valid_modes = ("constant", "nearest", "reflect", "wrap")
+    if mode not in valid_modes:
+        raise ValueError(f"Invalid mode {mode!r}. Valid modes: {valid_modes}")
+
+    in_size = data.shape[0]
+    extra_dims = data.ndim - 1
+    bc_shape = (-1,) + (1,) * extra_dims
+
+    out_idx = np.arange(out_size, dtype=np.float64)
+    in_coords = out_idx * scale
+    floor_coords = np.floor(in_coords).astype(np.intp)
+
+    result = np.zeros((out_size,) + data.shape[1:], dtype=np.float64)
+    weight_sum = np.zeros(out_size, dtype=np.float64)
+
+    for delta in range(-(num_lobes - 1), num_lobes + 1):
+        neigh = floor_coords + delta
+        w = _lanczos_kernel(in_coords - neigh, num_lobes)
+
+        if mode == "wrap":
+            sample = data[np.mod(neigh, in_size)]
+        elif mode == "reflect":
+            period = 2 * (in_size - 1) if in_size > 1 else 1
+            idx = np.mod(neigh, period)
+            idx = np.where(idx >= in_size, period - idx, idx)
+            sample = data[idx]
+        else:
+            sample = data[np.clip(neigh, 0, in_size - 1)]
+            if mode == "constant":
+                invalid = (neigh < 0) | (neigh >= in_size)
+                if invalid.any():
+                    sample = sample.copy()
+                    sample[invalid] = float(cval)
+
+        result += w.reshape(bc_shape) * sample
+        weight_sum += w
+
+    nonzero = (np.abs(weight_sum) > 1e-10).reshape(bc_shape)
+    weight_sum_bc = weight_sum.reshape(bc_shape)
+    fill = float(cval) if mode == "constant" else 0.0
+    return np.where(nonzero, result / np.where(nonzero, weight_sum_bc, 1.0), fill)
+
+
+def _lanczos_resample_3d(
+    data, scale, output_shape, *, num_lobes=2, mode="constant", cval=0
+):
+    """Resample a 3D volume using separable Lanczos interpolation.
+
+    Applies 1D Lanczos resampling along each spatial axis in sequence.
+    Separability of the Lanczos kernel makes this equivalent to the full
+    3D tensor-product kernel at a fraction of the cost.
+
+    Parameters
+    ----------
+    data : ndarray, shape (I, J, K)
+        Input 3D volume.
+    scale : ndarray, shape (3,)
+        Scaling factors per axis (new_zooms / zooms).
+    output_shape : tuple of int
+        Shape of the output volume.
+    num_lobes : int, optional
+        Lanczos kernel lobes (2 or 3).
+    mode : str, optional
+        Boundary mode: 'constant', 'nearest', 'reflect', or 'wrap'.
+    cval : float, optional
+        Fill value for mode='constant'.
+
+    Returns
+    -------
+    out : ndarray, shape output_shape, dtype matches data.dtype
+        Resampled volume.
+    """
+    vol = data.astype(np.float64)
+    for axis in range(3):
+        vol = np.moveaxis(vol, axis, 0)
+        vol = _lanczos_resample_1d_axis0(
+            vol,
+            scale[axis],
+            output_shape[axis],
+            num_lobes=num_lobes,
+            mode=mode,
+            cval=cval,
+        )
+        vol = np.moveaxis(vol, 0, axis)
+    return vol.astype(data.dtype)
+
+
+def isotropic_voxel_size(zooms, *, step=None):
+    """Find the isotropic voxel size that best preserves the voxel volume.
+
+    The voxel volume ``prod(zooms)`` sets the amount of signal each voxel
+    integrates. An isotropic voxel of edge ``s`` has volume ``s ** 3``, so the
+    volume-preserving edge is the geometric mean ``prod(zooms) ** (1 / 3)``.
+    That value is snapped to the nearest multiple of ``step`` in volume-ratio
+    terms: among the two grid neighbours, the one minimising
+    ``|log(s ** 3 / prod(zooms))|`` is kept. Comparing volumes rather than
+    edges matters because volume grows with the cube of the edge. For a
+    1x1x3 mm voxel (volume 3), 1.25 mm gives a volume of 1.95 and 1.5 mm
+    gives 3.375, so 1.5 mm is selected while 2 mm (volume 8) is far off.
+
+    Parameters
+    ----------
+    zooms : array-like, shape (3,)
+        Voxel size along each spatial axis. Values within a relative and
+        absolute tolerance of 1e-3 of each other are considered isotropic.
+    step : float, optional
+        Grid spacing on which the isotropic voxel size is snapped. If None,
+        the grid scales with the voxel size: a quarter of the power of ten
+        just below the geometric mean, i.e. 0.25 for voxels between 1 and 10,
+        0.025 for voxels between 0.1 and 1 (e.g. ex-vivo data). Use 0 to
+        return the exact geometric mean.
+
+    Returns
+    -------
+    voxel_size : float
+        Isotropic voxel size. Already isotropic ``zooms`` are returned
+        unchanged.
+    """
+    zooms = np.asarray(zooms, dtype=np.float64)
+    if zooms.shape != (3,) or not np.all(np.isfinite(zooms)) or np.any(zooms <= 0):
+        raise ValueError(f"zooms must be 3 finite positive values, got {zooms}.")
+    if step is not None and not (np.isfinite(step) and step >= 0):
+        raise ValueError(f"step must be finite and non-negative, got {step}.")
+
+    if np.allclose(zooms, zooms[0], rtol=1e-3, atol=1e-3):
+        return float(zooms[0])
+
+    volume = np.prod(zooms)
+    target = np.cbrt(volume)
+    if step == 0:
+        return float(target)
+    if step is None:
+        step = 0.25 * 10.0 ** np.floor(np.log10(target))
+
+    candidates = {
+        round(float(np.floor(target / step) * step), 6),
+        round(float(np.ceil(target / step) * step), 6),
+    }
+    candidates = [c for c in candidates if c > 0]
+    return min(candidates, key=lambda c: abs(np.log(c**3 / volume)))
+
+
 @warning_for_keywords()
 def reslice(
-    data, affine, zooms, new_zooms, *, order=1, mode="constant", cval=0, num_processes=1
+    data,
+    affine,
+    zooms,
+    *,
+    new_zooms=None,
+    order=1,
+    mode="constant",
+    cval=0,
+    num_processes=1,
+    new_shape=None,
 ):
     """Reslice data with new voxel resolution defined by ``new_zooms``.
 
@@ -28,12 +225,15 @@ def reslice(
         mapping from voxel coordinates to world coordinates
     zooms : tuple, shape (3,)
         voxel size for (i,j,k) dimensions
-    new_zooms : tuple, shape (3,)
-        new voxel size for (i,j,k) after resampling
-    order : int, from 0 to 5
-        order of interpolation for resampling/reslicing,
-        0 nearest interpolation, 1 trilinear etc..
-        if you don't want any smoothing 0 is the option you need.
+    new_zooms : tuple, shape (3,), optional
+        new voxel size for (i,j,k) after resampling. If None, an isotropic
+        voxel size preserving the original voxel volume is selected with
+        :func:`isotropic_voxel_size`.
+    order : int or str
+        Interpolation order. Integer 0–5 selects spline order via scipy
+        (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
+        ``'lanczos2'`` select a 2-lobe Lanczos kernel; ``'lanczos3'``
+        selects a 3-lobe Lanczos kernel.
     mode : string ('constant', 'nearest', 'reflect' or 'wrap')
         Points outside the boundaries of the input are filled according
         to the given mode.
@@ -44,7 +244,12 @@ def reslice(
         Split the calculation to a pool of children processes. This only
         applies to 4D `data` arrays. Default is 1. If < 0 the maximal number
         of cores minus ``num_processes + 1`` is used (enter -1 to use as many
-        cores as possible). 0 raises an error.
+        cores as possible). 0 raises an error. Ignored when order is
+        ``'lanczos'``, ``'lanczos2'``, or ``'lanczos3'``.
+    new_shape : tuple, shape (3,), optional
+        Sets the shape the image should take after affine transformation.
+        If None, it is calculated through the affine matrix and current shape.
+
 
     Returns
     -------
@@ -67,12 +272,41 @@ def reslice(
     >>> new_zooms = (3.,3.,3.)
     >>> new_zooms
     (3.0, 3.0, 3.0)
-    >>> data2, affine2 = reslice(data, affine, zooms, new_zooms)
+    >>> data2, affine2 = reslice(data, affine, zooms, new_zooms=new_zooms)
     >>> data2.shape == (77, 77, 40)
+    True
+
+    With ``new_zooms=None`` the isotropic voxel size preserving the original
+    voxel volume (4 * 4 * 5 = 80) is used, here 4.25 (4.25 ** 3 = 76.8).
+
+    >>> data3, affine3 = reslice(data, affine, zooms)
+    >>> data3.shape == (55, 55, 28)
     True
 
     """
     num_processes = determine_num_processes(num_processes)
+
+    lanczos_lobes = None
+    if isinstance(order, str):
+        if order in ("lanczos", "lanczos2"):
+            lanczos_lobes = 2
+        elif order == "lanczos3":
+            lanczos_lobes = 3
+        else:
+            raise ValueError(
+                f"Unknown interpolation order {order!r}. "
+                "Valid string values: 'lanczos', 'lanczos2', 'lanczos3'."
+            )
+    elif not (0 <= order <= 5):
+        raise ValueError(f"order must be 0-5, got {order!r}.")
+
+    _valid_modes_lanczos = ("constant", "nearest", "reflect", "wrap")
+    _valid_modes_scipy = ("constant", "nearest", "reflect", "mirror", "wrap")
+    _valid_modes = (
+        _valid_modes_lanczos if lanczos_lobes is not None else _valid_modes_scipy
+    )
+    if mode not in _valid_modes:
+        raise ValueError(f"Invalid mode {mode!r}. Valid modes: {_valid_modes}")
 
     # We are suppressing warnings emitted by scipy >= 0.18,
     # described in https://github.com/dipy/dipy/issues/1107.
@@ -80,41 +314,71 @@ def reslice(
     # input to scipy's affine_transform is [0, 0, 0]
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*scipy.*18.*", category=UserWarning)
+        if new_zooms is None:
+            new_zooms = (isotropic_voxel_size(zooms),) * 3
         new_zooms = np.array(new_zooms, dtype="f8")
         zooms = np.array(zooms, dtype="f8")
-        R = new_zooms / zooms
-        new_shape = zooms / new_zooms * np.array(data.shape[:3])
-        new_shape = tuple(np.round(new_shape).astype("i8"))
-        kwargs = {
-            "matrix": R,
-            "output_shape": new_shape,
-            "order": order,
-            "mode": mode,
-            "cval": cval,
-        }
-        if data.ndim == 3:
-            data2 = affine_transform(input=data, **kwargs)
-        elif data.ndim == 4:
-            data2 = np.zeros(new_shape + (data.shape[-1],), data.dtype)
-            if num_processes == 1:
-                for i in range(data.shape[-1]):
-                    affine_transform(input=data[..., i], output=data2[..., i], **kwargs)
-            else:
-                params = []
-                for i in range(data.shape[-1]):
-                    _kwargs = {"input": data[..., i]}
-                    _kwargs.update(kwargs)
-                    params.append(_kwargs)
-                mp.set_start_method("spawn", force=True)
-                pool = mp.Pool(num_processes)
-                for i, res in enumerate(pool.imap(_affine_transform, params)):
-                    data2[..., i] = res
-                pool.close()
-        else:
+        scale = new_zooms / zooms
+        if new_shape is None:
+            new_shape = zooms / new_zooms * np.array(data.shape[:3])
+            new_shape = tuple(np.round(new_shape).astype("i8"))
+
+        if data.ndim not in (3, 4):
             raise ValueError(
                 f"dimension of data should be 3 or 4 but you provided {data.ndim}"
             )
-        Rx = np.eye(4)
-        Rx[:3, :3] = np.diag(R)
-        affine2 = np.dot(affine, Rx)
+
+        if lanczos_lobes is not None:
+            if data.ndim == 3:
+                data2 = _lanczos_resample_3d(
+                    data,
+                    scale,
+                    new_shape,
+                    num_lobes=lanczos_lobes,
+                    mode=mode,
+                    cval=cval,
+                )
+            else:
+                data2 = np.zeros(new_shape + (data.shape[-1],), data.dtype)
+                for vol_idx in range(data.shape[-1]):
+                    data2[..., vol_idx] = _lanczos_resample_3d(
+                        data[..., vol_idx],
+                        scale,
+                        new_shape,
+                        num_lobes=lanczos_lobes,
+                        mode=mode,
+                        cval=cval,
+                    )
+        else:
+            kwargs = {
+                "matrix": scale,
+                "output_shape": new_shape,
+                "order": order,
+                "mode": mode,
+                "cval": cval,
+            }
+            if data.ndim == 3:
+                data2 = affine_transform(input=data, **kwargs)
+            else:
+                data2 = np.zeros(new_shape + (data.shape[-1],), data.dtype)
+                if num_processes == 1:
+                    for i in range(data.shape[-1]):
+                        affine_transform(
+                            input=data[..., i], output=data2[..., i], **kwargs
+                        )
+                else:
+                    params = []
+                    for i in range(data.shape[-1]):
+                        _kwargs = {"input": data[..., i]}
+                        _kwargs.update(kwargs)
+                        params.append(_kwargs)
+                    mp.set_start_method("spawn", force=True)
+                    pool = mp.Pool(num_processes)
+                    for i, res in enumerate(pool.imap(_affine_transform, params)):
+                        data2[..., i] = res
+                    pool.close()
+
+        affine_scale = np.eye(4)
+        affine_scale[:3, :3] = np.diag(scale)
+        affine2 = np.dot(affine, affine_scale)
     return (data2, affine2)

@@ -1,4 +1,4 @@
-# Set update schedule for GitHub Actions
+# Set update schedule for GitHub Actions and pip dependencies
 
 version: 2
 updates:
@@ -12,3 +12,17 @@ updates:
       actions:
         patterns:
           - "*"
+    commit-message:
+      prefix: "CI:"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      # Check for updates to Python dependencies every month
+      interval: "monthly"
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "MNT:"

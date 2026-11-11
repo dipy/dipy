@@ -11,14 +11,12 @@ axially symmetric tensor and the fODF using the FORECAST model from
 First import the necessary modules:
 """
 
-import os.path as op
-
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.data import fetch_hbn, get_sphere
+from dipy.data import fetch_hbn
 from dipy.reconst.forecast import ForecastModel
 from dipy.viz import actor, window
 
@@ -30,35 +28,29 @@ from dipy.viz import actor, window
 # HBN-POD2 dataset :footcite:p:`RichieHalford2022`.
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
-dwi_path = op.join(
-    data_path, "derivatives", "qsiprep", "sub-NDARAA948VFH", "ses-HBNsiteRU", "dwi"
+dwi_path = (
+    data_path / "derivatives" / "qsiprep" / "sub-NDARAA948VFH" / "ses-HBNsiteRU" / "dwi"
 )
 
 img = nib.load(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
-    )
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
 )
 
 gtab = gradient_table(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
-    ),
-    bvecs=op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
+    bvecs=(
+        dwi_path
+        / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec"
     ),
 )
 
 data = np.asarray(img.dataobj)
 
 mask_img = nib.load(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz",
-    )
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz"
 )
 
 brain_mask = mask_img.get_fdata()
@@ -131,25 +123,15 @@ plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 # FORECAST scalar indices.
 #
 #
-# Load an ODF reconstruction sphere
+# Display the fODFs of a small ROI straight from the FORECAST SH coefficients,
+# which use DIPY's legacy ``descoteaux07`` basis.
 
-sphere = get_sphere(name="repulsion724")
-
-###############################################################################
-# Compute the fODFs.
-
-odf = f_fit.odf(sphere)
-print(f"fODF.shape {odf.shape}")
-
-###############################################################################
-# Display a part of the fODFs
-
-odf_actor = actor.odf_slicer(
-    odf[30:60, 30:60, :], sphere=sphere, colormap="plasma", scale=0.6
+fodf_actor = actor.odf_slicer(
+    sh_coeffs=f_fit.sh_coeff[30:60, 30:60],
+    basis_type="descoteaux07_legacy",
+    scale=0.6,
 )
-scene = window.Scene()
-scene.add(odf_actor)
-window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=4)
+window.show(fodf_actor, title="fODFs")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

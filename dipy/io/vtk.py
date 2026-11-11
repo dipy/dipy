@@ -1,109 +1,54 @@
-import numpy as np
+"""Deprecated. Polydata IO now lives beside the formats that use it.
 
-from dipy.testing.decorators import warning_for_keywords
-from dipy.tracking.streamline import transform_streamlines
-from dipy.utils.optpkg import optional_package
+VTK formats (.vtk, .vtp, .fib) are handled directly by :mod:`dipy.io.streamline`
+for tractograms and :mod:`dipy.io.surface` for surfaces, both through polyxios.
+This module only re-exports them and is removed in DIPY 2.0.
+"""
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+import importlib
 
-if have_fury:
-    import fury.io
-    import fury.utils
+from dipy.utils.deprecator import deprecate_with_version
+
+_NEW_LOCATIONS = {
+    "convert_to_polydata": "dipy.io.stateful_surface",
+    "convert_to_polydata_lines": "dipy.io.streamline",
+    "get_polydata_lines": "dipy.io.streamline",
+    "get_polydata_triangles": "dipy.io.surface",
+    "get_polydata_vertex_attrs": "dipy.io.surface",
+    "get_polydata_vertices": "dipy.io.surface",
+    "load_polydata": "dipy.io.surface",
+    "load_vtk_streamlines": "dipy.io.streamline",
+    "save_polydata": "dipy.io.surface",
+    "save_vtk_streamlines": "dipy.io.streamline",
+}
+
+__all__ = list(_NEW_LOCATIONS)
 
 
-def load_polydata(file_name):
-    """Load a vtk polydata to a supported format file.
-
-    Supported file formats are OBJ, VTK, VTP, FIB, PLY, STL and XML
+def __getattr__(name):
+    """Resolve a deprecated re-export from its new location.
 
     Parameters
     ----------
-    file_name : string
+    name : str
+        Name of the attribute being looked up on this module.
 
     Returns
     -------
-    output : vtkPolyData
+    callable
+        The re-exported function, wrapped so that calling it warns.
 
+    Raises
+    ------
+    AttributeError
+        If `name` is not one of the deprecated re-exports.
     """
-    return fury.io.load_polydata(file_name)
+    if name not in _NEW_LOCATIONS:
+        raise AttributeError(f"module 'dipy.io.vtk' has no attribute {name!r}")
 
-
-@warning_for_keywords()
-def save_polydata(polydata, file_name, *, binary=False, color_array_name=None):
-    """Save a vtk polydata to a supported format file.
-
-    Save formats can be VTK, VTP, FIB, PLY, STL and XML.
-
-    Parameters
-    ----------
-    polydata : vtkPolyData
-    file_name : string
-
-    """
-    fury.io.save_polydata(
-        polydata=polydata,
-        file_name=file_name,
-        binary=binary,
-        color_array_name=color_array_name,
-    )
-
-
-@warning_for_keywords()
-def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
-    """Save streamlines as vtk polydata to a supported format file.
-
-    File formats can be OBJ, VTK, VTP, FIB, PLY, STL and XML
-
-    Parameters
-    ----------
-    streamlines : list
-        list of 2D arrays or ArraySequence
-    filename : string
-        output filename (.obj, .vtk, .fib, .ply, .stl and .xml)
-    to_lps : bool
-        Default to True, will follow the vtk file convention for streamlines
-        Will be supported by MITKDiffusion and MI-Brain
-    binary : bool
-        save the file as binary
-
-    """
-    if to_lps:
-        # ras (mm) to lps (mm)
-        to_lps = np.eye(4)
-        to_lps[0, 0] = -1
-        to_lps[1, 1] = -1
-        streamlines = transform_streamlines(streamlines, to_lps)
-
-    polydata, _ = fury.utils.lines_to_vtk_polydata(streamlines)
-    save_polydata(polydata, file_name=filename, binary=binary)
-
-
-@warning_for_keywords()
-def load_vtk_streamlines(filename, *, to_lps=True):
-    """Load streamlines from vtk polydata.
-
-    Load formats can be VTK, FIB
-
-    Parameters
-    ----------
-    filename : string
-        input filename (.vtk or .fib)
-    to_lps : bool
-        Default to True, will follow the vtk file convention for streamlines
-        Will be supported by MITKDiffusion and MI-Brain
-
-    Returns
-    -------
-    output :  list
-         list of 2D arrays
-
-    """
-    polydata = load_polydata(filename)
-    lines = fury.utils.get_polydata_lines(polydata)
-    if to_lps:
-        to_lps = np.eye(4)
-        to_lps[0, 0] = -1
-        to_lps[1, 1] = -1
-        return transform_streamlines(lines, to_lps)
-
-    return lines
+    module = _NEW_LOCATIONS[name]
+    return deprecate_with_version(
+        f"dipy.io.vtk is deprecated. Import '{name}' from {module} instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )(getattr(importlib.import_module(module), name))

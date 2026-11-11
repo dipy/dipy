@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 from urllib.error import HTTPError, URLError
 
@@ -9,15 +10,25 @@ import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
+from dipy.io.surface import load_surface
 from dipy.io.utils import (
+    Space,
     create_nifti_header,
     decfa,
     decfa_to_float,
     get_reference_info,
+    has_rgb_dtype,
+    is_header_compatible,
     is_reference_info_valid,
+    is_rgb_compatible_data,
     read_img_arr_or_path,
+    split_filename_extension,
+    unpack_rgb_array,
 )
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 
@@ -25,7 +36,7 @@ FILEPATH_DIX = None
 def setup_module():
     global FILEPATH_DIX
     try:
-        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_tracks")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_io")
     except (HTTPError, URLError) as e:
         FILEPATH_DIX = None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
@@ -38,7 +49,33 @@ def teardown_module():
     FILEPATH_DIX = (None,)
 
 
-def test_decfa():
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+def test_equivalence_lpsmm_sft_sfs():
+    sft = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+    )
+    sfs = load_surface(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+        to_space=Space.RASMM,
+    )
+
+    assert is_header_compatible(sft, sfs)
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
+
+    sfs.to_lpsmm()
+    sfs.to_corner()
+    sft.to_lpsmm()
+    sft.to_corner()
+
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
+
+
+@set_random_number_generator()
+def test_decfa(rng=None):
     data_orig = np.zeros((4, 4, 4, 3))
     data_orig[0, 0, 0] = np.array([1, 0, 0])
     img_orig = nib.Nifti1Image(data_orig, np.eye(4))
@@ -67,6 +104,28 @@ def test_decfa():
     data_rt = np.asanyarray(round_trip.dataobj)
     assert data_rt.shape == (4, 4, 4, 3)
     assert np.all(data_rt[0, 0, 0] == np.array([25, 0, 0]))
+
+    data_large = rng.random((10, 10, 10, 3))
+    img_large = nib.Nifti1Image(data_large, np.eye(4))
+    img_rgb = decfa(img_large, scale=True)
+    out_rgb = np.asanyarray(img_rgb.dataobj)
+    unpacked = unpack_rgb_array(out_rgb)
+    expected = (data_large * 255).astype("uint8")
+    assert_array_equal(unpacked, expected)
+
+    rt = decfa_to_float(img_rgb)
+    rt_data = np.asanyarray(rt.dataobj)
+    assert_array_equal(rt_data, expected)
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.int16, np.int32])
+def test_decfa_integer_scaling_preserves_channels(dtype):
+    data = np.array([[[[10, 200, 255], [0, 1, 128]]]], dtype=dtype)
+    img = nib.Nifti1Image(data, np.eye(4))
+
+    converted = decfa(img, scale=True)
+
+    assert_array_equal(unpack_rgb_array(np.asanyarray(converted.dataobj)), data)
 
 
 def is_affine_valid(affine):
@@ -128,8 +187,8 @@ def reference_info_zero_affine():
 
 
 def test_reference_trk_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trk"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trk"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -140,8 +199,8 @@ def test_reference_trk_file_info_identical():
 
 
 def test_reference_trx_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trx"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trx"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -152,9 +211,9 @@ def test_reference_trx_file_info_identical():
 
 
 def test_reference_obj_info_identical():
-    sft = load_tractogram(FILEPATH_DIX["gs.trk"], "same")
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    sft = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"], "same")
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(sft)
     tuple_2 = get_reference_info(trx)
@@ -175,9 +234,9 @@ def test_reference_obj_info_identical():
 
 
 def test_reference_header_info_identical():
-    trk = nib.streamlines.load(FILEPATH_DIX["gs.trk"])
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    trk = nib.streamlines.load(FILEPATH_DIX["gs_streamlines.trk"])
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(trk.header)
     tuple_2 = get_reference_info(trx.header)
@@ -204,7 +263,7 @@ def test_all_zeros_affine():
 
 
 @set_random_number_generator()
-def test_read_img_arr_or_path(rng):
+def test_read_img_arr_or_path(rng=None):
     data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
     aff[:3, :] = rng.standard_normal((3, 4))
@@ -224,3 +283,103 @@ def test_read_img_arr_or_path(rng):
     dd, aa = read_img_arr_or_path(path)
     assert np.allclose(dd, data)
     assert np.allclose(aa, aff)
+
+
+@pytest.mark.parametrize(
+    "filename, expected_name, expected_extension",
+    [
+        ("smoothwm.L.surf.gii", "smoothwm.L.surf", ".gii"),
+        ("smoothwm.L.surf.gii.gz", "smoothwm.L.surf", ".gii.gz"),
+        ("my.brain_2025.nii", "my.brain_2025", ".nii"),
+        (Path("my.brain_2025.nii.gz"), "my.brain_2025", ".nii.gz"),
+        ("test.trk", "test", ".trk"),
+        ("test.tck", "test", ".tck"),
+        ("test.vtk", "test", ".vtk"),
+        (Path("test.ply"), "test", ".ply"),
+        ("test_no_extension", "test_no_extension", ""),
+        (Path("test_no_extension"), "test_no_extension", ""),
+        ("a.b.c.d", "a.b.c", ".d"),
+        ("a.b.c.d.gz", "a.b.c", ".d.gz"),
+        ("test.nii.nii", "test.nii", ".nii"),
+        (Path("test.nii.nii"), "test.nii", ".nii"),
+        ("my_brain_2025.nii", "my_brain_2025", ".nii"),
+        (Path("my_brain_2025.nii.gz"), "my_brain_2025", ".nii.gz"),
+        (".my.file-name.gii.gz", ".my.file-name", ".gii.gz"),
+        (Path(".my.file-name.gii.gz"), ".my.file-name", ".gii.gz"),
+    ],
+)
+def test_split_filename_extension(filename, expected_name, expected_extension):
+    name, ext = split_filename_extension(filename)
+    assert name == expected_name
+    assert ext == expected_extension
+
+
+@pytest.mark.parametrize("filename_to_test", ["test.nii.nii.nii.gz", "test.nii.nii"])
+def test_split_filename_extension_warning(caplog, filename_to_test):
+    split_filename_extension(filename_to_test)
+    assert "Filename contains more than two instances" in caplog.text
+
+
+def test_has_rgb_dtype():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgb_dtype))
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgba_dtype))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=other_struct))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=np.float32))
+
+
+def test_is_rgb_compatible_data():
+    # Shape requirements: ndim == 4, last dim 3 or 4
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8, 5), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((0, 4, 4, 3), dtype=np.int16))
+    assert not is_rgb_compatible_data(np.zeros((2, 3, 4, 5, 3), dtype=np.uint8))
+
+    # uint8 with valid shape
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 3), dtype=np.uint8))
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 4), dtype=np.uint8))
+
+    # Integer in [0, 255]
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 200, dtype=np.int16))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 1000, dtype=np.int16))
+
+    # Float in [0, 1] with no NaN
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 0.5, dtype=np.float32))
+    nan_arr = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    nan_arr[0, 0, 0, 0] = np.nan
+    assert not is_rgb_compatible_data(nan_arr)
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), -0.5, dtype=np.float32))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 2.0, dtype=np.float32))
+
+    # Structured dtype arrays are not checked here
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=rgb_dtype))
+
+
+def test_unpack_rgb_array():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    # RGB structured (3,3,3) → (3,3,3,3) uint8
+    rgb_arr = np.zeros((3, 3, 3), dtype=rgb_dtype)
+    out = unpack_rgb_array(rgb_arr)
+    assert out.shape == (3, 3, 3, 3)
+    assert out.dtype == np.dtype("u1")
+
+    # RGBA structured (3,3,3) → (3,3,3,4) uint8
+    rgba_arr = np.zeros((3, 3, 3), dtype=rgba_dtype)
+    out = unpack_rgb_array(rgba_arr)
+    assert out.shape == (3, 3, 3, 4)
+    assert out.dtype == np.dtype("u1")
+
+    # Non-RGB structured → same object
+    other_arr = np.zeros((3,), dtype=other_struct)
+    assert unpack_rgb_array(other_arr) is other_arr
+
+    # Plain float → same object
+    plain = np.zeros((3, 3, 3), dtype=np.float32)
+    assert unpack_rgb_array(plain) is plain

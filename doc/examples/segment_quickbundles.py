@@ -14,8 +14,8 @@ import numpy as np
 from dipy.data import get_fnames
 from dipy.io.pickles import save_pickle
 from dipy.io.streamline import load_tractogram
-from dipy.segment.clustering import QuickBundles
-from dipy.viz import actor, colormap, window
+from dipy.segment.clustering import QuickBundles, qbx_and_merge
+from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
 # For educational purposes we will try to cluster a small streamline bundle
@@ -57,15 +57,16 @@ print("Centroid of the last cluster:\n", clusters[-1].centroid)
 #
 # Let's first show the initial dataset.
 
-# Enables/disables interactive visualization
-interactive = False
+streamlines_actor = actor.streamtube(
+    streamlines, colors=(1, 1, 1), radius=0.075, backend="cpu"
+)
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=window.colors.white))
-window.record(scene=scene, out_path="fornix_initial.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene = window.Scene(background=(0, 0, 0, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(title="fornix_initial", size=(600, 600), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -75,15 +76,26 @@ if interactive:
 #
 # Show the centroids of the fornix after clustering (with random colors):
 
-colormap = colormap.create_colormap(np.arange(len(clusters)))
+colormap_qb = cmap.create_colormap(np.arange(len(clusters)))
 
-scene.clear()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
-scene.add(actor.streamtube(clusters.centroids, colors=colormap, linewidth=0.4))
-window.record(scene=scene, out_path="fornix_centroids.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamtube(
+    streamlines, colors=(1, 1, 1), opacity=0.05, radius=0.075, backend="cpu"
+)
+# Keep the faded streamlines from hiding the centroids behind them.
+streamlines_actor.material.depth_write = False
+centroids_actor = actor.streamtube(
+    clusters.centroids, colors=colormap_qb, radius=0.4, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+scene.add(centroids_actor)
+
+show_manager = window.ShowManager(
+    title="fornix_centroids", size=(600, 600), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -94,15 +106,19 @@ if interactive:
 # Show the labeled fornix (colors from centroids).
 
 colormap_full = np.ones((len(streamlines), 3))
-for cluster, color in zip(clusters, colormap):
+for cluster, color in zip(clusters, colormap_qb):
     colormap_full[cluster.indices] = color
 
-scene.clear()
-scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="fornix_clusters.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+streamlines_actor = actor.streamtube(
+    streamlines, colors=colormap_full, radius=0.075, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(title="fornix_clusters", size=(600, 600), scene=scene)
+actor.gizmo(show_manager)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -115,11 +131,74 @@ if interactive:
 save_pickle("QB.pkl", clusters)
 
 ###############################################################################
+# QuickBundlesX (Hierarchical Clustering)
+# =======================================
+#
+# QuickBundlesX extends QuickBundles :footcite:p:`Garyfallidis2012a` by building
+# clustering hierarchies at multiple threshold levels. The `qbx_and_merge`
+# function is the recommended way to use it.
+#
+# Let's perform clustering using a sequence of distance thresholds (in mm).
+# QuickBundlesX builds a hierarchy by clustering at each threshold level, from
+# coarse (40mm) to fine (10mm).
+
+rng = np.random.default_rng(42)
+thresholds = [40, 30, 25, 20, 10]
+qbx_clusters = qbx_and_merge(streamlines, thresholds, rng=rng)
+
+colormap_qbx = cmap.create_colormap(np.arange(len(qbx_clusters)))
+colormap_full_qbx = np.ones((len(streamlines), 3))
+for cluster, color in zip(qbx_clusters, colormap_qbx):
+    colormap_full_qbx[cluster.indices] = color
+
+streamlines_actor = actor.streamtube(
+    streamlines, colors=colormap_full_qbx, radius=0.075, backend="cpu"
+)
+
+scene = window.Scene(background=(1, 1, 1, 1))
+scene.add(streamlines_actor)
+
+show_manager = window.ShowManager(
+    title="fornix_qbx_clusters", size=(600, 600), scene=scene
+)
+actor.gizmo(show_manager)
+show_manager.start()
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Showing the different QuickBundlesX clusters with random colors.
+#
+#
+# Comparing QuickBundles and QuickBundlesX
+# ========================================
+#
+# QuickBundles uses a single flat distance threshold, which requires
+# determining an optimal global value. QuickBundlesX solves this by exploring
+# multiple scales simultaneously.
+#
+# Let's compare the granularity of the outputs from both methods by looking at
+# the number of clusters and their sizes.
+
+qb_cluster_sizes = sorted([len(c) for c in clusters], reverse=True)
+qbx_cluster_sizes = sorted([len(c) for c in qbx_clusters], reverse=True)
+
+print(f"QuickBundles  (threshold=10mm): {len(clusters)} clusters")
+print(f"QuickBundlesX (thresholds ending at 10mm): {len(qbx_clusters)} clusters")
+print("QuickBundles cluster sizes:", qb_cluster_sizes)
+print("QuickBundlesX cluster sizes:", qbx_cluster_sizes)
+
+###############################################################################
+# Comparing these size distributions shows how QuickBundlesX
+# :footcite:p:`Garyfallidis2016` can preserve coarse organization while
+# refining the final segmentation at smaller scales. It is also generally
+# faster for large datasets.
+#
 # Finally, here is a video of QuickBundles applied on a larger dataset.
 #
 # .. raw:: html
 #
-#     <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>  # noqa: E501
+#     <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 #
 #
 # References

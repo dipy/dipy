@@ -12,7 +12,7 @@ mailing list`_. We suggest to begin the subject of your e-mail with
 ``[DIPY]``. This will help us respond faster to your questions.
 
 Additional help can be found on the Neurostars_ website, or
-on the `dipy gitter`_ channel.
+on the `dipy discussions`_.
 
 
 .. include:: links_names.inc

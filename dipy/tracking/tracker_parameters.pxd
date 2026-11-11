@@ -29,14 +29,19 @@ cdef class ParallelTransportTrackerParameters:
 cdef class ShTrackerParameters:
     cdef public double pmf_threshold
 
+cdef class EudxTrackerParameters:
+    cdef public double peak_values_threshold
+    cdef public double angle_threshold
+    cdef public double min_total_weight
+
 cdef class TrackerParameters:
     cdef func_ptr tracker
 
     cdef public double cos_similarity
     cdef public double max_angle
     cdef public double max_curvature
-    cdef public int max_len
-    cdef public int min_len
+    cdef public int max_nbr_pts
+    cdef public int min_nbr_pts
     cdef public int random_seed
     cdef public double step_size
     cdef public double average_voxel_size
@@ -46,5 +51,6 @@ cdef class TrackerParameters:
 
     cdef public ShTrackerParameters sh
     cdef public ParallelTransportTrackerParameters ptt
+    cdef public EudxTrackerParameters eudx
 
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil

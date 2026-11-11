@@ -45,20 +45,18 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
 from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.direction import ProbabilisticDirectionGetter, peaks_from_model
+from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.fbcmeasures import FBCMeasures
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import probabilistic_tracking
 from dipy.viz import actor, window
 
-# Enables/disables interactive visualization
-interactive = False
 # Fix seed
 rng = np.random.default_rng(1)
 
@@ -120,11 +118,6 @@ csd_fit_shm = np.pad(
     "constant",
 )
 
-# Probabilistic direction getting for fiber tracking
-prob_dg = ProbabilisticDirectionGetter.from_shcoeff(
-    csd_fit_shm, max_angle=30.0, sphere=default_sphere
-)
-
 ###############################################################################
 # The optic radiation is reconstructed by tracking fibers from the calcarine
 # sulcus (visual cortex V1) to the lateral geniculate nucleus (LGN). We seed
@@ -141,9 +134,16 @@ seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 # Local Tracking is used for probabilistic tractography which takes the
 # direction getter along with the stopping criterion and seeds as input.
 
-# Perform tracking using Local Tracking
-streamlines_generator = LocalTracking(
-    prob_dg, stopping_criterion, seeds, affine, step_size=0.5
+# Perform tracking using probabilistic Tracking
+streamlines_generator = probabilistic_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    sh=csd_fit_shm,
+    random_seed=1,
+    sphere=default_sphere,
+    step_size=0.5,
+    max_angle=30,
 )
 
 # Compute streamlines.
@@ -162,10 +162,7 @@ mask_lgn[35 - rad : 35 + rad, 42 - rad : 42 + rad, 28 - rad : 28 + rad] = True
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, affine, mask_lgn, tol=1.8)
 
-sfil = []
-for i in range(len(streamlines)):
-    if filtered_fibers2[i]:
-        sfil.append(streamlines[i])
+sfil = [s for i, s in enumerate(streamlines) if filtered_fibers2[i]]
 streamlines = Streamlines(sfil)
 
 ###############################################################################
@@ -216,31 +213,47 @@ fbc_sl_thres, clrs_thres, rfbc_thres = fbc.get_points_rfbc_thresholded(
 scene = window.Scene()
 
 # Original lines colored by LFBC
-lineactor = actor.line(fbc_sl_orig, colors=np.vstack(clrs_orig), linewidth=0.2)
+lineactor = actor.streamlines(
+    fbc_sl_orig,
+    colors=np.vstack(clrs_orig),
+    thickness=0.05,
+    outline_thickness=0.05,
+)
 scene.add(lineactor)
 
-# Horizontal (axial) slice of T1 data
-vol_actor1 = actor.slicer(t1_data, affine=affine)
-vol_actor1.display(z=20)
-scene.add(vol_actor1)
-
-# Vertical (sagittal) slice of T1 data
-vol_actor2 = actor.slicer(t1_data, affine=affine)
-vol_actor2.display(x=35)
-scene.add(vol_actor2)
+# Axial and sagittal slices of T1 data
+vol_actor = actor.volume_slicer(
+    t1_data, affine=affine, visibility=(True, False, True), depth_write=True
+)
+slice_voxel = np.array([35, 0, 20])
+actor.show_slices(vol_actor, affine[:3, :3] @ slice_voxel + affine[:3, 3])
+scene.add(vol_actor)
 
 # Show original fibers
-scene.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
-window.record(scene=scene, n_frames=1, out_path="OR_before.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+camera_view_dir = (264, -299, -146)
+show_manager = window.ShowManager(title="OR_before", size=(900, 900), scene=scene)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=(0, 0, 1)
+)
+show_manager.start()
 
 # Show thresholded fibers
-scene.rm(lineactor)
-scene.add(actor.line(fbc_sl_thres, colors=np.vstack(clrs_thres), linewidth=0.2))
-window.record(scene=scene, n_frames=1, out_path="OR_after.png", size=(900, 900))
-if interactive:
-    window.show(scene)
+scene.remove(lineactor)
+scene.add(
+    actor.streamlines(
+        fbc_sl_thres,
+        colors=np.vstack(clrs_thres),
+        thickness=0.05,
+        outline_thickness=0.05,
+    )
+)
+show_manager = window.ShowManager(title="OR_after", size=(900, 900), scene=scene)
+screen = show_manager.screens[0]
+screen.camera.show_object(
+    screen.scene.main_scene, view_dir=camera_view_dir, up=(0, 0, 1)
+)
+show_manager.start()
 
 ###############################################################################
 # .. _optic_radiation_before_cleaning:

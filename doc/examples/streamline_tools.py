@@ -26,14 +26,14 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.direction import peaks
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst import shm
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
@@ -46,13 +46,20 @@ hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hard
 label_fname = get_fnames(name="stanford_labels")
 t1_fname = get_fnames(name="stanford_t1")
 
-data, _, hardi_img = load_nifti(hardi_fname, return_img=True)
-labels = load_nifti_data(label_fname)
-t1_data = load_nifti_data(t1_fname)
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels, labels_affine = load_nifti(label_fname)
+t1_data, t1_affine = load_nifti(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
+# .. note::
+#    Affine, labels_affine and t1_affine are the same in this example, so we can
+#    use any of them for the affine transformation [#]_. If it was not the
+#    case, we would need to transform the streamlines to the space of the
+#    labels or the T1 image.
+#
+#
 # We've loaded an image called ``labels_img`` which is a map of tissue types
 # such that every integer value in the array ``labels`` represents an
 # anatomical structure or tissue type [#]_. For this example, the image was
@@ -73,20 +80,24 @@ csapeaks = peaks.peaks_from_model(
 )
 
 ###############################################################################
-# Now we can use EuDX to track all of the white matter. We define an identity
-# matrix for the affine transformation [#]_ of the seeding locations. To keep
-# things reasonably fast we use ``density=1`` which will result in 1 seeds per
+# Now we can use EuDX to track all of the white matter. To keep things
+# reasonably fast we use ``density=1`` which will result in 1 seeds per
 # voxel. The stopping criterion, determining when the tracking stops, is set to
 # stop when the tracking exits the white matter.
 
-affine = np.eye(4)
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
 stopping_criterion = BinaryStoppingCriterion(white_matter)
 
-streamline_generator = LocalTracking(
-    csapeaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+streamlines_generator = eudx_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    pam=csapeaks,
+    random_seed=1,
+    sphere=peaks.default_sphere,
+    step_size=0.5,
 )
-streamlines = Streamlines(streamline_generator)
+streamlines = Streamlines(streamlines_generator)
 
 ###############################################################################
 # The first of the tracking utilities we'll cover here is ``target``. This
@@ -114,41 +125,47 @@ assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 # above and all the streamlines that pass through that ROI. The ROI is the
 # yellow region near the center of the axial image.
 
-# Enables/disables interactive visualization
-interactive = False
 
-# Make display objects
-color = cmap.line_colors(cc_streamlines)
-cc_streamlines_actor = actor.line(
-    cc_streamlines, colors=cmap.line_colors(cc_streamlines)
+def corpus_callosum_scene(visibility):
+    """Build a scene with the T1 slices selected by ``visibility`` (x, y, z)."""
+    vol_actor = actor.volume_slicer(
+        t1_data, affine=affine, visibility=visibility, depth_write=True
+    )
+    actor.show_slices(vol_actor, affine[:3, :3] @ np.array([40, 0, 35]) + affine[:3, 3])
+    cc_streamlines_actor = actor.streamlines(
+        cc_streamlines,
+        colors=cmap.line_colors(cc_streamlines),
+        thickness=0.05,
+        outline_thickness=0,
+    )
+    cc_ROI_actor = actor.contour_from_roi(
+        cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5, affine=affine
+    )
+    scene = window.Scene()
+    scene.add(vol_actor, cc_streamlines_actor, cc_ROI_actor)
+    return scene
+
+
+###############################################################################
+# We show both views in the same window, one scene per screen. The axial screen
+# only displays the axial slice and the sagittal screen only the sagittal one.
+# FURY's default camera already looks from above, so the axial gizmo is added
+# without snapping the camera. For the sagittal screen we simulate a click on
+# the ``L`` label of its gizmo to look at the scene from the left.
+
+axial_scene = corpus_callosum_scene(visibility=(False, False, True))
+sagittal_scene = corpus_callosum_scene(visibility=(True, False, False))
+
+show_manager = window.ShowManager(
+    title="corpuscallosum_axial_sagittal",
+    size=(1600, 800),
+    scene=[axial_scene, sagittal_scene],
+    screen_config=[1, 1],
 )
-cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
-
-vol_actor = actor.slicer(t1_data)
-
-vol_actor.display(x=40)
-vol_actor2 = vol_actor.copy()
-vol_actor2.display(z=35)
-
-# Add display objects to canvas
-scene = window.Scene()
-scene.add(vol_actor)
-scene.add(vol_actor2)
-scene.add(cc_streamlines_actor)
-scene.add(cc_ROI_actor)
-
-# Save figures
-window.record(
-    scene=scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800)
-)
-if interactive:
-    window.show(scene)
-scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
-window.record(
-    scene=scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
-)
-if interactive:
-    window.show(scene)
+actor.gizmo(show_manager, screen=0)
+sagittal_gizmo = actor.gizmo(show_manager, screen=1)
+actor.click_gizmo(show_manager, sagittal_gizmo, "L")
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -188,8 +205,9 @@ M[:, :3] = 0
 # We can now display this matrix using matplotlib. We display it using a log
 # scale to make small values in the matrix easier to see.
 
-plt.imshow(np.log1p(M), interpolation="nearest")
-plt.savefig("connectivity.png")
+fig, ax = plt.subplots()
+ax.imshow(np.log1p(M), interpolation="nearest")
+fig.savefig("connectivity.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -231,8 +249,8 @@ save_nifti("lr-superiorfrontal-dm.nii.gz", dm.astype("int16"), affine)
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.VOX)
-save_trk(sft, "lr-superiorfrontal.trk")
+sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.RASMM)
+save_tractogram(sft, "lr-superiorfrontal.trx")
 
 ###############################################################################
 # .. rubric:: Footnotes

@@ -15,7 +15,9 @@ from dipy.core.gradients import (
     extract_b0,
     extract_dwi_shell,
     generate_bvecs,
+    get_affine_with_new_orientation,
     get_bval_indices,
+    get_orientation_from_affine,
     gradient_table,
     gradient_table_from_bvals_bvecs,
     gradient_table_from_gradient_strength_bvecs,
@@ -32,7 +34,7 @@ from dipy.core.gradients import (
 )
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.testing import clear_and_catch_warnings
+from dipy.testing import assert_warns, clear_and_catch_warnings
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -158,7 +160,7 @@ def test_GradientTable_btensor_calculation():
             # Check that the b tensor magnitude is correct
             npt.assert_almost_equal(np.trace(bten), bval)
             # Check that the b tensor orientation is correct
-            if btens == ("LTE" or "CTE"):
+            if btens in ("LTE", "CTE"):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
                     dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
@@ -178,7 +180,7 @@ def test_GradientTable_btensor_calculation():
         # Check that the b tensor magnitude is correct
         npt.assert_almost_equal(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
-        if btens[i] == ("LTE" or "CTE"):
+        if btens[i] in ("LTE", "CTE"):
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
@@ -414,7 +416,7 @@ def test_qvalues():
 
 
 @set_random_number_generator()
-def test_reorient_bvecs(rng):
+def test_reorient_bvecs(rng=None):
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
     bvecs = np.array(
@@ -485,11 +487,10 @@ def test_reorient_bvecs(rng):
 
     # Shear components in the matrix need to be decomposed into rotation only,
     # and should not lead to scaling of the bvecs
-    shear_affines = []
-    for _ in np.where(~gt.b0s_mask)[0]:
-        shear_affines.append(
-            np.array([[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        )
+    shear_affines = [
+        np.array([[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        for _ in np.where(~gt.b0s_mask)[0]
+    ]
     shear_affines = np.stack(shear_affines, axis=-1)
     # atol is set to 1 here to do the scaling verification here,
     # so that the reorient_bvecs function does not throw an error itself
@@ -515,7 +516,7 @@ def test_nan_bvecs():
 
 
 @set_random_number_generator()
-def test_generate_bvecs(rng):
+def test_generate_bvecs(rng=None):
     """Tests whether we have properly generated bvecs."""
     # Test if the generated b-vectors are unit vectors
     bvecs = generate_bvecs(100, rng=rng)
@@ -708,7 +709,7 @@ def test_check_multi_b():
 
 
 @set_random_number_generator()
-def test_btens_to_params(rng):
+def test_btens_to_params(rng=None):
     """
     Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
@@ -914,7 +915,7 @@ def test_affine_input_change():
     for i in range(4):
         affs[:, i, i] = 1
 
-    npt.assert_warns(Warning, reorient_bvecs, gt, affs)
+    assert_warns(Warning, reorient_bvecs, gt, affs)
 
     # Check if list still works
     affs = [np.eye(4) for _ in range(6)]
@@ -1040,6 +1041,19 @@ def test_extract_b0():
     npt.assert_almost_equal(result_grouped[..., 0], result_first)
     npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 2:4].mean(axis=-1))
 
+    # Contiguous grouping when the first volume is not a b0
+    late_b0_mask = np.array([False, True, True, False, True])
+    result_grouped = extract_b0(
+        dwi, late_b0_mask, group_contiguous_b0=True, strategy="mean"
+    )
+    npt.assert_almost_equal(result_grouped[..., 0], dwi[..., 1:3].mean(axis=-1))
+    npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 4])
+    result_grouped = extract_b0(
+        dwi, late_b0_mask, group_contiguous_b0=True, strategy="first"
+    )
+    npt.assert_array_equal(result_grouped[..., 0], dwi[..., 1])
+    npt.assert_array_equal(result_grouped[..., 1], dwi[..., 4])
+
     npt.assert_raises(ValueError, extract_b0, dwi, b0_mask, strategy="max")
     npt.assert_raises(ValueError, extract_b0, dwi[..., 0], b0_mask)
     npt.assert_raises(ValueError, extract_b0, dwi, b0_mask[:, None])
@@ -1080,4 +1094,60 @@ def test_extract_dwi_shell():
     npt.assert_array_equal(output_bvecs[0], expected_bvecs)
 
     npt.assert_raises(ValueError, extract_dwi_shell, dwi, gtab, bvals_to_extract=[5000])
-    npt.assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])
+    assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])
+
+
+def test_ensure_orientation():
+    affine = np.asarray(
+        [
+            [0.00000000e00, 0.00000000e00, 1.19999695e00, -8.86398926e01],
+            [-9.30352330e-01, 1.15545668e-01, 0.00000000e00, 1.16532005e02],
+            [1.15545668e-01, 9.30352330e-01, -2.49799545e-16, -1.12113556e02],
+            [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e00],
+        ]
+    )
+    ras_affine = get_affine_with_new_orientation(affine)
+    npt.assert_equal(get_orientation_from_affine(ras_affine), "RAS")
+
+    # Already in the new orientation
+    npt.assert_array_equal(get_affine_with_new_orientation(ras_affine), ras_affine)
+    lps_affine = get_affine_with_new_orientation(affine, new_orientation="LPS")
+    npt.assert_array_equal(
+        get_affine_with_new_orientation(lps_affine, new_orientation="lps"), lps_affine
+    )
+
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_affine_with_new_orientation(np.eye(3))
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_affine_with_new_orientation([[1, 0, 0, 0]] * 4)
+
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation=123)
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation="RA")
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation="RAX")
+    with pytest.raises(
+        ValueError, match="does not seem to be a valid orientation string"
+    ):
+        get_affine_with_new_orientation(affine, new_orientation="RRA")
+
+
+def test_get_orientation():
+    affine = np.asarray(
+        [
+            [0.00000000e00, 0.00000000e00, 1.19999695e00, -8.86398926e01],
+            [-9.30352330e-01, 1.15545668e-01, 0.00000000e00, 1.16532005e02],
+            [1.15545668e-01, 9.30352330e-01, -2.49799545e-16, -1.12113556e02],
+            [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e00],
+        ]
+    )
+    npt.assert_equal(get_orientation_from_affine(affine), "PSR")
+
+    affine = np.eye(4)
+    npt.assert_equal(get_orientation_from_affine(affine), "RAS")
+
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_orientation_from_affine(np.eye(3))
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_orientation_from_affine([[1, 0, 0, 0]] * 4)

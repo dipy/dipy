@@ -3,16 +3,25 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if have_fury:
     from dipy.viz import actor, colormap, ui
 
 
+@deprecate_with_version(
+    "panel.build_label is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_label(text, *, font_size=18, bold=False):
     """Simple utility function to build labels
@@ -58,6 +67,12 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
+@deprecate_with_version(
+    "panel.slicer_panel is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def slicer_panel(
     scene,
@@ -98,7 +113,7 @@ def slicer_panel(
         mem = GlobalHorizon()
 
     orig_shape = data.shape
-    print("Original shape", orig_shape)
+    logger.info("Original shape", orig_shape)
     ndim = data.ndim
     tmp = data
     if ndim == 4:
@@ -136,11 +151,11 @@ def slicer_panel(
 
     if len(data.shape) == 4:
         if data.shape[-1] == 3:
-            print("Resized to RAS shape ", tmp_new.shape)
+            logger.info("Resized to RAS shape ", tmp_new.shape)
         else:
-            print("Resized to RAS shape ", tmp_new.shape + (data.shape[-1],))
+            logger.info("Resized to RAS shape ", tmp_new.shape + (data.shape[-1],))
     else:
-        print("Resized to RAS shape ", tmp_new.shape)
+        logger.info("Resized to RAS shape ", tmp_new.shape)
 
     shape = tmp_new.shape
 
@@ -375,7 +390,7 @@ def slicer_panel(
             message = f"{res:.3f}"
         except TypeError:
             message = f"{res[0]:.3f} {res[1]:.3f} {res[2]:.3f}"
-        picker_label.message = f"({str(i)}, {str(j)}, {str(k)}) {message}"
+        picker_label.message = f"({i}, {j}, {k}) {message}"
 
     mem.slicer_vol_idx = 0
     mem.slicer_vol = tmp_new

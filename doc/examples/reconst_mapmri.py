@@ -366,19 +366,17 @@ odf = mapfit_both_iso.odf(sphere, s=2)
 print(f"odf.shape {odf.shape}")
 
 ###############################################################################
-# Display the ODFs.
+# Display the ODFs. ``data_small`` is a coronal slab, so we view it from -Y,
+# with x pointing right and z pointing up.
 
-# Enables/disables interactive visualization
-interactive = False
+odf_actor = actor.odf_slicer(sh_func=odf, sphere=sphere, scale=0.5)
 
 scene = window.Scene()
-sfu = actor.odf_slicer(odf, sphere=sphere, colormap="plasma", scale=0.5)
-sfu.display(y=0)
-sfu.RotateX(-90)
-scene.add(sfu)
-window.record(scene=scene, out_path="odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene.add(odf_actor)
+
+show_manager = window.ShowManager(title="odfs", size=(600, 600), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, -1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

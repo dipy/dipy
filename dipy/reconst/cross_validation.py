@@ -5,7 +5,7 @@ Cross-validation analysis of diffusion models.
 import numpy as np
 
 import dipy.core.gradients as gt
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -99,7 +99,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     .. footbibliography::
 
     """
-    _ = model_kwargs.pop("rng", np.random.default_rng())
+    rng = model_kwargs.pop("rng", np.random.default_rng())
 
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:
@@ -118,7 +118,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     n_in_fold = data_b.shape[-1] / folds
     prediction = np.zeros(data.shape)
     # We are going to leave out some randomly chosen samples in each iteration:
-    order = np.random.permutation(data_b.shape[-1])
+    order = rng.permutation(data_b.shape[-1])
 
     nz_bval = gtab.bvals[~gtab.b0s_mask]
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]

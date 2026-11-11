@@ -28,7 +28,7 @@ def test_as_native():
 
 
 @set_random_number_generator()
-def test_pinv(rng):
+def test_pinv(rng=None):
     arr = rng.standard_normal((4, 4, 4, 3, 7))
     _pinv = pinv(arr)
     for i in range(4):

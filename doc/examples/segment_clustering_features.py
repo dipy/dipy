@@ -140,9 +140,6 @@ print("Cluster sizes:", list(map(len, clusters)))
 # **Note:** The computed center is not guaranteed to be an existing point in
 # the streamline.
 
-# Enables/disables interactive visualization
-interactive = False
-
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
 
@@ -164,15 +161,16 @@ for cluster, color in zip(clusters, colormap):
 
 # Visualization
 scene = window.Scene()
-scene.clear()
-scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
-scene.add(actor.point(centers[:, 0, :], colormap_full, point_radius=0.2))
-window.record(
-    scene=scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600)
+scene.add(
+    actor.streamlines(
+        streamlines, colors=(1, 1, 1), opacity=0.05, thickness=0.3, outline_thickness=0
+    )
 )
-if interactive:
-    window.show(scene)
+scene.add(actor.sphere(centers[:, 0, :], colors=colormap_full, radii=0.2))
+show_manager = window.ShowManager(
+    title="center_of_mass_feature", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -212,14 +210,17 @@ for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-scene = window.Scene()
 scene.clear()
-scene.SetBackground(0, 0, 0)
-scene.add(actor.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
-scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
-window.record(scene=scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene.add(actor.sphere(midpoints[:, 0, :], colors=colormap_full, radii=0.2))
+scene.add(
+    actor.streamlines(
+        streamlines, colors=(1, 1, 1), opacity=0.05, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="midpoint_feature", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -254,13 +255,16 @@ for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-scene = window.Scene()
 scene.clear()
-scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="arclength_feature.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="arclength_feature", size=(600, 600), scene=scene
+)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -299,13 +303,18 @@ for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-scene = window.Scene()
 scene.clear()
-scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colors=colormap_full))
-window.record(scene=scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+scene.add(
+    actor.streamlines(
+        streamlines, colors=colormap_full, thickness=0.3, outline_thickness=0
+    )
+)
+show_manager = window.ShowManager(
+    title="vector_of_endpoints_feature", size=(600, 600), scene=scene
+)
+screen = show_manager.screens[0]
+screen.camera.show_object(screen.scene.main_scene, view_dir=(0, 0, -1), up=(0, 1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -4,7 +4,7 @@ import multiprocessing as mp
 import numpy as np
 import scipy.fft
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 _fft = scipy.fft
@@ -295,7 +295,7 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
     if slice_axis > 2:
         raise ValueError(
             "Different slices have to be organized along"
-            + "one of the 3 first matrix dimensions"
+            "one of the 3 first matrix dimensions"
         )
 
     # 2) Reorder axis to allow iteration over the first axis

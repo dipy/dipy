@@ -22,7 +22,7 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial.
 
 # ``fetch_isbi2013_2shell()`` provides data from the `ISBI HARDI contest 2013
-# <http://hardi.epfl.ch/static/events/2013_ISBI/>`_ acquired for two shells at
+# <https://hardi.epfl.ch/static/events/2013_ISBI/>`_ acquired for two shells at
 # b-values 1500 $s/mm^2$ and 2500 $s/mm^2$.
 
 # The six parameters of these two functions define the ROI where to reconstruct
@@ -84,17 +84,16 @@ print(f"odf.shape {odf.shape}")
 ###############################################################################
 # Display the ODFs
 
-# Enables/disables interactive visualization
-interactive = False
+# ``data_small`` is a coronal slab: add a singleton y axis and view it from -Y
+# so x points right and z points up.
 
-scene = window.Scene()
-sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap="plasma", scale=0.5)
-sfu.RotateX(-90)
-sfu.display(y=0)
-scene.add(sfu)
-window.record(scene=scene, out_path="odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+odf_actor = actor.odf_slicer(sh_func=odf[:, None], sphere=sphere, scale=0.5)
+
+show_manager = window.ShowManager(title="odfs", size=(600, 600))
+screen = show_manager.screens[0]
+screen.scene.add(odf_actor)
+window.set_camera_from_axis(screen, (0, -1, 0))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -2,12 +2,15 @@ python_sources = [
   '__init__.py',
   'test_align.py',
   'test_atlasing.py',
+  'test_auto.py',
+  'test_combined_workflow.py',
   'test_denoise.py',
   'test_docstring_parser.py',
   'test_iap.py',
   'test_io.py',
   'test_masking.py',
   'test_nn.py',
+  'test_qc.py',
   'test_reconst_csa_csd.py',
   'test_reconst_dki.py',
   'test_reconst_dti.py',
@@ -30,5 +33,3 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/workflows/tests'
 )
-
-

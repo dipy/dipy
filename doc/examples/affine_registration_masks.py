@@ -4,8 +4,8 @@ Affine Registration with Masks
 ==============================
 
 This example explains how to compute a transformation to register two 3D
-volumes by maximization of their Mutual Information [Mattes03]_. The
-optimization strategy is similar to that implemented in ANTS [Avants11]_.
+volumes by maximization of their Mutual Information :footcite:p:`Mattes2003`. The
+optimization strategy is similar to that implemented in ANTS :footcite:p:`Avants2011`.
 
 We will use masks to define which pixels are used in the Mutual Information.
 Masking can also be done for registration of 2D images rather than 3D volumes.
@@ -18,7 +18,7 @@ with respect to the heart.
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ from dipy.viz import regtools
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
-    pjoin(folder, "HARDI150.nii.gz"), return_img=True
+    Path(folder) / "HARDI150.nii.gz", return_img=True
 )
 static = np.squeeze(static_data)[..., 0]
 
@@ -369,9 +369,5 @@ regtools.overlay_slices(
 # References
 # ----------
 #
-# .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
-#               Eubank, W. (2003). PET-CT image registration in the chest using
-#               free-form deformations. IEEE Transactions on Medical Imaging,
-#               22(1), 120-8.
-# .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-#               Normalization Tools (ANTS), 1-35.
+# .. footbibliography::
+#

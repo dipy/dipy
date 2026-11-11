@@ -1,6 +1,5 @@
-import os.path
-from os.path import join as pjoin
-from tempfile import TemporaryDirectory
+import logging
+from pathlib import Path
 
 import nibabel as nib
 import numpy as np
@@ -10,8 +9,9 @@ import pytest
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.testing.decorators import set_random_number_generator
@@ -30,311 +30,628 @@ from dipy.workflows.align import (
 _, have_pd, _ = optional_package("pandas")
 
 
-def test_reslice():
-    with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames(name="small_25")
-        volume = load_nifti_data(data_path)
+def test_reslice(tmp_path):
+    data_path, _, _ = get_fnames(name="small_25")
+    volume = load_nifti_data(data_path)
 
+    reslice_flow = ResliceFlow()
+    reslice_flow.run(data_path, new_vox_size=[1.5, 1.5, 1.5], out_dir=tmp_path)
+
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    resliced = load_nifti_data(out_path)
+
+    npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
+    npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
+    npt.assert_equal(resliced.shape[2] > volume.shape[2], True)
+    npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+
+
+def test_reslice_auto_voxsize(tmp_path, caplog):
+    """Test ResliceFlow with automatic voxel size calculation."""
+    data_path, _, _ = get_fnames(name="small_25")
+    volume = load_nifti_data(data_path)
+
+    with caplog.at_level(logging.WARNING, logger="dipy"):
         reslice_flow = ResliceFlow()
-        reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=out_dir)
+        reslice_flow.run(data_path, out_dir=tmp_path)
 
-        out_path = reslice_flow.last_generated_outputs["out_resliced"]
-        resliced = load_nifti_data(out_path)
+    warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warning_records) > 0, "Expected WARNING level log message"
+    assert any(
+        "new_vox_size not provided" in record.message for record in warning_records
+    ), "Expected warning about auto-calculation"
+    assert any("preserve the original voxel" in r.message for r in warning_records), (
+        "Expected warning to explain the volume-preserving rule"
+    )
 
-        npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
-        npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
-        npt.assert_equal(resliced.shape[2] > volume.shape[2], True)
-        npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    resliced = load_nifti_data(out_path)
+
+    npt.assert_equal(resliced.shape[-1], volume.shape[-1])
 
 
-def test_slr_flow():
-    with TemporaryDirectory() as out_dir:
-        data_path = get_fnames(name="fornix")
+def test_reslice_positional_new_vox_size_warns(tmp_path):
+    """Test that a positional new_vox_size warns and is still honoured."""
+    data_path, _, _ = get_fnames(name="small_25")
+    reslice_flow = ResliceFlow()
+    with pytest.warns(UserWarning, match="new_vox_size"):
+        reslice_flow.run(data_path, (2.0, 2.0, 2.0), out_dir=tmp_path)
 
-        fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    _, _, new_zooms = load_nifti(out_path, return_voxsize=True)
+    npt.assert_almost_equal(new_zooms[:3], [2.0] * 3)
 
-        f = Streamlines(fornix)
-        f1 = f.copy()
 
-        f1_path = pjoin(out_dir, "f1.trk")
-        sft = StatefulTractogram(f1, data_path, Space.RASMM)
-        save_tractogram(sft, f1_path, bbox_valid_check=False)
+def test_reslice_vox_factor_deprecated(tmp_path):
+    """Test that vox_factor triggers a deprecation warning and is ignored."""
+    data_path, _, _ = get_fnames(name="small_25")
+    volume = load_nifti_data(data_path)
 
-        f2 = f1.copy()
-        f2._data += np.array([50, 0, 0])
+    with pytest.warns(DeprecationWarning, match="vox_factor"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(data_path, vox_factor=0.5, out_dir=tmp_path)
 
-        f2_path = pjoin(out_dir, "f2.trk")
-        sft = StatefulTractogram(f2, data_path, Space.RASMM)
-        save_tractogram(sft, f2_path, bbox_valid_check=False)
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    resliced = load_nifti_data(out_path)
 
-        slr_flow = SlrWithQbxFlow(force=True)
-        slr_flow.run(f1_path, f2_path, out_dir=out_dir)
+    npt.assert_equal(resliced.shape[-1], volume.shape[-1])
 
-        out_path = slr_flow.last_generated_outputs["out_moved"]
 
-        npt.assert_equal(os.path.isfile(out_path), True)
+def test_reslice_skip_when_matching(tmp_path, caplog):
+    """Test ResliceFlow skips reslicing when voxel size already matches."""
+    import logging
+
+    data_path, _, _ = get_fnames(name="small_25")
+    volume = load_nifti_data(data_path)
+    _, _, zooms = load_nifti(data_path, return_voxsize=True)
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(data_path, new_vox_size=list(zooms[:3]), out_dir=tmp_path)
+
+    info_records = [r for r in caplog.records if r.levelname == "INFO"]
+    assert any("Skipping reslicing" in record.message for record in info_records), (
+        "Expected INFO message about skipping. "
+        f"Found: {[r.message for r in info_records]}"
+    )
+    assert any("already matches target" in record.message for record in info_records), (
+        "Expected INFO message about matching voxel size"
+    )
+
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    resliced = load_nifti_data(out_path)
+
+    npt.assert_equal(resliced.shape, volume.shape)
+
+
+def test_reslice_skip_idempotent(tmp_path, caplog):
+    """Test ResliceFlow is idempotent when force option is used."""
+
+    data_path, _, _ = get_fnames(name="small_25")
+    _, _, zooms = load_nifti(data_path, return_voxsize=True)
+    target_vox = list(zooms[:3])
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        ResliceFlow().run(data_path, new_vox_size=target_vox, out_dir=tmp_path)
+
+    caplog.clear()
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        ResliceFlow(force=True).run(
+            data_path, new_vox_size=target_vox, out_dir=tmp_path
+        )
+
+    info_messages = [r.message for r in caplog.records if r.levelname == "INFO"]
+    assert any("already linked" in m or "Skipping" in m for m in info_messages), (
+        f"Expected idempotent skip message on second run. Found: {info_messages}"
+    )
+
+
+def test_reslice_skip_returns_original_path(tmp_path, caplog):
+    """Test ResliceFlow returns original input path when voxel size matches."""
+    data_path, _, _ = get_fnames(name="small_25")
+    data, affine, zooms = load_nifti(data_path, return_voxsize=True)
+
+    nii_path = tmp_path / "input.nii"
+    nib.save(nib.Nifti1Image(data, affine), str(nii_path))
+
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(
+            str(nii_path), new_vox_size=list(zooms[:3]), out_dir=str(out_dir)
+        )
+
+    out_path = Path(reslice_flow.last_generated_outputs["out_resliced"])
+    assert out_path.resolve() == nii_path.resolve(), (
+        f"Expected original input path {nii_path}, got {out_path}"
+    )
+
+    resliced = np.array(load_nifti_data(str(out_path)))
+    npt.assert_equal(resliced.shape, data.shape)
+
+
+@pytest.mark.parametrize(
+    "orig_zooms, expected_vox",
+    [
+        ((1.0, 1.0, 3.0), 1.5),
+        ((2.0, 2.0, 2.5), 2.25),
+        ((0.9, 0.9, 4.0), 1.5),
+        ((0.1, 0.1, 0.2), 0.125),
+    ],
+)
+def test_reslice_auto_voxsize_preserves_volume(
+    caplog, tmp_path, orig_zooms, expected_vox
+):
+    """Auto voxel size matches the original voxel volume."""
+    data = np.random.rand(12, 12, 6).astype(np.float32)
+    img = nib.Nifti1Image(data, np.diag(list(orig_zooms) + [1.0]))
+    in_path = tmp_path / "vol.nii.gz"
+    nib.save(img, str(in_path))
+
+    with caplog.at_level(logging.WARNING, logger="dipy"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(str(in_path), out_dir=str(tmp_path / "out"))
+
+    out_path = reslice_flow.last_generated_outputs["out_resliced"]
+    _, _, new_zooms = load_nifti(out_path, return_voxsize=True)
+    npt.assert_almost_equal(new_zooms[:3], [expected_vox] * 3)
+
+
+@pytest.mark.parametrize("orig_vox", [2.0, 2.5, 5.0])
+def test_reslice_auto_voxsize_isotropic_skipped(caplog, tmp_path, orig_vox):
+    """Isotropic input is never up- or down-sampled by the auto rule."""
+    data = np.random.rand(10, 10, 10).astype(np.float32)
+    img = nib.Nifti1Image(data, np.diag([orig_vox] * 3 + [1.0]))
+    in_path = tmp_path / "vol.nii.gz"
+    nib.save(img, str(in_path))
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(str(in_path), out_dir=str(tmp_path / "out"))
+
+    messages = " ".join(r.message for r in caplog.records)
+    assert "Skipping reslicing" in messages, messages
+    out_path = Path(reslice_flow.last_generated_outputs["out_resliced"])
+    assert out_path.resolve() == in_path.resolve()
+
+
+def test_slr_flow(tmp_path, caplog):
+    data_path = get_fnames(name="fornix")
+
+    sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+    sft.streamlines._data += np.array([50, 0, 0])
+    moved_path = tmp_path / "moved.trx"
+    save_tractogram(sft, moved_path, bbox_valid_check=False)
+
+    slr_flow = SlrWithQbxFlow(force=True)
+    slr_flow.run(data_path, moved_path, out_dir=tmp_path, bbox_valid_check=False)
+
+    out_path = slr_flow.last_generated_outputs["out_moved"]
+
+    npt.assert_equal(Path(out_path).is_file(), True)
+
+    sft = sft.from_sft(np.array([]), sft)
+    empty_path = tmp_path / "empty.trk"
+    save_tractogram(sft, empty_path, bbox_valid_check=False)
+
+    slr_flow = SlrWithQbxFlow(force=True)
+
+    # Test empty static file
+    with caplog.at_level(logging.ERROR, logger="dipy"):
+        slr_flow.run(
+            empty_path,
+            moved_path,
+            out_dir=tmp_path,
+            bbox_valid_check=False,
+        )
+
+    error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(error_records) > 0, "Expected ERROR level log message"
+    error_msg = f"Static file {empty_path} is empty"
+    assert any(err.msg in error_msg for err in error_records)
+
+    caplog.clear()
+
+    # Test empty moving file
+    with caplog.at_level(logging.ERROR, logger="dipy"):
+        slr_flow.run(
+            data_path,
+            empty_path,
+            out_dir=tmp_path,
+            bbox_valid_check=False,
+        )
+
+    error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(error_records) > 0, "Expected ERROR level log message"
+    error_msg = f"Moving file {empty_path} is empty"
+    assert any(err.msg in error_msg for err in error_records)
+
+
+def test_slr_flow_empty_after_length_filtering(tmp_path, caplog):
+    """Test that SlrWithQbxFlow logs error when all streamlines are filtered
+    out by length constraints.
+    """
+    data_path = get_fnames(name="fornix")
+
+    sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+    moved_path = tmp_path / "moved.trx"
+    save_tractogram(sft, moved_path, bbox_valid_check=False)
+
+    slr_flow = SlrWithQbxFlow(force=True)
+
+    caplog.clear()
+    with caplog.at_level(logging.ERROR, logger="dipy"):
+        slr_flow.run(
+            data_path,
+            moved_path,
+            out_dir=tmp_path,
+            bbox_valid_check=False,
+            greater_than=1000,
+            less_than=np.inf,
+        )
+
+    error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(error_records) > 0, "Expected ERROR level log message"
+    assert any("SLR with QBX failed" in err.message for err in error_records)
+
+    caplog.clear()
+    with caplog.at_level(logging.ERROR, logger="dipy"):
+        slr_flow.run(
+            data_path,
+            moved_path,
+            out_dir=tmp_path,
+            bbox_valid_check=False,
+            greater_than=0,
+            less_than=1,
+        )
+
+    error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+    assert len(error_records) > 0, "Expected ERROR level log message"
+    assert any("SLR with QBX failed" in err.message for err in error_records)
+
+
+def test_slr_flow_remove_invalid_streamlines(tmp_path):
+    """Test that SlrWithQbxFlow removes out-of-bounds streamlines when
+    remove_invalid_streamlines=True and does not raise a ValueError on save.
+    """
+    data_path = get_fnames(name="fornix")
+
+    sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+    sft.streamlines._data += np.array([50, 0, 0])
+    moved_path = tmp_path / "moved.trx"
+    save_tractogram(sft, moved_path, bbox_valid_check=False)
+
+    slr_flow = SlrWithQbxFlow(force=True)
+    slr_flow.run(
+        data_path,
+        moved_path,
+        out_dir=tmp_path,
+        bbox_valid_check=False,
+        remove_invalid_streamlines=True,
+    )
+
+    out_path = slr_flow.last_generated_outputs["out_moved"]
+    assert Path(out_path).is_file()
+
+    result_sft = load_tractogram(out_path, "same", bbox_valid_check=True)
+    assert len(result_sft.streamlines) >= 0
 
 
 @set_random_number_generator(1234)
-def test_image_registration(rng):
-    with TemporaryDirectory() as temp_out_dir:
-        static, moving, static_g2w, moving_g2w, smask, mmask, M = (
-            setup_random_transform(
-                transform=regtransforms[("AFFINE", 3)], rfactor=0.1, rng=rng
-            )
+def test_image_registration(tmp_path, rng=None):
+    static, moving, static_g2w, moving_g2w, smask, mmask, M = setup_random_transform(
+        transform=regtransforms[("AFFINE", 3)], rfactor=0.1, rng=rng
+    )
+
+    save_nifti(tmp_path / "b0.nii.gz", data=static, affine=static_g2w)
+    save_nifti(tmp_path / "t1.nii.gz", data=moving, affine=moving_g2w)
+    # simulate three direction DWI by repeating b0 three times
+    save_nifti(
+        tmp_path / "dwi.nii.gz",
+        data=np.repeat(static[..., None], 3, axis=-1),
+        affine=static_g2w,
+    )
+
+    static_image_file = tmp_path / "b0.nii.gz"
+    moving_image_file = tmp_path / "t1.nii.gz"
+    dwi_image_file = tmp_path / "dwi.nii.gz"
+
+    image_registration_flow = ImageRegistrationFlow()
+    apply_trans = ApplyTransformFlow()
+
+    def read_distance(qual_fname):
+        with open(tmp_path / qual_fname) as f:
+            return float(f.readlines()[-1])
+
+    def test_com():
+        out_moved = tmp_path / "com_moved.nii.gz"
+        out_affine = tmp_path / "com_affine.txt"
+
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="com",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+        )
+        check_existence(out_moved, out_affine)
+
+    def test_translation():
+        out_moved = tmp_path / "trans_moved.nii.gz"
+        out_affine = tmp_path / "trans_affine.txt"
+
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="trans",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="trans_q.txt",
         )
 
-        save_nifti(pjoin(temp_out_dir, "b0.nii.gz"), data=static, affine=static_g2w)
-        save_nifti(pjoin(temp_out_dir, "t1.nii.gz"), data=moving, affine=moving_g2w)
-        # simulate three direction DWI by repeating b0 three times
-        save_nifti(
-            pjoin(temp_out_dir, "dwi.nii.gz"),
-            data=np.repeat(static[..., None], 3, axis=-1),
-            affine=static_g2w,
+        dist = read_distance("trans_q.txt")
+        npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
+        check_existence(out_moved, out_affine)
+
+    def test_translation_cc():
+        out_moved = tmp_path / "trans_cc_moved.nii.gz"
+        out_affine = tmp_path / "trans_cc_affine.txt"
+
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="trans",
+            metric="cc",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="trans_cc_q.txt",
         )
 
-        static_image_file = pjoin(temp_out_dir, "b0.nii.gz")
-        moving_image_file = pjoin(temp_out_dir, "t1.nii.gz")
-        dwi_image_file = pjoin(temp_out_dir, "dwi.nii.gz")
+        dist = read_distance("trans_cc_q.txt")
+        # L-BFGS-B relies on BLAS/LAPACK internally, and the local-window
+        # CC landscape is rough enough that platform-level numerical
+        # differences (e.g. Apple Accelerate vs OpenBLAS) can steer the
+        # optimizer to a slightly different local optimum. Use a
+        # relative tolerance instead of a tight absolute one so this
+        # stays meaningful without being platform-flaky.
+        npt.assert_allclose(float(dist), -189758.99583579277, rtol=1e-3)
+        check_existence(out_moved, out_affine)
 
-        image_registration_flow = ImageRegistrationFlow()
-        apply_trans = ApplyTransformFlow()
+    def test_rigid_cc():
+        out_moved = tmp_path / "rigid_cc_moved.nii.gz"
+        out_affine = tmp_path / "rigid_cc_affine.txt"
 
-        def read_distance(qual_fname):
-            with open(pjoin(temp_out_dir, qual_fname), "r") as f:
-                return float(f.readlines()[-1])
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="rigid",
+            metric="cc",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="rigid_cc_q.txt",
+        )
 
-        def test_com():
-            out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "com_affine.txt")
+        dist = read_distance("rigid_cc_q.txt")
+        # Same cross-platform BLAS/LAPACK caveat as test_translation_cc,
+        # amplified here since the rigid transform's Jacobian depends on
+        # the rotation parameters (not constant like translation).
+        npt.assert_allclose(float(dist), -198329.15149667568, rtol=1e-3)
+        check_existence(out_moved, out_affine)
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="com",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-            )
-            check_existence(out_moved, out_affine)
+    def test_rigid():
+        out_moved = tmp_path / "rigid_moved.nii.gz"
+        out_affine = tmp_path / "rigid_affine.txt"
 
-        def test_translation():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="rigid",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="rigid_q.txt",
+        )
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="trans",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                save_metric=True,
-                level_iters=[100, 10, 1],
-                out_quality="trans_q.txt",
-            )
+        dist = read_distance("rigid_q.txt")
+        npt.assert_almost_equal(dist, -0.7246454252101615, 1)
+        check_existence(out_moved, out_affine)
 
-            dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
-            check_existence(out_moved, out_affine)
+    def test_rigid_isoscaling():
+        out_moved = tmp_path / "rigid_isoscaling_moved.nii.gz"
+        out_affine = tmp_path / "rigid_isoscaling_affine.txt"
 
-        def test_rigid():
-            out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="rigid_isoscaling",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="rigid_isoscaling_q.txt",
+        )
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="rigid",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                save_metric=True,
-                level_iters=[100, 10, 1],
-                out_quality="rigid_q.txt",
-            )
+        dist = read_distance("rigid_isoscaling_q.txt")
+        npt.assert_almost_equal(dist, -0.7357104551669915, 1)
+        check_existence(out_moved, out_affine)
 
-            dist = read_distance("rigid_q.txt")
-            npt.assert_almost_equal(dist, -0.6900534794005155, 1)
-            check_existence(out_moved, out_affine)
+    def test_rigid_scaling():
+        out_moved = tmp_path / "rigid_scaling_moved.nii.gz"
+        out_affine = tmp_path / "rigid_scaling_affine.txt"
 
-        def test_rigid_isoscaling():
-            out_moved = pjoin(temp_out_dir, "rigid_isoscaling_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_isoscaling_affine.txt")
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="rigid_scaling",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="rigid_scaling_q.txt",
+        )
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="rigid_isoscaling",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                save_metric=True,
-                level_iters=[100, 10, 1],
-                out_quality="rigid_isoscaling_q.txt",
-            )
+        dist = read_distance("rigid_scaling_q.txt")
+        npt.assert_almost_equal(dist, -0.698688892993124, 1)
+        check_existence(out_moved, out_affine)
 
-            dist = read_distance("rigid_isoscaling_q.txt")
-            npt.assert_almost_equal(dist, -0.6960044668271375, 1)
-            check_existence(out_moved, out_affine)
+    def test_affine():
+        out_moved = tmp_path / "affine_moved.nii.gz"
+        out_affine = tmp_path / "affine_affine.txt"
 
-        def test_rigid_scaling():
-            out_moved = pjoin(temp_out_dir, "rigid_scaling_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_scaling_affine.txt")
+        image_registration_flow._force_overwrite = True
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform="affine",
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            save_metric=True,
+            level_iters=[100, 10, 1],
+            out_quality="affine_q.txt",
+        )
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="rigid_scaling",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                save_metric=True,
-                level_iters=[100, 10, 1],
-                out_quality="rigid_scaling_q.txt",
-            )
+        dist = read_distance("affine_q.txt")
+        npt.assert_almost_equal(dist, -0.7317371886943095, 1)
+        check_existence(out_moved, out_affine)
 
-            dist = read_distance("rigid_scaling_q.txt")
-            npt.assert_almost_equal(dist, -0.698688892993124, 1)
-            check_existence(out_moved, out_affine)
+    # Creating the erroneous behavior
+    def test_err():
+        image_registration_flow._force_overwrite = True
+        npt.assert_raises(
+            ValueError,
+            image_registration_flow.run,
+            static_image_file,
+            moving_image_file,
+            transform="notransform",
+        )
 
-        def test_affine():
-            out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "affine_affine.txt")
+        image_registration_flow._force_overwrite = True
+        npt.assert_raises(
+            ValueError,
+            image_registration_flow.run,
+            static_image_file,
+            moving_image_file,
+            metric="wrong_metric",
+        )
 
-            image_registration_flow._force_overwrite = True
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform="affine",
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                save_metric=True,
-                level_iters=[100, 10, 1],
-                out_quality="affine_q.txt",
-            )
+    def check_existence(movedfile, affine_mat_file):
+        assert Path(movedfile).exists()
+        assert Path(affine_mat_file).exists()
+        return True
 
-            dist = read_distance("affine_q.txt")
-            npt.assert_almost_equal(dist, -0.7670650775914811, 1)
-            check_existence(out_moved, out_affine)
+    def test_4D_static():
+        out_moved = tmp_path / "trans_moved.nii.gz"
+        out_affine = tmp_path / "trans_affine.txt"
 
-        # Creating the erroneous behavior
-        def test_err():
-            image_registration_flow._force_overwrite = True
-            npt.assert_raises(
-                ValueError,
-                image_registration_flow.run,
-                static_image_file,
-                moving_image_file,
-                transform="notransform",
-            )
+        image_registration_flow._force_overwrite = True
+        kwargs = {
+            "static_image_files": dwi_image_file,
+            "moving_image_files": moving_image_file,
+            "transform": "trans",
+            "out_dir": tmp_path,
+            "out_moved": out_moved,
+            "out_affine": out_affine,
+            "save_metric": True,
+            "level_iters": [100, 10, 1],
+            "out_quality": "trans_q.txt",
+        }
+        with pytest.raises(ValueError, match="Dimension mismatch"):
+            image_registration_flow.run(**kwargs)
 
-            image_registration_flow._force_overwrite = True
-            npt.assert_raises(
-                ValueError,
-                image_registration_flow.run,
-                static_image_file,
-                moving_image_file,
-                metric="wrong_metric",
-            )
+        image_registration_flow.run(static_vol_idx=0, **kwargs)
 
-        def check_existence(movedfile, affine_mat_file):
-            assert os.path.exists(movedfile)
-            assert os.path.exists(affine_mat_file)
-            return True
+        dist = read_distance("trans_q.txt")
+        npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
+        check_existence(out_moved, out_affine)
 
-        def test_4D_static():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+        apply_trans.run(
+            static_image_files=dwi_image_file,
+            moving_image_files=moving_image_file,
+            out_dir=tmp_path,
+            transform_map_file=out_affine,
+        )
 
-            image_registration_flow._force_overwrite = True
-            kwargs = {
-                "static_image_files": dwi_image_file,
-                "moving_image_files": moving_image_file,
-                "transform": "trans",
-                "out_dir": temp_out_dir,
-                "out_moved": out_moved,
-                "out_affine": out_affine,
-                "save_metric": True,
-                "level_iters": [100, 10, 1],
-                "out_quality": "trans_q.txt",
-            }
-            with pytest.raises(ValueError, match="Dimension mismatch"):
-                image_registration_flow.run(**kwargs)
+        # Checking for the transformed volume shape
+        volume = load_nifti_data(tmp_path / "transformed.nii.gz")
+        assert volume.ndim == 3
 
-            image_registration_flow.run(static_vol_idx=0, **kwargs)
+    def test_4D_moving():
+        out_moved = tmp_path / "trans_moved.nii.gz"
+        out_affine = tmp_path / "trans_affine.txt"
 
-            dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
-            check_existence(out_moved, out_affine)
+        image_registration_flow._force_overwrite = True
 
-            apply_trans.run(
-                static_image_files=dwi_image_file,
-                moving_image_files=moving_image_file,
-                out_dir=temp_out_dir,
-                transform_map_file=out_affine,
-            )
+        kwargs = {
+            "static_image_files": static_image_file,
+            "moving_image_files": dwi_image_file,
+            "transform": "trans",
+            "out_dir": tmp_path,
+            "out_moved": out_moved,
+            "out_affine": out_affine,
+            "save_metric": True,
+            "level_iters": [100, 10, 1],
+            "out_quality": "trans_q.txt",
+        }
+        with pytest.raises(ValueError, match="Dimension mismatch"):
+            image_registration_flow.run(**kwargs)
 
-            # Checking for the transformed volume shape
-            volume = load_nifti_data(pjoin(temp_out_dir, "transformed.nii.gz"))
-            assert volume.ndim == 3
+        image_registration_flow.run(moving_vol_idx=0, **kwargs)
 
-        def test_4D_moving():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+        dist = read_distance("trans_q.txt")
+        npt.assert_almost_equal(float(dist), -1.0002607616786339, 1)
+        check_existence(out_moved, out_affine)
 
-            image_registration_flow._force_overwrite = True
+        apply_trans.run(
+            static_image_files=static_image_file,
+            moving_image_files=dwi_image_file,
+            out_dir=tmp_path,
+            transform_map_file=out_affine,
+            out_file="transformed2.nii.gz",
+        )
 
-            kwargs = {
-                "static_image_files": static_image_file,
-                "moving_image_files": dwi_image_file,
-                "transform": "trans",
-                "out_dir": temp_out_dir,
-                "out_moved": out_moved,
-                "out_affine": out_affine,
-                "save_metric": True,
-                "level_iters": [100, 10, 1],
-                "out_quality": "trans_q.txt",
-            }
-            with pytest.raises(ValueError, match="Dimension mismatch"):
-                image_registration_flow.run(**kwargs)
+        # Checking for the transformed volume shape
+        volume = load_nifti_data(tmp_path / "transformed2.nii.gz")
+        assert volume.ndim == 4
 
-            image_registration_flow.run(moving_vol_idx=0, **kwargs)
-
-            dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -1.0002607616786339, 1)
-            check_existence(out_moved, out_affine)
-
-            apply_trans.run(
-                static_image_files=static_image_file,
-                moving_image_files=dwi_image_file,
-                out_dir=temp_out_dir,
-                transform_map_file=out_affine,
-                out_file="transformed2.nii.gz",
-            )
-
-            # Checking for the transformed volume shape
-            volume = load_nifti_data(pjoin(temp_out_dir, "transformed2.nii.gz"))
-            assert volume.ndim == 4
-
-        test_com()
-        test_translation()
-        test_rigid()
-        test_rigid_isoscaling()
-        test_rigid_scaling()
-        test_affine()
-        test_err()
-        test_4D_static()
-        test_4D_moving()
+    test_com()
+    test_translation()
+    test_translation_cc()
+    test_rigid_cc()
+    test_rigid()
+    test_rigid_isoscaling()
+    test_rigid_scaling()
+    test_affine()
+    test_err()
+    test_4D_static()
+    test_4D_moving()
 
 
-def test_apply_transform_error():
+def test_apply_transform_type_error():
     flow = ApplyTransformFlow()
     npt.assert_raises(
         ValueError,
@@ -346,136 +663,181 @@ def test_apply_transform_error():
     )
 
 
-def test_apply_affine_transform():
-    with TemporaryDirectory() as temp_out_dir:
-        factors = {
-            ("TRANSLATION", 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
-            ("RIGID", 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7])),
-            ("RIGIDISOSCALING", 3): (
-                0.1,
-                None,
-                np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7, 0.8]),
+def test_apply_transform_interp_error():
+    flow = ApplyTransformFlow()
+    npt.assert_raises(
+        ValueError,
+        flow.run,
+        "my_fake_static.nii.gz",
+        "my_fake_moving.nii.gz",
+        "my_fake_map.nii.gz",
+        transform_type="affine",
+        interpolation="wrong_interp",
+    )
+
+
+def test_apply_affine_transform(tmp_path):
+    factors = {
+        ("TRANSLATION", 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
+        ("RIGID", 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7])),
+        ("RIGIDISOSCALING", 3): (
+            0.1,
+            None,
+            np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7, 0.8]),
+        ),
+        ("RIGIDSCALING", 3): (
+            0.1,
+            None,
+            np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7, 0.8, 0.9, 1.1]),
+        ),
+        ("AFFINE", 3): (
+            0.1,
+            None,
+            np.array(
+                [
+                    0.99,
+                    -0.05,
+                    0.03,
+                    1.3,
+                    0.05,
+                    0.99,
+                    -0.10,
+                    2.5,
+                    -0.07,
+                    0.10,
+                    0.99,
+                    -1.4,
+                ]
             ),
-            ("RIGIDSCALING", 3): (
-                0.1,
-                None,
-                np.array([0.1, 0.15, -0.11, 2.3, 4.5, 1.7, 0.8, 0.9, 1.1]),
-            ),
-            ("AFFINE", 3): (
-                0.1,
-                None,
-                np.array(
-                    [
-                        0.99,
-                        -0.05,
-                        0.03,
-                        1.3,
-                        0.05,
-                        0.99,
-                        -0.10,
-                        2.5,
-                        -0.07,
-                        0.10,
-                        0.99,
-                        -1.4,
-                    ]
-                ),
-            ),
-        }
+        ),
+    }
 
-        image_registration_flow = ImageRegistrationFlow()
-        apply_trans = ApplyTransformFlow()
+    image_registration_flow = ImageRegistrationFlow()
+    apply_trans = ApplyTransformFlow()
 
-        for i in factors.keys():
-            static, moving, static_g2w, moving_g2w, smask, mmask, M = (
-                setup_random_transform(
-                    transform=regtransforms[i], rfactor=factors[i][0]
-                )
-            )
-
-            stat_file = str(i[0]) + "_static.nii.gz"
-            mov_file = str(i[0]) + "_moving.nii.gz"
-
-            save_nifti(pjoin(temp_out_dir, stat_file), data=static, affine=static_g2w)
-
-            save_nifti(pjoin(temp_out_dir, mov_file), data=moving, affine=moving_g2w)
-
-            static_image_file = pjoin(temp_out_dir, str(i[0]) + "_static.nii.gz")
-            moving_image_file = pjoin(temp_out_dir, str(i[0]) + "_moving.nii.gz")
-
-            out_moved = pjoin(temp_out_dir, str(i[0]) + "_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, str(i[0]) + "_affine.txt")
-
-            if str(i[0]) == "TRANSLATION":
-                transform_type = "trans"
-            elif str(i[0]) == "RIGIDISOSCALING":
-                transform_type = "rigid_isoscaling"
-            elif str(i[0]) == "RIGIDSCALING":
-                transform_type = "rigid_scaling"
-            else:
-                transform_type = str(i[0]).lower()
-
-            image_registration_flow.run(
-                static_image_file,
-                moving_image_file,
-                transform=transform_type,
-                out_dir=temp_out_dir,
-                out_moved=out_moved,
-                out_affine=out_affine,
-                level_iters=[1, 1, 1],
-                save_metric=False,
-            )
-
-            # Checking for the created moved file.
-            assert os.path.exists(out_moved)
-            assert os.path.exists(out_affine)
-
-        images = pjoin(temp_out_dir, "*moving*")
-        apply_trans.run(
-            static_image_file,
-            images,
-            out_dir=temp_out_dir,
-            transform_map_file=out_affine,
+    for i in factors:
+        static, moving, static_g2w, moving_g2w, smask, mmask, M = (
+            setup_random_transform(transform=regtransforms[i], rfactor=factors[i][0])
         )
 
-        # Checking for the transformed file.
-        assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
+        stat_file = str(i[0]) + "_static.nii.gz"
+        mov_file = str(i[0]) + "_moving.nii.gz"
+
+        save_nifti(tmp_path / stat_file, data=static, affine=static_g2w)
+
+        save_nifti(tmp_path / mov_file, data=moving, affine=moving_g2w)
+
+        static_image_file = tmp_path / str(i[0] + "_static.nii.gz")
+        moving_image_file = tmp_path / str(i[0] + "_moving.nii.gz")
+
+        out_moved = tmp_path / str(i[0] + "_moved.nii.gz")
+        out_affine = tmp_path / str(i[0] + "_affine.txt")
+
+        if str(i[0]) == "TRANSLATION":
+            transform_type = "trans"
+        elif str(i[0]) == "RIGIDISOSCALING":
+            transform_type = "rigid_isoscaling"
+        elif str(i[0]) == "RIGIDSCALING":
+            transform_type = "rigid_scaling"
+        else:
+            transform_type = str(i[0]).lower()
+
+        image_registration_flow.run(
+            static_image_file,
+            moving_image_file,
+            transform=transform_type,
+            out_dir=tmp_path,
+            out_moved=out_moved,
+            out_affine=out_affine,
+            level_iters=[1, 1, 1],
+            save_metric=False,
+        )
+
+        # Checking for the created moved file.
+        assert Path(out_moved).exists()
+        assert Path(out_affine).exists()
+
+    images = tmp_path / "*moving*"
+    apply_trans.run(
+        static_image_file,
+        images,
+        out_dir=tmp_path,
+        transform_map_file=out_affine,
+    )
+
+    # Checking for the transformed file.
+    assert Path(tmp_path / "transformed.nii.gz").exists()
+
+    apply_trans.run(
+        static_image_file,
+        images,
+        out_dir=tmp_path,
+        transform_map_file=out_affine,
+        out_file="transformed_linear.nii.gz",
+    )
+
+    assert Path(tmp_path / "transformed_linear.nii.gz").exists()
+
+    apply_trans.run(
+        static_image_file,
+        images,
+        out_dir=tmp_path,
+        transform_map_file=out_affine,
+        interpolation="nearest",
+        out_file="transformed_nearest.nii.gz",
+    )
+
+    assert Path(tmp_path / "transformed_nearest.nii.gz").exists()
 
 
-def test_motion_correction():
+@pytest.mark.parametrize("metric, metric_kwargs", [("mi", {}), ("cc", {"radius": 1})])
+def test_motion_correction(tmp_path, metric, metric_kwargs):
     data_path, fbvals_path, fbvecs_path = get_fnames(name="small_64D")
 
-    with TemporaryDirectory() as out_dir:
-        # Use an abbreviated data-set:
-        img = nib.load(data_path)
-        data = img.get_fdata()[..., :10]
-        nib.save(
-            nib.Nifti1Image(data, img.affine), os.path.join(out_dir, "data.nii.gz")
-        )
-        # Save a subset:
-        bvals = np.loadtxt(fbvals_path)
-        bvecs = np.loadtxt(fbvecs_path)
-        np.savetxt(os.path.join(out_dir, "bvals.txt"), bvals[:10])
-        np.savetxt(os.path.join(out_dir, "bvecs.txt"), bvecs[:10])
+    # Use an abbreviated data-set:
+    img = nib.load(data_path)
+    data = img.get_fdata()[..., :10]
+    nib.save(nib.Nifti1Image(data, img.affine), tmp_path / "data.nii.gz")
+    # Save a subset:
+    bvals = np.loadtxt(fbvals_path)
+    bvecs = np.loadtxt(fbvecs_path)
+    np.savetxt(tmp_path / "bvals.txt", bvals[:10])
+    np.savetxt(tmp_path / "bvecs.txt", bvecs[:10])
 
-        motion_correction_flow = MotionCorrectionFlow()
+    motion_correction_flow = MotionCorrectionFlow()
 
-        motion_correction_flow._force_overwrite = True
-        motion_correction_flow.run(
-            os.path.join(out_dir, "data.nii.gz"),
-            os.path.join(out_dir, "bvals.txt"),
-            os.path.join(out_dir, "bvecs.txt"),
-            out_dir=out_dir,
-        )
-        out_path = motion_correction_flow.last_generated_outputs["out_moved"]
-        corrected = load_nifti_data(out_path)
+    motion_correction_flow._force_overwrite = True
+    motion_correction_flow.run(
+        str(tmp_path / "data.nii.gz"),
+        str(tmp_path / "bvals.txt"),
+        str(tmp_path / "bvecs.txt"),
+        level_iters=[500, 100],
+        metric=metric,
+        out_dir=tmp_path,
+        **metric_kwargs,
+    )
+    out_path = motion_correction_flow.last_generated_outputs["out_moved"]
+    corrected = load_nifti_data(out_path)
 
-        npt.assert_equal(corrected.shape, data.shape)
-        npt.assert_equal(corrected.min(), data.min())
-        npt.assert_equal(corrected.max(), data.max())
+    npt.assert_equal(corrected.shape, data.shape)
+    npt.assert_equal(corrected.min(), data.min())
+    npt.assert_equal(corrected.max(), data.max())
+
+    bvecs_path = motion_correction_flow.last_generated_outputs["out_bvecs"]
+    new_bvecs = np.loadtxt(bvecs_path)
+    gtab = gradient_table(bvals[:10], bvecs=bvecs[:10])
+
+    npt.assert_equal(new_bvecs.shape, (3, 10))
+    npt.assert_allclose(new_bvecs[:, gtab.b0s_mask], 0, atol=1e-12)
+    npt.assert_allclose(
+        np.linalg.norm(new_bvecs[:, ~gtab.b0s_mask], axis=0), 1.0, atol=1e-6
+    )
+    npt.assert_(
+        not np.allclose(new_bvecs.T[~gtab.b0s_mask], gtab.bvecs[~gtab.b0s_mask])
+    )
 
 
-def test_syn_registration_flow():
+def test_syn_registration_flow(tmp_path):
     moving_data, static_data = get_synthetic_warped_circle(40)
     moving_data[..., :10] = 0
     moving_data[..., -1:-11:-1] = 0
@@ -484,115 +846,136 @@ def test_syn_registration_flow():
 
     syn_flow = SynRegistrationFlow()
 
-    with TemporaryDirectory() as out_dir:
-        static_img = nib.Nifti1Image(static_data.astype(float), np.eye(4))
-        fname_static = pjoin(out_dir, "tmp_static.nii.gz")
-        nib.save(static_img, fname_static)
+    static_img = nib.Nifti1Image(static_data.astype(float), np.eye(4))
+    fname_static = tmp_path / "tmp_static.nii.gz"
+    nib.save(static_img, fname_static)
 
-        moving_img = nib.Nifti1Image(moving_data.astype(float), np.eye(4))
-        fname_moving = pjoin(out_dir, "tmp_moving.nii.gz")
-        nib.save(moving_img, fname_moving)
+    moving_img = nib.Nifti1Image(moving_data.astype(float), np.eye(4))
+    fname_moving = tmp_path / "tmp_moving.nii.gz"
+    nib.save(moving_img, fname_moving)
 
-        positional_args = [fname_static, fname_moving]
+    positional_args = [fname_static, fname_moving]
 
-        # Test the cc metric
-        metric_optional_args = {
-            "metric": "cc",
-            "mopt_sigma_diff": 2.0,
-            "mopt_radius": 4,
-        }
-        optimizer_optional_args = {
-            "level_iters": [10, 10, 5],
-            "step_length": 0.25,
-            "opt_tol": 1e-5,
-            "inv_iter": 20,
-            "inv_tol": 1e-3,
-            "ss_sigma_factor": 0.2,
-        }
+    # Test the cc metric
+    metric_optional_args = {
+        "metric": "cc",
+        "mopt_sigma_diff": 2.0,
+        "mopt_radius": 4,
+    }
+    optimizer_optional_args = {
+        "level_iters": [10, 10, 5],
+        "step_length": 0.25,
+        "opt_tol": 1e-5,
+        "inv_iter": 20,
+        "inv_tol": 1e-3,
+        "ss_sigma_factor": 0.2,
+    }
 
-        all_args = dict(metric_optional_args, **optimizer_optional_args)
-        syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
+    all_args = dict(metric_optional_args, **optimizer_optional_args)
+    syn_flow.run(*positional_args, out_dir=tmp_path, **all_args)
 
-        warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
-        warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+    warped_path = syn_flow.last_generated_outputs["out_warped"]
+    npt.assert_equal(Path(warped_path).is_file(), True)
+    warped_map_path = syn_flow.last_generated_outputs["out_field"]
+    npt.assert_equal(Path(warped_map_path).is_file(), True)
 
-        # Test the ssd metric
-        metric_optional_args = {
-            "metric": "ssd",
-            "mopt_smooth": 4.0,
-            "mopt_inner_iter": 5,
-            "mopt_step_type": "demons",
-        }
-        optimizer_optional_args = {
-            "level_iters": [200, 100, 50, 25],
-            "step_length": 0.5,
-            "opt_tol": 1e-4,
-            "inv_iter": 40,
-            "inv_tol": 1e-3,
-            "ss_sigma_factor": 0.2,
-        }
+    # Test the mi metric
+    metric_optional_args = {
+        "metric": "mi",
+        "mopt_nbins": 16,
+        "mopt_smooth": 0.0,
+    }
+    optimizer_optional_args = {
+        "level_iters": [10, 10, 5],
+        "step_length": 0.25,
+        "opt_tol": 1e-5,
+        "inv_iter": 20,
+        "inv_tol": 1e-3,
+        "ss_sigma_factor": 0.2,
+    }
 
-        all_args = dict(metric_optional_args, **optimizer_optional_args)
-        syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
+    all_args = dict(metric_optional_args, **optimizer_optional_args)
+    syn_flow.run(*positional_args, out_dir=tmp_path, **all_args)
 
-        warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
-        warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+    warped_path = syn_flow.last_generated_outputs["out_warped"]
+    npt.assert_equal(Path(warped_path).is_file(), True)
+    warped_map_path = syn_flow.last_generated_outputs["out_field"]
+    npt.assert_equal(Path(warped_map_path).is_file(), True)
 
-        # Test the em metric
-        metric_optional_args = {
-            "metric": "em",
-            "mopt_smooth": 1.0,
-            "mopt_inner_iter": 5,
-            "mopt_step_type": "gauss_newton",
-        }
-        optimizer_optional_args = {
-            "level_iters": [200, 100, 50, 25],
-            "step_length": 0.5,
-            "opt_tol": 1e-4,
-            "inv_iter": 40,
-            "inv_tol": 1e-3,
-            "ss_sigma_factor": 0.2,
-        }
+    # Test the ssd metric
+    metric_optional_args = {
+        "metric": "ssd",
+        "mopt_smooth": 4.0,
+        "mopt_inner_iter": 5,
+        "mopt_step_type": "demons",
+    }
+    optimizer_optional_args = {
+        "level_iters": [200, 100, 50, 25],
+        "step_length": 0.5,
+        "opt_tol": 1e-4,
+        "inv_iter": 40,
+        "inv_tol": 1e-3,
+        "ss_sigma_factor": 0.2,
+    }
 
-        all_args = dict(metric_optional_args, **optimizer_optional_args)
-        syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
+    all_args = dict(metric_optional_args, **optimizer_optional_args)
+    syn_flow.run(*positional_args, out_dir=tmp_path, **all_args)
 
-        warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
-        warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+    warped_path = syn_flow.last_generated_outputs["out_warped"]
+    npt.assert_equal(Path(warped_path).is_file(), True)
+    warped_map_path = syn_flow.last_generated_outputs["out_field"]
+    npt.assert_equal(Path(warped_map_path).is_file(), True)
+
+    # Test the em metric
+    metric_optional_args = {
+        "metric": "em",
+        "mopt_smooth": 1.0,
+        "mopt_inner_iter": 5,
+        "mopt_step_type": "gauss_newton",
+    }
+    optimizer_optional_args = {
+        "level_iters": [200, 100, 50, 25],
+        "step_length": 0.5,
+        "opt_tol": 1e-4,
+        "inv_iter": 40,
+        "inv_tol": 1e-3,
+        "ss_sigma_factor": 0.2,
+    }
+
+    all_args = dict(metric_optional_args, **optimizer_optional_args)
+    syn_flow.run(*positional_args, out_dir=tmp_path, **all_args)
+
+    warped_path = syn_flow.last_generated_outputs["out_warped"]
+    npt.assert_equal(Path(warped_path).is_file(), True)
+    warped_map_path = syn_flow.last_generated_outputs["out_field"]
+    npt.assert_equal(Path(warped_map_path).is_file(), True)
 
 
 @pytest.mark.skipif(not have_pd, reason="Requires pandas")
-def test_bundlewarp_flow():
-    with TemporaryDirectory() as out_dir:
-        data_path = get_fnames(name="fornix")
+def test_bundlewarp_flow(tmp_path):
+    data_path = get_fnames(name="fornix")
 
-        fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
+    fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
 
-        f = Streamlines(fornix)
-        f1 = f.copy()
+    f = Streamlines(fornix)
+    f1 = f.copy()
 
-        f1_path = pjoin(out_dir, "f1.trk")
-        sft = StatefulTractogram(f1, data_path, Space.RASMM)
-        save_tractogram(sft, f1_path, bbox_valid_check=False)
+    f1_path = tmp_path / "f1.trk"
+    sft = StatefulTractogram(f1, data_path, Space.RASMM)
+    save_tractogram(sft, f1_path, bbox_valid_check=False)
 
-        f2 = f1.copy()
-        f2._data += np.array([50, 0, 0])
+    f2 = f1.copy()
+    f2._data += np.array([50, 0, 0])
 
-        f2_path = pjoin(out_dir, "f2.trk")
-        sft = StatefulTractogram(f2, data_path, Space.RASMM)
-        save_tractogram(sft, f2_path, bbox_valid_check=False)
+    f2_path = tmp_path / "f2.trk"
+    sft = StatefulTractogram(f2, data_path, Space.RASMM)
+    save_tractogram(sft, f2_path, bbox_valid_check=False)
 
-        bw_flow = BundleWarpFlow(force=True)
-        bw_flow.run(f1_path, f2_path, out_dir=out_dir)
+    bw_flow = BundleWarpFlow(force=True)
+    bw_flow.run(f1_path, f2_path, out_dir=tmp_path, bbox_valid_check=False)
 
-        out_linearly_moved = pjoin(out_dir, "linearly_moved.trk")
-        out_nonlinearly_moved = pjoin(out_dir, "nonlinearly_moved.trk")
+    out_linearly_moved = tmp_path / "linearly_moved.trx"
+    out_nonlinearly_moved = tmp_path / "nonlinearly_moved.trx"
 
-        assert os.path.exists(out_linearly_moved)
-        assert os.path.exists(out_nonlinearly_moved)
+    assert out_linearly_moved.exists()
+    assert out_nonlinearly_moved.exists()

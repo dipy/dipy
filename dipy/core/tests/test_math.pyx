@@ -1,6 +1,5 @@
 
 
-cimport numpy as cnp
 import numpy as np
 import numpy.testing as npt
 
@@ -35,4 +34,3 @@ def test_f_min():
     npt.assert_equal(f_min[double](1, 2), 1)
     npt.assert_equal(f_min[float](2, 1), 1)
     npt.assert_equal(f_min(1.0, 1.0), 1)
-

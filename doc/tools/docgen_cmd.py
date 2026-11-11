@@ -58,8 +58,7 @@ def sh3(cmd):
 
 
 def abort(error):
-    print(f"*WARNING* Command line API documentation not generated: {error}")
-    exit()
+    sys.exit(f"*ERROR* Command line API documentation not generated: {error}")
 
 
 def get_doc_parser(class_obj):

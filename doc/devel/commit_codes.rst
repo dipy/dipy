@@ -12,8 +12,8 @@ categories:
 * *NF* : new feature
 * *BW* : addresses backward-compatibility
 * *OPT* : optimization
-* *BK* : breaks something and/or tests fail
-* *PL* : making pylint happier
+* *CI* : continuous integration
+* *MNT* : maintenance tasks, such as release preparation
 * *DOC*: for all kinds of documentation related commits
 * *TEST* : for adding or changing tests
 * *STYLE* : PEP8 conformance, whitespace changes etc that do not affect

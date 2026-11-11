@@ -9,6 +9,7 @@ streamlines.
 import collections.abc
 from functools import partial
 import numbers
+from pathlib import Path
 import re
 from warnings import warn
 
@@ -18,11 +19,12 @@ import numpy as np
 from dipy.align.imaffine import (
     AffineMap,
     AffineRegistration,
+    CrossCorrelationMetric,
     MutualInformationMetric,
     transform_centers_of_mass,
 )
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.align.transforms import (
     AffineTransform3D,
@@ -34,11 +36,12 @@ from dipy.align.transforms import (
 import dipy.core.gradients as dpg
 import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.io.utils import read_img_arr_or_path
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
+from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.logging import logger
 
 __all__ = [
     "syn_registration",
@@ -60,9 +63,12 @@ __all__ = [
 ]
 
 # Global dicts for choosing metrics for registration:
-syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
+syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "MI": MIMetric, "SSD": SSDMetric}
 
-affine_metric_dict = {"MI": MutualInformationMetric}
+affine_metric_dict = {
+    "CC": CrossCorrelationMetric,
+    "MI": MutualInformationMetric,
+}
 
 
 @warning_for_keywords()
@@ -119,7 +125,7 @@ def syn_registration(
         that is stored in the `data` input. Default: use the affine stored
         in `data`.
     metric : string, optional
-        The metric to be optimized. One of `CC`, `EM`, `SSD`,
+        The metric to be optimized. One of `CC`, `EM`, `MI`, `SSD`
         Default: 'CC' => CCMetric.
     dim: int (either 2 or 3), optional
        The dimensions of the image domain. Default: 3
@@ -186,16 +192,16 @@ def register_dwi_to_template(
 
     Parameters
     ----------
-    dwi : 4D array, nifti image or str
+    dwi : 4D array, nifti image, str or Path
         Containing the DWI data, or full path to a nifti file with DWI.
-    gtab : GradientTable or sequence of strings
+    gtab : GradientTable or sequence of strings or Paths
         The gradients associated with the DWI data, or a sequence with
         (fbval, fbvec), full paths to bvals and bvecs files.
     dwi_affine : 4x4 array, optional
         An affine transformation associated with the DWI. Required if data
         is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-    template : 3D array, nifti image or str
+    template : 3D array, nifti image, str or Path
         Containing the data for the template, or full path to a nifti file
         with the template data.
     template_affine : 4x4 array, optional
@@ -296,13 +302,13 @@ def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
 
     Parameters
     ----------
-    disp : str or Nifti1Image
+    disp : str, Path or Nifti1Image
         A file of image containing the mapping displacement field in each voxel
         Shape (x, y, z, 3, 2)
 
-    domain_img : str or Nifti1Image
+    domain_img : str, Path or Nifti1Image
 
-    codomain_img : str or Nifti1Image
+    codomain_img : str, Path or Nifti1Image
 
     Returns
     -------
@@ -313,13 +319,13 @@ def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
     See :func:`write_mapping` for the data format expected.
 
     """
-    if isinstance(disp, str):
+    if isinstance(disp, (str, Path)):
         disp_data, disp_affine = load_nifti(disp)
 
-    if isinstance(domain_img, str):
+    if isinstance(domain_img, (str, Path)):
         domain_img = nib.load(domain_img)
 
-    if isinstance(codomain_img, str):
+    if isinstance(codomain_img, (str, Path)):
         codomain_img = nib.load(codomain_img)
 
     mapping = DiffeomorphicMap(
@@ -413,6 +419,8 @@ def affine_registration(
     ret_metric=False,
     moving_mask=None,
     static_mask=None,
+    optimizer_options=None,
+    optimizer_method=None,
     **metric_kwargs,
 ):
     """
@@ -452,14 +460,15 @@ def affine_registration(
         Default: identity.
 
     metric : str, optional.
-        Currently only supports 'MI' for MutualInformationMetric.
+        The metric to optimize. Supported values are 'MI' for MutualInformationMetric
+        and 'CC' for CrossCorrelationMetric.
 
     level_iters : sequence, optional
         AffineRegistration key-word argument: the number of iterations at each
         scale of the scale space. `level_iters[0]` corresponds to the coarsest
         scale, `level_iters[-1]` the finest, where n is the length of the
         sequence. By default, a 3-level scale space with iterations
-        sequence equal to [10000, 1000, 100] will be used.
+        sequence equal to [1000, 500, 100] will be used.
 
     sigmas : sequence of floats, optional
         AffineRegistration key-word argument: custom smoothing parameter to
@@ -477,11 +486,23 @@ def affine_registration(
 
     moving_mask : array, shape (S', R', C') or (R', C'), optional
         moving image mask that defines which pixels in the moving image
-        are used to calculate the mutual information.
+        are used to calculate the similarity metric.
 
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information.
+        are used to calculate the similarity metric.
+
+    optimizer_options : dict, optional
+        AffineRegistration key-word argument: options to be passed to the
+        optimizer. See `scipy.optimize.minimize` documentation for details.
+
+    optimizer_method : str, optional
+        Optimization method passed to :class:`~dipy.align.imaffine.AffineRegistration`.
+        Can be any gradient-based method supported by `dipy.core.optimize`:
+        ``'CG'``, ``'BFGS'``, ``'Newton-CG'``, ``'L-BFGS-B'``, ``'TNC'``,
+        ``'SLSQP'``. If ``None``, defaults to ``'L-BFGS-B'``.
+
+        .. versionadded:: 1.13
 
     nbins : int, optional
         MutualInformationMetric key-word argument: the number of bins to be
@@ -496,6 +517,11 @@ def affine_registration(
         floating point value in (0,1] then sparse sampling is used,
         where `sampling_proportion` specifies the proportion of voxels to
         be used. The default is None (dense sampling).
+
+    radius : int, optional
+        CrossCorrelationMetric key-word argument: radius of the square (2D)
+        or cubic (3D) neighborhood used for local cross-correlation. The
+        default is 4.
 
     Returns
     -------
@@ -512,11 +538,22 @@ def affine_registration(
     step (`affine`) is omitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
 
+    With ``metric="CC"``, masks select the centers of local neighborhoods.
+    Pixels outside the masks can still contribute to those neighborhoods.
+
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
-    level_iters = level_iters or [10000, 1000, 100]
+    if level_iters is None:
+        level_iters = [1000, 500, 100]
+        logger.info(
+            "Default level_iters have been updated to [1000, 500, 100] for "
+            "performance improvement. Identical results are expected. In case "
+            "of any discrepancy, you can revert to the previous default by "
+            "setting level_iters=[10000, 1000, 100]."
+        )
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
+    optimizer_method = optimizer_method or "L-BFGS-B"
 
     starting_was_supplied = starting_affine is not None
     static, static_affine, moving, moving_affine, starting_affine = (
@@ -530,11 +567,24 @@ def affine_registration(
     )
 
     # Define the Affine registration object we'll use with the chosen metric.
-    # For now, there is only one metric (mutual information)
+    if not isinstance(metric, str):
+        raise TypeError("metric must be a string")
+    metric = metric.upper()
+    if metric not in affine_metric_dict:
+        supported = ", ".join(sorted(affine_metric_dict))
+        raise ValueError(
+            f"Unsupported affine metric {metric!r}. Supported metrics are: {supported}."
+        )
     use_metric = affine_metric_dict[metric](**metric_kwargs)
 
     affreg = AffineRegistration(
-        metric=use_metric, level_iters=level_iters, sigmas=sigmas, factors=factors
+        metric=use_metric,
+        level_iters=level_iters,
+        sigmas=sigmas,
+        factors=factors,
+        method=optimizer_method,
+        options=optimizer_options,
+        verbosity=0,
     )
 
     # Convert pipeline to sanitized list of str
@@ -547,7 +597,7 @@ def affine_registration(
                     break
         if not isinstance(func, str) or func not in _METHOD_DICT:
             raise ValueError(
-                f"pipeline[{fi}] must be one of " f"{list(_METHOD_DICT)}, got {func!r}"
+                f"pipeline[{fi}] must be one of {list(_METHOD_DICT)}, got {func!r}"
             )
 
     if pipeline == ["center_of_mass"] and ret_metric:
@@ -557,6 +607,7 @@ def affine_registration(
 
     # Go through the selected transformation:
     for func in pipeline:
+        logger.info(f"➞ Running {func} step from affine registration...")
         if func == "center_of_mass":
             if starting_affine is not None and starting_was_supplied:
                 wm = "starting_affine overwritten by center_of_mass transform"
@@ -649,7 +700,17 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 
 @warning_for_keywords()
 def register_series(
-    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
+    series,
+    ref,
+    *,
+    pipeline=None,
+    series_affine=None,
+    ref_affine=None,
+    static_mask=None,
+    level_iters=None,
+    optimizer_options=None,
+    metric="MI",
+    **metric_kwargs,
 ):
     """Register a series to a reference image.
 
@@ -676,6 +737,22 @@ def register_series(
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
+
+    level_iters : list of int, optional
+        The number of iterations at each level of the Gaussian pyramid.
+        By default, a 3-level scale space with iterations [1000, 500, 100]
+        will be used.
+
+    optimizer_options : dict, optional
+        Options to be passed to the optimizer. See `scipy.optimize.minimize`
+        documentation for details.
+
+    metric : string, optional
+        The metric to be optimized. One of `CC`, `MI`.
+
+    metric_kwargs : dict, optional
+        Metric initialization arguments forwarded to ``affine_registration``:
+        ``nbins`` and ``sampling_proportion`` for MI, or ``radius`` for CC.
 
     Returns
     -------
@@ -705,6 +782,7 @@ def register_series(
     xformed = np.zeros(series.shape)
     affines = np.zeros((4, 4, series.shape[-1]))
     for ii in range(series.shape[-1]):
+        logger.info(f"Registering volume {ii} of the series...")
         this_moving = series[..., ii]
         if isinstance(ref_as_idx, numbers.Number) and ii == ref_as_idx:
             # This is the reference! No need to move and the xform is I(4):
@@ -718,6 +796,10 @@ def register_series(
                 static_affine=ref_affine,
                 pipeline=pipeline,
                 static_mask=static_mask,
+                level_iters=level_iters,
+                optimizer_options=optimizer_options,
+                metric=metric,
+                **metric_kwargs,
             )
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
@@ -727,7 +809,17 @@ def register_series(
 
 @warning_for_keywords()
 def register_dwi_series(
-    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None
+    data,
+    gtab,
+    *,
+    affine=None,
+    b0_ref=0,
+    pipeline=None,
+    static_mask=None,
+    level_iters=None,
+    optimizer_options=None,
+    metric="MI",
+    **metric_kwargs,
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -758,7 +850,23 @@ def register_dwi_series(
 
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information.
+        are used to calculate the similarity metric.
+
+    level_iters : list of int, optional
+        The number of iterations at each level of the Gaussian pyramid.
+        By default, a 3-level scale space with iterations [1000, 500, 100]
+        will be used.
+
+    optimizer_options : dict, optional
+        Options to be passed to the optimizer. See `scipy.optimize.minimize`
+        documentation for details.
+
+    metric : string, optional
+        The metric to be optimized. One of `CC`, `MI`.
+
+    metric_kwargs : dict, optional
+        Metric initialization arguments forwarded to ``affine_registration``:
+        ``nbins`` and ``sampling_proportion`` for MI, or ``radius`` for CC.
 
     Returns
     -------
@@ -768,6 +876,15 @@ def register_dwi_series(
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
+    if not optimizer_options:
+        optimizer_options = {"gtol": 1e-4, "ftol": 1e-3}
+        logger.warning(
+            "Default optimizer_options have been updated to "
+            "{'gtol': 1e-4, 'ftol': 1e-3}  for performance improvement. Identical "
+            "results are expected. In case of any discrepancy, you can revert to the "
+            "previous default by setting "
+            "optimizer_options={'gtol': 1e-4, 'ftol': 2.220446049250313e-09}."
+        )
 
     data, affine = read_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.abc.Sequence):
@@ -775,9 +892,19 @@ def register_dwi_series(
 
     if np.sum(gtab.b0s_mask) > 1:
         # First, register the b0s into one image and average:
+        logger.info(
+            "Creating Reference Image by Registering b0 Volumes to Each Other..."
+        )
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(
-            b0_img, ref=b0_ref, pipeline=pipeline, static_mask=static_mask
+            b0_img,
+            ref=b0_ref,
+            pipeline=pipeline,
+            static_mask=static_mask,
+            level_iters=level_iters,
+            optimizer_options=optimizer_options,
+            metric=metric,
+            **metric_kwargs,
         )
         ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
@@ -791,7 +918,14 @@ def register_dwi_series(
     series = nib.Nifti1Image(series_arr, affine)
 
     xformed, affines = register_series(
-        series, ref=0, pipeline=pipeline, static_mask=static_mask
+        series,
+        ref=0,
+        pipeline=pipeline,
+        static_mask=static_mask,
+        level_iters=level_iters,
+        optimizer_options=optimizer_options,
+        metric=metric,
+        **metric_kwargs,
     )
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
@@ -812,9 +946,7 @@ motion_correction = partial(
 )
 motion_correction.__doc__ = re.sub(
     "Register.*?volume",
-    "Apply a motion "
-    "correction to a DWI dataset "
-    "(Between-Volumes Motion correction)",
+    "Apply a motion correction to a DWI dataset (Between-Volumes Motion correction)",
     register_dwi_series.__doc__,
     flags=re.DOTALL,
 )
@@ -826,7 +958,7 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
 
     Parameters
     ----------
-    moving, static : lists of 3 by n, or str
+    moving, static : lists of 3 by n, str or Path
         The two bundles to be registered. Given either as lists of arrays with
         3D coordinates, or strings containing full paths to these files.
 
@@ -848,10 +980,10 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
 
     """
     # Load the streamlines, if you were given a file-name
-    if isinstance(moving, str):
-        moving = load_trk(moving, "same", bbox_valid_check=False).streamlines
-    if isinstance(static, str):
-        static = load_trk(static, "same", bbox_valid_check=False).streamlines
+    if isinstance(moving, (str, Path)):
+        moving = load_tractogram(moving, "same", bbox_valid_check=False).streamlines
+    if isinstance(static, (str, Path)):
+        static = load_tractogram(static, "same", bbox_valid_check=False).streamlines
 
     srr = StreamlineLinearRegistration()
     srm = srr.optimize(

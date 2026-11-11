@@ -1,8 +1,8 @@
 #!python
-import logging
-import os
+from pathlib import Path
 import sys
 
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.flow_runner import run_flow
 
@@ -10,17 +10,21 @@ cli_flows = {
     "dipy_align_affine": ("dipy.workflows.align", "ImageRegistrationFlow"),
     "dipy_align_syn": ("dipy.workflows.align", "SynRegistrationFlow"),
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
+    "dipy_auto": ("dipy.workflows.combined_workflow", "AutoFlow"),
+    "dipy_brain_mask": ("dipy.workflows.segment", "BrainMaskFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_classify_tissue": ("dipy.workflows.segment", "ClassifyTissueFlow"),
+    "dipy_cluster_streamlines": ("dipy.workflows.segment", "ClusterStreamlinesFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
     "dipy_convert_tensors": ("dipy.workflows.io", "ConvertTensorsFlow"),
     "dipy_convert_sh": ("dipy.workflows.io", "ConvertSHFlow"),
+    "dipy_denoise": ("dipy.workflows.denoise", "DenoiseFlow"),
     "dipy_denoise_nlmeans": ("dipy.workflows.denoise", "NLMeansFlow"),
     "dipy_denoise_lpca": ("dipy.workflows.denoise", "LPCAFlow"),
     "dipy_denoise_mppca": ("dipy.workflows.denoise", "MPPCAFlow"),
@@ -33,16 +37,22 @@ cli_flows = {
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
     "dipy_fit_dsid": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_force": ("dipy.workflows.reconst", "ReconstForceFlow"),
     "dipy_fit_forecast": ("dipy.workflows.reconst", "ReconstForecastFlow"),
+    "dipy_fit_fwdti": ("dipy.workflows.reconst", "ReconstFwdtiFlow"),
     "dipy_fit_gqi": ("dipy.workflows.reconst", "ReconstGQIFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
+    "dipy_fit_msmtcsd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
+    "dipy_fit_odffp": ("dipy.workflows.reconst", "ReconstOdffpFlow"),
     "dipy_fit_opdt": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
+    "dipy_fit_powermap": ("dipy.workflows.reconst", "ReconstPowermapFlow"),
     "dipy_fit_qball": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_sdt": ("dipy.workflows.reconst", "ReconstSDTFlow"),
     "dipy_fit_sfm": ("dipy.workflows.reconst", "ReconstSFMFlow"),
     "dipy_gibbs_ringing": ("dipy.workflows.denoise", "GibbsRingingFlow"),
     "dipy_horizon": ("dipy.workflows.viz", "HorizonFlow"),
+    "dipy_skyline": ("dipy.workflows.viz", "SkylineFlow"),
     "dipy_info": ("dipy.workflows.io", "IoInfoFlow"),
     "dipy_extract_b0": ("dipy.workflows.io", "ExtractB0Flow"),
     "dipy_extract_shell": ("dipy.workflows.io", "ExtractShellFlow"),
@@ -67,16 +77,16 @@ cli_flows = {
 
 def run():
     """Run scripts located in pyproject.toml."""
-    script_name = os.path.basename(sys.argv[0])
+    script_name = Path(sys.argv[0]).name
     mod_name, flow_name = cli_flows.get(script_name, (None, None))
     if mod_name is None:
-        print(f"Flow: {script_name} not Found in DIPY")
-        print(f"Available flows: {', '.join(cli_flows.keys())}")
+        logger.info(f"Flow: {script_name} not Found in DIPY")
+        logger.info(f"Available flows: {', '.join(cli_flows.keys())}")
         sys.exit(1)
     mod, _, _ = optional_package(mod_name)
 
     if script_name in ["dipy_sh_convert_mrtrix"]:
-        logging.warning(
+        logger.warning(
             "`dipy_sh_convert_mrtrix` CLI is deprecated since DIPY 1.11.0. It will be "
             "removed on later release. Please use the `dipy_convert_sh` CLI instead.",
         )
@@ -86,6 +96,14 @@ def run():
         extra_args = {
             "remove_convolution": {
                 "dest": "remove_convolution",
+                "action": "store_true",
+                "default": True,
+            }
+        }
+    elif script_name == "dipy_fit_msmtcsd":
+        extra_args = {
+            "use_msmt": {
+                "dest": "use_msmt",
                 "action": "store_true",
                 "default": True,
             }

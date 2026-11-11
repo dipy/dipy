@@ -22,7 +22,6 @@
 .. _nibabel: https://nipy.org/nibabel
 .. _nibabel pypi: https://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: https://nipy.org/nipy/devel/guidelines/index.html
-.. _`dipy gitter`: https://gitter.im/dipy/dipy
 .. _neurostars: https://neurostars.org/
 .. _h5py: https://www.h5py.org/
 .. _cvxpy: https://www.cvxpy.org/
@@ -33,7 +32,6 @@
 .. _pip: https://www.pip-installer.org/en/latest/
 .. _easy_install: https://pypi.python.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
-.. _neurofedora: https://neuro.fedoraproject.org/
 
 .. Documentation tools
 .. _graphviz: https://www.graphviz.org/
@@ -113,6 +111,7 @@
 .. _pandas: https://pandas.pydata.org
 .. _pytables: https://www.pytables.org
 .. _tensorflow: https://www.tensorflow.org
+.. _pytorch: https://pytorch.org
 .. _tqdm: https://tqdm.github.io/
 .. _trx-python: https://tee-ar-ex.github.io/trx-python/
 

@@ -1,10 +1,14 @@
+import enum
 import importlib
 from inspect import getmembers, isfunction
-import logging
 import os
+from pathlib import Path
+import re
+import shutil
 import sys
 import warnings
 
+import nibabel as nib
 import numpy as np
 import trx.trx_file_memmap as tmm
 
@@ -25,15 +29,589 @@ from dipy.io.peaks import (
     tensor_to_pam,
 )
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.io.utils import has_rgb_dtype, split_filename_extension, unpack_rgb_array
+from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 ne, have_ne, _ = optional_package("numexpr")
+
+
+class StatsPropertyName(enum.Enum):
+    """Statistical data property names."""
+
+    MIN = "min"
+    MAX = "max"
+    MEDIAN = "median"
+    MEAN = "mean"
+    STD_DEV = "std dev"
+
+
+class PercentilePropertyName(enum.Enum):
+    """Percentile data property names."""
+
+    PERCENTILE_2 = "2nd percentile"
+    PERCENTILE_98 = "98th percentile"
+
+
+class VolumetricPropertyName(enum.Enum):
+    """Volumetric data property names."""
+
+    AFFINE = "Affine matrix"
+    VOXEL_ORDER = "Voxel order"
+    DATA_TYPE = "Data type"
+    COLOR_ENCODING = "Color encoding"
+    DIMENSIONS = "Dimensions"
+    VOXEL_SIZE = "Voxel size"
+
+
+class BvalPropertyName(enum.Enum):
+    """b-value data property names."""
+
+    B0_THRESHOLD = "b0 threshold"
+    B_VALUES = "b-values"
+    NUMBER_B0s = "Number of b0s"
+    NUMBER_B_VALUES = "Total number of b-values"
+    NUMBER_SHELLS = "Number of gradient shells"
+
+
+class BvecPropertyName(enum.Enum):
+    """b-vector data property names."""
+
+    B_VECTORS = "b-vectors"
+    B_VECTORS_SHAPE = "Shape of b-vectors on disk"
+    NUMBER_NONUNIT_B_VECTORS = "Total number of non-unit b-vectors"
+    NUMBER_UNIT_B_VECTORS = "Total number of unit b-vectors"
+
+
+class TractographyPropertyName(enum.Enum):
+    """Tractography data property names."""
+
+    DPP_KEYS = "Data per point keys"
+    DPS_KEYS = "Data per streamline keys"
+    LENGTH_MM = "Length (mm)"
+    LENGTH_NUM_PTS = "Length (nb points)"
+    NUM_STRML = "Number of streamlines"
+    ORIGIN = "Origin"
+    SPACE = "Space"
+    STEP_SIZE = "Step size (mm)"
+
+
+class PamPropertyName(enum.Enum):
+    """PAM5 (PeaksAndMetrics) data property names."""
+
+    VERSION = "PAM5 version"
+    DIMENSIONS = "Volume dimensions"
+    VOXEL_SIZE = "Voxel size"
+    VOXEL_ORDER = "Voxel order"
+    NUM_PEAKS = "Peaks per voxel (max)"
+    PEAK_COVERAGE = "Peak coverage (fraction)"
+    MEAN_PEAKS = "Mean peaks per non-empty voxel"
+    PEAK_DIRS_SHAPE = "Peak dirs shape"
+    PEAK_VALUES_SHAPE = "Peak values shape"
+    PEAK_INDICES_SHAPE = "Peak indices shape"
+    SPHERE_VERTICES = "Sphere vertices"
+    SHM_COEFF_SHAPE = "SH coefficients shape"
+    SH_ORDER = "SH order"
+    B_SHAPE = "B matrix shape"
+    GFA_SHAPE = "GFA shape"
+    QA_SHAPE = "QA shape"
+    ODF_SHAPE = "ODF shape"
+    TOTAL_WEIGHT = "Total weight"
+    ANG_THR = "Angular threshold"
+    AFFINE = "Affine matrix"
+
+
+def _print_property_information(prop, val, alignment_space):
+    """Print a property, value pair left-aligned at the given width.
+
+    Parameters
+    ----------
+    prop : str
+        Name of the property.
+    val : scalar, str, ndarray, list
+        Value to be property.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    logger.info(f"{prop + ':':<{alignment_space}}{val}")
+
+
+def _print_stats_information(data, alignment_space, tab):
+    """Print statistical information left-aligned at the given width.
+
+    Prints minimum, maximum, median, mean and standard deviation values of
+    the given data indented by ``tab`` number of whitespaces.
+
+    Parameters
+    ----------
+    data : ndarray
+        Name of the piece of information.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    logger.info(f"{tab + 'min:':<{alignment_space}}{np.min(data)}")
+    logger.info(f"{tab + 'max:':<{alignment_space}}{np.max(data)}")
+    logger.info(f"{tab + 'median:':<{alignment_space}}{np.median(data)}")
+    logger.info(f"{tab + 'mean:':<{alignment_space}}{np.mean(data)}")
+    logger.info(f"{tab + 'std dev:':<{alignment_space}}{np.std(data)}")
+
+
+def _print_volumetric_information(img, alignment_space, tab):
+    """Print volumetric information.
+
+    Parameters
+    ----------
+    img : nibabel.spatialimages.SpatialImage
+        Image whose metadata and voxel statistics are to be printed.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    def _print_voxel_information(_name, _data, _alignment_space, _tab):
+        """Print voxel information.
+
+        Parameters
+        ----------
+        _name : str
+           Name of the information piece.
+        _data : ndarray
+            Data whose properties are to be printed.
+        _alignment_space : int
+            Character width for the property, value pair alignment.
+        _tab : str
+            Whitespace characters corresponding to a tab character
+            for the indentation.
+        """
+
+        logger.info(f"{_name}:")
+        _print_stats_information(_data, _alignment_space, _tab)
+        _print_property_information(
+            _tab + PercentilePropertyName.PERCENTILE_2.value,
+            np.percentile(_data, 2),
+            _alignment_space,
+        )
+        _print_property_information(
+            _tab + PercentilePropertyName.PERCENTILE_98.value,
+            np.percentile(_data, 98),
+            _alignment_space,
+        )
+
+    _print_property_information(
+        VolumetricPropertyName.DIMENSIONS.value, img.shape, alignment_space
+    )
+    _print_property_information(
+        VolumetricPropertyName.DATA_TYPE.value, img.get_data_dtype(), alignment_space
+    )
+    if has_rgb_dtype(img.dataobj):
+        color_encoding = (
+            "RGB (DT_RGB24)"
+            if len(img.get_data_dtype().names) == 3
+            else "RGBA (DT_RGBA32)"
+        )
+        _print_property_information(
+            VolumetricPropertyName.COLOR_ENCODING.value, color_encoding, alignment_space
+        )
+
+    data = unpack_rgb_array(np.asanyarray(img.dataobj))
+
+    if data.ndim == 3:
+        _print_voxel_information("Data", data, alignment_space, tab)
+    if data.ndim == 4:
+        _print_voxel_information("Data (0th vol)", data[..., 0], alignment_space, tab)
+
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_ORDER.value,
+        "".join(nib.aff2axcodes(img.affine)),
+        alignment_space,
+    )
+    logger.info(f"Affine matrix:\n{img.affine}")
+    vox_sz = img.header.get_zooms()[:3]
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_SIZE.value,
+        tuple(map(float, vox_sz)),
+        alignment_space,
+    )
+
+    if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
+        msg = "Voxel size is not isotropic. Please reslice.\n"
+        logger.warning(msg, stacklevel=2)
+
+
+def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_space):
+    """Print b-value information.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        b-values.
+    b0_threshold : float
+        b0 threshold.
+    bshell_thr : float
+        Threshold value to determine shells.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    logger.info(f"{BvalPropertyName.B_VALUES.value}:\n{bvals}")
+    _print_property_information(
+        BvalPropertyName.NUMBER_B_VALUES.value, len(bvals), alignment_space
+    )
+    shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
+    _print_property_information(
+        BvalPropertyName.NUMBER_SHELLS.value, shells, alignment_space
+    )
+    num_b0s = np.sum(bvals <= b0_threshold)
+    logger.info(
+        f"{BvalPropertyName.NUMBER_B0s.value + ':':<{alignment_space}}{num_b0s}"
+        f" ({BvalPropertyName.B0_THRESHOLD.value}: {b0_threshold})"
+    )
+
+
+def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
+    r"""Print b-vector information.
+
+    Parameters
+    ----------
+    bvecs : ndarray
+        b-vectors.
+    bvecs_tol : float
+        Threshold used to check that
+        :math:`norm(\text{bvec}) = 1 \pm \text{bvecs_tol}` b-vectors are
+        unit vectors.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    _print_property_information(
+        BvecPropertyName.B_VECTORS_SHAPE.value, bvecs.shape, alignment_space
+    )
+    rows, cols = bvecs.shape
+    if rows < cols:
+        bvecs = bvecs.T
+    logger.info(f"{BvecPropertyName.B_VECTORS.value}\n{bvecs}")
+    norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
+    res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
+    ncl1 = np.sum(norms < 1 - bvecs_tol)
+    _print_property_information(
+        BvecPropertyName.NUMBER_UNIT_B_VECTORS.value, len(res[0]), alignment_space
+    )
+    _print_property_information(
+        BvecPropertyName.NUMBER_NONUNIT_B_VECTORS.value, ncl1, alignment_space
+    )
+
+
+def _print_tractography_information(
+    sft, lengths_mm, lengths, step_size, alignment_space, tab
+):
+    """Print tractogram information.
+
+    Parameters
+    ----------
+    sft : StatefulTractogram
+       Tractogram.
+    lengths_mm : list
+        Length of the streamlines in millimeters.
+    lengths : list
+        Length of the streamlines in number of points.
+    step_size : ndarray
+        Step sizes.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    _print_property_information(
+        TractographyPropertyName.NUM_STRML.value, len(sft), alignment_space
+    )
+    logger.info(f"{TractographyPropertyName.LENGTH_MM.value}:")
+    _print_stats_information(lengths_mm, alignment_space, tab)
+    logger.info(f"{TractographyPropertyName.LENGTH_NUM_PTS.value}:")
+    _print_stats_information(lengths, alignment_space, tab)
+    logger.info(f"{TractographyPropertyName.STEP_SIZE.value}:")
+    _print_stats_information(step_size, alignment_space, tab)
+    _print_property_information(
+        TractographyPropertyName.DPP_KEYS.value,
+        list(sft.data_per_point.keys()),
+        alignment_space,
+    )
+    _print_property_information(
+        TractographyPropertyName.DPS_KEYS.value,
+        list(sft.data_per_streamline.keys()),
+        alignment_space,
+    )
+    logger.info(f"Affine matrix:\n{sft.affine}")
+    _print_property_information(
+        VolumetricPropertyName.DIMENSIONS.value,
+        tuple(map(int, sft.dimensions)),
+        alignment_space,
+    )
+    _print_property_information(
+        VolumetricPropertyName.DATA_TYPE.value,
+        sft.streamlines.get_data().dtype,
+        alignment_space,
+    )
+    _print_property_information(
+        TractographyPropertyName.ORIGIN.value, sft.origin, alignment_space
+    )
+    _print_property_information(
+        TractographyPropertyName.SPACE.value, sft.space, alignment_space
+    )
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_ORDER.value,
+        sft.voxel_order,
+        alignment_space,
+    )
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_SIZE.value,
+        tuple(map(float, sft.voxel_sizes)),
+        alignment_space,
+    )
+
+
+def _print_pam_information(pam, version, alignment_space, tab):
+    """Print PAM5 (PeaksAndMetrics) information.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Loaded PAM5 object.
+    version : str
+        PAM5 file format version.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    _print_property_information(PamPropertyName.VERSION.value, version, alignment_space)
+    _print_property_information(
+        PamPropertyName.DIMENSIONS.value,
+        tuple(map(int, pam.peak_dirs.shape[:3])),
+        alignment_space,
+    )
+    if hasattr(pam, "affine") and pam.affine is not None:
+        vox_sz = np.sqrt(np.sum(pam.affine[:3, :3] ** 2, axis=0))
+        _print_property_information(
+            PamPropertyName.VOXEL_SIZE.value,
+            tuple(map(float, vox_sz)),
+            alignment_space,
+        )
+        _print_property_information(
+            PamPropertyName.VOXEL_ORDER.value,
+            "".join(nib.aff2axcodes(pam.affine)),
+            alignment_space,
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.VOXEL_SIZE.value, "Not available", alignment_space
+        )
+        _print_property_information(
+            PamPropertyName.VOXEL_ORDER.value, "Not available", alignment_space
+        )
+    _print_property_information(
+        PamPropertyName.NUM_PEAKS.value,
+        int(pam.peak_dirs.shape[3]),
+        alignment_space,
+    )
+
+    nonzero_peaks = pam.peak_values > 0
+    voxel_has_peak = np.any(nonzero_peaks, axis=-1)
+    n_voxels = int(np.prod(pam.peak_values.shape[:-1]))
+    n_nonempty = int(voxel_has_peak.sum())
+    coverage = n_nonempty / n_voxels if n_voxels else 0.0
+    _print_property_information(
+        PamPropertyName.PEAK_COVERAGE.value,
+        f"{coverage:.4f} ({n_nonempty}/{n_voxels})",
+        alignment_space,
+    )
+    if n_nonempty:
+        mean_peaks = float(nonzero_peaks.sum() / n_nonempty)
+    else:
+        mean_peaks = 0.0
+    _print_property_information(
+        PamPropertyName.MEAN_PEAKS.value,
+        f"{mean_peaks:.3f}",
+        alignment_space,
+    )
+
+    _print_property_information(
+        PamPropertyName.PEAK_DIRS_SHAPE.value,
+        pam.peak_dirs.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.PEAK_VALUES_SHAPE.value,
+        pam.peak_values.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.PEAK_INDICES_SHAPE.value,
+        pam.peak_indices.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.SPHERE_VERTICES.value,
+        int(pam.sphere.vertices.shape[0]),
+        alignment_space,
+    )
+
+    logger.info("Peak values stats:")
+    _print_stats_information(pam.peak_values, alignment_space, tab)
+
+    if hasattr(pam, "shm_coeff") and pam.shm_coeff is not None:
+        _print_property_information(
+            PamPropertyName.SHM_COEFF_SHAPE.value,
+            pam.shm_coeff.shape,
+            alignment_space,
+        )
+        try:
+            sh_order = order_from_ncoef(pam.shm_coeff.shape[-1])
+            _print_property_information(
+                PamPropertyName.SH_ORDER.value, sh_order, alignment_space
+            )
+        except ValueError:
+            logger.warning(
+                f"Could not derive SH order from shm_coeff with "
+                f"{pam.shm_coeff.shape[-1]} coefficients."
+            )
+            _print_property_information(
+                PamPropertyName.SH_ORDER.value, "Not available", alignment_space
+            )
+    else:
+        _print_property_information(
+            PamPropertyName.SHM_COEFF_SHAPE.value, "Not available", alignment_space
+        )
+        _print_property_information(
+            PamPropertyName.SH_ORDER.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "B") and pam.B is not None:
+        _print_property_information(
+            PamPropertyName.B_SHAPE.value, pam.B.shape, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.B_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "gfa") and pam.gfa is not None:
+        _print_property_information(
+            PamPropertyName.GFA_SHAPE.value, pam.gfa.shape, alignment_space
+        )
+        logger.info("GFA stats:")
+        _print_stats_information(pam.gfa, alignment_space, tab)
+    else:
+        _print_property_information(
+            PamPropertyName.GFA_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "qa") and pam.qa is not None:
+        _print_property_information(
+            PamPropertyName.QA_SHAPE.value, pam.qa.shape, alignment_space
+        )
+        logger.info("QA stats:")
+        _print_stats_information(pam.qa, alignment_space, tab)
+    else:
+        _print_property_information(
+            PamPropertyName.QA_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "odf") and pam.odf is not None:
+        _print_property_information(
+            PamPropertyName.ODF_SHAPE.value, pam.odf.shape, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.ODF_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "total_weight") and pam.total_weight is not None:
+        _print_property_information(
+            PamPropertyName.TOTAL_WEIGHT.value, pam.total_weight, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.TOTAL_WEIGHT.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "ang_thr") and pam.ang_thr is not None:
+        _print_property_information(
+            PamPropertyName.ANG_THR.value, pam.ang_thr, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.ANG_THR.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "affine") and pam.affine is not None:
+        logger.info(f"{PamPropertyName.AFFINE.value}:\n{pam.affine}")
+    else:
+        _print_property_information(
+            PamPropertyName.AFFINE.value, "Not available", alignment_space
+        )
+
+
+def format_data_names_table(data):
+    """Format dataset names and fetcher summaries as an ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Available dataset names mapped to fetcher functions.
+
+    Returns
+    -------
+    str
+        Dataset names and fetcher summaries formatted as an ASCII table.
+    """
+
+    def _doc_summary(fetcher_function):
+        """Extract a short description from a fetcher docstring.
+
+        Parameters
+        ----------
+        fetcher_function : callable
+            Dataset fetcher function.
+
+        Returns
+        -------
+        str
+            The first non-empty line from ``fetcher_function.__doc__``.
+            Returns ``"-"`` when no description is available.
+        """
+
+        doc = getattr(fetcher_function, "__doc__", None)
+        if not doc:
+            return "-"
+
+        for line in doc.splitlines():
+            stripped_line = line.strip()
+            if stripped_line:
+                return stripped_line.replace("|", "/")
+
+        return "-"
+
+    descriptions_by_name = {
+        dataset_name: _doc_summary(fetcher_function)
+        for dataset_name, fetcher_function in data.items()
+    }
+
+    return format_key_value_table(
+        descriptions_by_name,
+        key_header="Dataset",
+        value_header="Description",
+    )
 
 
 class IoInfoFlow(Workflow):
@@ -49,23 +627,24 @@ class IoInfoFlow(Workflow):
         bshell_thr=100,
         reference=None,
     ):
-        """Provides useful information about different files used in
+        r"""Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
         program identifies the type of file by its extension.
 
         Parameters
         ----------
-        input_files : variable string
-            Any number of NIfTI, bvals, bvecs or tractography data files.
+        input_files : variable string or Path
+            Any number of NIfTI, bvals, bvecs, tractography or PAM5
+            (``*.pam5``) data files.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that
-            :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+            :math:`norm(\text{bvec}) = 1 \pm \text{bvecs_tol}` b-vectors are
             unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
-        reference : string, optional
+        reference : string or Path, optional
             Reference anatomy for ``*.tck``, ``*.vtk``/``*.vtp``, ``*.fib``, and
             ``*.dpy`` tractography files.
 
@@ -74,78 +653,94 @@ class IoInfoFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
+        vol_property_length = (
+            len(max([item.value for item in VolumetricPropertyName], key=len)) + 2
+        )
+        stats_property_length = (
+            len(max([item.value for item in StatsPropertyName], key=len)) + 2
+        )
+        pctl_property_length = (
+            len(max([item.value for item in PercentilePropertyName], key=len)) + 2
+        )
+        tab = "\t".expandtabs(4)
+
         for input_path in io_it:
-            mult_ = len(input_path)
-            logging.info(f"-----------{mult_ * '-'}")
-            logging.info(f"Looking at {input_path}")
-            logging.info(f"-----------{mult_ * '-'}")
+            input_path = Path(input_path)
+            mult_ = len(str(input_path))
+            logger.info(f"-----------{mult_ * '-'}")
+            logger.info(f"Looking at {input_path}")
+            logger.info(f"-----------{mult_ * '-'}")
 
-            ipath_lower = input_path.lower()
-            extension = os.path.splitext(ipath_lower)[1]
+            _, extension = split_filename_extension(input_path)
+            extension = extension.lower()
 
-            if ipath_lower.endswith(".nii") or ipath_lower.endswith(".nii.gz"):
-                data, affine, img, vox_sz, affcodes = load_nifti(
-                    input_path, return_img=True, return_voxsize=True, return_coords=True
+            if extension in [".nii", ".nii.gz"]:
+                _, _, img = load_nifti(input_path, return_img=True, as_ndarray=False)
+                apply_tab_offset = bool(
+                    max(
+                        range(3),
+                        key=lambda i: [
+                            vol_property_length,
+                            stats_property_length,
+                            pctl_property_length,
+                        ][i],
+                    )
                 )
-                logging.info(f"Data size {data.shape}")
-                logging.info(f"Data type {data.dtype}")
+                _print_volumetric_information(
+                    img,
+                    max(
+                        vol_property_length, stats_property_length, pctl_property_length
+                    )
+                    + apply_tab_offset * len(tab),
+                    tab,
+                )
 
-                if data.ndim == 3:
-                    logging.info(
-                        f"Data min {data.min()} max {data.max()} avg {data.mean()}"
-                    )
-                    logging.info(
-                        f"2nd percentile {np.percentile(data, 2)} "
-                        f"98th percentile {np.percentile(data, 98)}"
-                    )
-                if data.ndim == 4:
-                    logging.info(
-                        f"Data min {data[..., 0].min()} "
-                        f"max {data[..., 0].max()} "
-                        f"avg {data[..., 0].mean()} of vol 0"
-                    )
-                    msg = (
-                        f"2nd percentile {np.percentile(data[..., 0], 2)} "
-                        f"98th percentile {np.percentile(data[..., 0], 98)} "
-                        f"of vol 0"
-                    )
-                    logging.info(msg)
-                logging.info(f"Native coordinate system {''.join(affcodes)}")
-                logging.info(f"Affine Native to RAS matrix \n{affine}")
-                logging.info(f"Voxel size {np.array(vox_sz)}")
-                if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
-                    msg = "Voxel size is not isotropic. Please reslice.\n"
-                    logging.warning(msg, stacklevel=2)
+            if "bval" in input_path.name.lower():
+                bval_property_length = (
+                    len(max([item.value for item in BvalPropertyName], key=len)) + 2
+                )
 
-            if os.path.basename(input_path).lower().find("bval") > -1:
                 bvals = np.loadtxt(input_path)
-                logging.info(f"b-values \n{bvals}")
-                logging.info(f"Total number of b-values {len(bvals)}")
-                shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
-                logging.info(f"Number of gradient shells {shells}")
-                logging.info(
-                    f"Number of b0s {np.sum(bvals <= b0_threshold)} "
-                    f"(b0_thr {b0_threshold})\n"
+                _print_bval_data_information(
+                    bvals, b0_threshold, bshell_thr, bval_property_length
                 )
 
-            if os.path.basename(input_path).lower().find("bvec") > -1:
+            if "bvec" in input_path.name.lower():
+                bvec_property_length = (
+                    len(max([item.value for item in BvecPropertyName], key=len)) + 2
+                )
+
                 bvecs = np.loadtxt(input_path)
-                logging.info(f"Bvectors shape on disk is {bvecs.shape}")
-                rows, cols = bvecs.shape
-                if rows < cols:
-                    bvecs = bvecs.T
-                logging.info(f"Bvectors are \n{bvecs}")
-                norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
-                res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
-                ncl1 = np.sum(norms < 1 - bvecs_tol)
-                logging.info(f"Total number of unit bvectors {len(res[0])}")
-                logging.info(f"Total number of non-unit bvectors {ncl1}\n")
+                _print_bvec_data_information(bvecs, bvecs_tol, bvec_property_length)
 
             if extension in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
-                sft = None
+                tractogr_property_length = (
+                    len(max([item.value for item in TractographyPropertyName], key=len))
+                    + 2
+                )
+                apply_tab_offset = not bool(
+                    max(
+                        range(3),
+                        key=lambda i: [
+                            stats_property_length,
+                            vol_property_length,
+                            tractogr_property_length,
+                        ][i],
+                    )
+                )
                 if extension in [".trk", ".trx"]:
                     sft = load_tractogram(input_path, "same", bbox_valid_check=False)
                 else:
+                    if not reference or not Path(reference).exists():
+                        msg = (
+                            "No reference provided. It is needed for tck, fib, dpy or "
+                            "vtk files to load properly. Please provide a reference, "
+                            "Nifti or Trk file using the option "
+                            "--reference my_files.nii.gz ."
+                        )
+                        logger.error(msg, stacklevel=2)
+                        sys.exit(1)
+
                     sft = load_tractogram(input_path, reference, bbox_valid_check=False)
 
                 lengths_mm = list(length(sft.streamlines))
@@ -158,25 +753,30 @@ class IoInfoFlow(Workflow):
                     steps += [np.sqrt(np.sum(np.diff(streamline, axis=0) ** 2, axis=1))]
                 steps = np.hstack(steps)
 
-                logging.info(f"Number of streamlines: {len(sft)}")
-                logging.info(f"min_length_mm: {float(np.min(lengths_mm))}")
-                logging.info(f"mean_length_mm: {float(np.mean(lengths_mm))}")
-                logging.info(f"max_length_mm: {float(np.max(lengths_mm))}")
-                logging.info(f"std_length_mm: {float(np.std(lengths_mm))}")
-                logging.info(f"min_length_nb_points: {float(np.min(lengths))}")
-                logging.info("mean_length_nb_points: " f"{float(np.mean(lengths))}")
-                logging.info(f"max_length_nb_points: {float(np.max(lengths))}")
-                logging.info(f"std_length_nb_points: {float(np.std(lengths))}")
-                logging.info(f"min_step_size: {float(np.min(steps))}")
-                logging.info(f"mean_step_size: {float(np.mean(steps))}")
-                logging.info(f"max_step_size: {float(np.max(steps))}")
-                logging.info(f"std_step_size: {float(np.std(steps))}")
-                logging.info(
-                    "data_per_point_keys: " f"{list(sft.data_per_point.keys())}"
+                _print_tractography_information(
+                    sft,
+                    lengths_mm,
+                    lengths,
+                    steps,
+                    max(
+                        vol_property_length,
+                        stats_property_length,
+                        tractogr_property_length,
+                    )
+                    + apply_tab_offset * len(tab),
+                    tab,
                 )
-                logging.info(
-                    "data_per_streamline_keys: "
-                    f"{list(sft.data_per_streamline.keys())}"
+
+            if extension == ".pam5":
+                pam_property_length = (
+                    len(max([item.value for item in PamPropertyName], key=len)) + 2
+                )
+                pam = load_pam(input_path)
+                _print_pam_information(
+                    pam,
+                    "0.0.1",
+                    max(pam_property_length, stats_property_length) + len(tab),
+                    tab,
                 )
 
         np.set_printoptions()
@@ -245,12 +845,16 @@ class FetchFlow(Workflow):
     ):
         """Download files to folder and check their md5 checksums.
 
-        To see all available datasets, please type "list" in data_names.
+        - To see all available datasets, please type "dipy_fetch list".
+        - To download all datasets, please type "dipy_fetch all".
 
         Parameters
         ----------
         data_names : variable string
-            Any number of Nifti1, bvals or bvecs files.
+            One or more dataset names to fetch. Use ``list`` to print all
+            available names or ``all`` to fetch everything. Available names
+            include (among others): ``atlas_schaefer_2018``,
+            ``bundle_atlas_hcp842``, ``stanford_hardi``, ``mni_template``.
         subjects : variable string, optional
             Identifiers of the subjects to download. Used only by the HBN & HCP dataset.
             For example with HBN dataset: --subject NDARAA948VFH NDAREK918EC2
@@ -270,34 +874,34 @@ class FetchFlow(Workflow):
         hcp_aws_secret_access_key : string, optional
             AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
             set to False.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         """
         if out_dir:
             dipy_home = os.environ.get("DIPY_HOME", None)
-            os.environ["DIPY_HOME"] = out_dir
+            os.environ["DIPY_HOME"] = str(out_dir)
 
         available_data = FetchFlow.get_fetcher_datanames()
 
         data_names = [name.lower() for name in data_names]
 
         if "all" in data_names:
-            logging.warning("Skipping HCP and HBN datasets.")
+            logger.warning("Skipping HCP and HBN datasets.")
             available_data.pop("hcp", None)
             available_data.pop("hbn", None)
             for name, fetcher_function in available_data.items():
                 if name in ["hcp", "hbn"]:
                     continue
-                logging.info("------------------------------------------")
-                logging.info(f"Fetching at {name}")
-                logging.info("------------------------------------------")
+                logger.info("------------------------------------------")
+                logger.info(f"Fetching at {name}")
+                logger.info("------------------------------------------")
                 fetcher_function(include_optional=include_optional)
 
         elif "list" in data_names:
-            logging.info(
+            logger.info(
                 "Please, select between the following data names: \n"
-                f"{', '.join(available_data.keys())}"
+                f"{format_data_names_table(available_data)}"
             )
 
         else:
@@ -307,31 +911,31 @@ class FetchFlow(Workflow):
                     skipped_names.append(data_name)
                     continue
 
-                logging.info("------------------------------------------")
-                logging.info(f"Fetching at {data_name}")
-                logging.info("------------------------------------------")
+                logger.info("------------------------------------------")
+                logger.info(f"Fetching at {data_name}")
+                logger.info("------------------------------------------")
                 if data_name == "hcp":
                     if not subjects:
-                        logging.error(
+                        logger.error(
                             "Please provide the subjects to download the HCP dataset."
                         )
                         continue
                     try:
                         available_data[data_name](
                             subjects=subjects,
-                            bucket=hcp_bucket,
+                            hcp_bucket=hcp_bucket,
                             profile_name=hcp_profile_name,
                             study=hcp_study,
                             aws_access_key_id=hcp_aws_access_key_id,
                             aws_secret_access_key=hcp_aws_secret_access_key,
                         )
                     except Exception as e:
-                        logging.error(
-                            f"Error while fetching HCP dataset: {str(e)}", exc_info=True
+                        logger.error(
+                            f"Error while fetching HCP dataset: {e}", exc_info=True
                         )
                 elif data_name == "hbn":
                     if not subjects:
-                        logging.error(
+                        logger.error(
                             "Please provide the subjects to download the HBN dataset."
                         )
                         continue
@@ -340,18 +944,18 @@ class FetchFlow(Workflow):
                             subjects=subjects, include_afq=include_afq
                         )
                     except Exception as e:
-                        logging.error(
-                            f"Error while fetching HBN dataset: {str(e)}", exc_info=True
+                        logger.error(
+                            f"Error while fetching HBN dataset: {e}", exc_info=True
                         )
                 else:
                     available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
-            print("\n")
-            logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
+            logger.info("\n")
+            logger.info(f"Fetched {nb_success} / {len(data_names)} Datasets ")
             if skipped_names:
-                logging.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
-                logging.warning(
+                logger.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
+                logger.warning(
                     "Please, select between the following data names: "
                     f"{', '.join(available_data.keys())}"
                 )
@@ -378,28 +982,28 @@ class SplitFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Any number of Nifti1 files
         vol_idx : int, optional
             Index of the 3D volume to extract.
         out_dir : string, optional
             Output directory.
-        out_split : string, optional
+        out_split : string or Path, optional
             Name of the resulting split volume
 
         """
         io_it = self.get_io_iterator()
         for fpath, osplit in io_it:
-            logging.info(f"Splitting {fpath}")
+            logger.info(f"Splitting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if vol_idx == 0:
-                logging.info("Splitting and extracting 1st b0")
+                logger.info("Splitting and extracting 1st b0")
 
             split_vol = data[..., vol_idx]
             save_nifti(osplit, split_vol, affine, hdr=image.header)
 
-            logging.info(f"Split volume saved as {osplit}")
+            logger.info(f"Split volume saved as {osplit}")
 
 
 class ExtractB0Flow(Workflow):
@@ -421,10 +1025,10 @@ class ExtractB0Flow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         b0_threshold : float, optional
@@ -440,7 +1044,7 @@ class ExtractB0Flow(Workflow):
 
             When used in conjunction with the batch parameter set to True, the
             strategy is applied individually on each continuous set found.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_b0 : string, optional
             Name of the resulting b0 volume.
@@ -448,7 +1052,7 @@ class ExtractB0Flow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, ob0 in io_it:
-            logging.info("Extracting b0 from {0}".format(dwi))
+            logger.info(f"Extracting b0 from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, None)
@@ -467,6 +1071,29 @@ class ExtractB0Flow(Workflow):
             norms = np.linalg.norm(bvecs, axis=1, keepdims=True)
             bvecs = bvecs / norms
             gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+            if not gtab.b0s_mask.sum():
+                logger.warning(
+                    "No b0 volumes found, omitting b0 extraction and "
+                    "returning original DWI"
+                )
+                logger.info(f"b0 saved as {ob0}")
+                source_file = Path(dwi)
+                link_file = Path(ob0)
+                try:
+                    link_file.symlink_to(source_file.resolve())
+                except OSError:
+                    # On Windows creating symlinks requires extra privileges; use a
+                    # hard link first to avoid duplicating potentially large data.
+                    try:
+                        os.link(source_file, link_file)
+                        logger.info(f"Hard link created for {ob0}")
+                    except OSError:
+                        shutil.copy(source_file, link_file)
+                        logger.warning(
+                            f"Link creation for {ob0} failed, copied instead."
+                        )
+                continue
+
             b0s_result = extract_b0(
                 data,
                 gtab.b0s_mask,
@@ -476,7 +1103,7 @@ class ExtractB0Flow(Workflow):
 
             if b0s_result.ndim == 3:
                 save_nifti(ob0, b0s_result, affine, hdr=image.header)
-                logging.info("b0 saved as {0}".format(ob0))
+                logger.info(f"b0 saved as {ob0}")
             elif b0s_result.ndim == 4:
                 for i in range(b0s_result.shape[-1]):
                     save_nifti(
@@ -485,11 +1112,9 @@ class ExtractB0Flow(Workflow):
                         affine,
                         hdr=image.header,
                     )
-                    logging.info(
-                        "b0 saved as {0}".format(ob0.replace(".nii", f"_{i}.nii"))
-                    )
+                    logger.info(f"b0 saved as {ob0.replace('.nii', f'_{i}.nii')}")
             else:
-                logging.error("No b0 volumes found")
+                logger.error("No b0 volumes found")
 
 
 class ExtractShellFlow(Workflow):
@@ -514,13 +1139,13 @@ class ExtractShellFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         bvals_to_extract : string, optional
@@ -539,7 +1164,7 @@ class ExtractShellFlow(Workflow):
         group_shells : bool, optional
             If True, extracted volumes are grouped into a single array. If False,
             returns a list of separate volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_shell : string, optional
             Name of the resulting shell volume.
@@ -547,7 +1172,7 @@ class ExtractShellFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         if bvals_to_extract is None:
-            logging.error(
+            logger.error(
                 "Please provide a list of b-values to extract."
                 " e.g: --bvals_to_extract 1000 2000 3000"
             )
@@ -556,7 +1181,7 @@ class ExtractShellFlow(Workflow):
         bvals_to_extract = handle_vol_idx(bvals_to_extract)
 
         for dwi, bval, bvec, oshell in io_it:
-            logging.info("Extracting shell from {0}".format(dwi))
+            logger.info(f"Extracting shell from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -584,17 +1209,10 @@ class ExtractShellFlow(Workflow):
             for i, shell in enumerate(shell_data):
                 shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
                 shell_value = "_".join(shell_value.tolist())
-                save_nifti(
-                    oshell.replace(".nii", f"_{shell_value}.nii"),
-                    shell,
-                    affine,
-                    hdr=image.header,
-                )
-                logging.info(
-                    "b0 saved as {0}".format(
-                        oshell.replace(".nii", f"_{shell_value}.nii")
-                    )
-                )
+                out_name, out_ext = split_filename_extension(oshell)
+                out_fname = Path(oshell).with_name(f"{out_name}_{shell_value}{out_ext}")
+                save_nifti(out_fname, shell, affine, hdr=image.header)
+                logger.info(f"b0 saved as {out_fname}")
 
 
 class ExtractVolumeFlow(Workflow):
@@ -609,7 +1227,7 @@ class ExtractVolumeFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Any number of Nifti1 files
         vol_idx : string, optional
             Indexes of the 3D volume to extract. Index start from 0. You can provide
@@ -620,7 +1238,7 @@ class ExtractVolumeFlow(Workflow):
         grouped : bool, optional
             If True, extracted volumes are grouped into a single array. If False,
             save a list of separate volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_vol : string, optional
             Name of the resulting volume.
@@ -630,19 +1248,20 @@ class ExtractVolumeFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, ovol in io_it:
-            logging.info("Extracting volume from {0}".format(fpath))
+            logger.info(f"Extracting volume from {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if grouped:
                 split_vol = data[..., vol_idx]
                 save_nifti(ovol, split_vol, affine, hdr=image.header)
-                logging.info("Volume saved as {0}".format(ovol))
+                logger.info(f"Volume saved as {ovol}")
             else:
                 for i in vol_idx:
-                    fname = ovol.replace(".nii", f"_{i}.nii")
+                    out_name, out_ext = split_filename_extension(ovol)
+                    fname = Path(ovol).with_name(f"{out_name}_{i}{out_ext}")
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
-                    logging.info("Volume saved as {0}".format(fname))
+                    logger.info(f"Volume saved as {fname}")
 
 
 class ConcatenateTractogramFlow(Workflow):
@@ -667,9 +1286,9 @@ class ConcatenateTractogramFlow(Workflow):
 
         Parameters
         ----------
-        tractogram_list : variable string
+        tractogram_files : variable string or Path
             The stateful tractogram filenames to concatenate
-        reference : string, optional
+        reference : string or Path, optional
             Reference anatomy for tck/vtk/fib/dpy file.
             support (.nii or .nii.gz).
         delete_dpv : bool, optional
@@ -685,7 +1304,7 @@ class ConcatenateTractogramFlow(Workflow):
             Preallocated TrxFile has already been generated and is the first
             element in trx_list (Note: delete_groups must be set to True as
             well)
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_extension : string, optional
             Extension of the resulting tractogram
@@ -698,16 +1317,17 @@ class ConcatenateTractogramFlow(Workflow):
         trx_list = []
         has_group = False
         for fpath, _, _ in io_it:
-            if fpath.lower().endswith(".trx") or fpath.lower().endswith(".trk"):
-                reference = "same"
+            _, extension = split_filename_extension(fpath)
+            ref = reference
+            if extension.lower() in [".trx", ".trk"]:
+                ref = "same"
 
-            if not reference:
+            if not ref:
                 raise ValueError(
-                    "No reference provided. It is needed for tck,"
-                    "fib, dpy or vtk files"
+                    "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
-            tractogram_obj = load_tractogram(fpath, reference, bbox_valid_check=False)
+            tractogram_obj = load_tractogram(fpath, ref, bbox_valid_check=False)
 
             if not isinstance(tractogram_obj, tmm.TrxFile):
                 tractogram_obj = tmm.TrxFile.from_sft(tractogram_obj)
@@ -730,7 +1350,7 @@ class ConcatenateTractogramFlow(Workflow):
                 f"Invalid extension. Valid extensions are: {valid_extensions}"
             )
 
-        out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
+        out_fpath = Path(out_dir) / f"{out_tractogram}.{out_extension}"
         save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
 
 
@@ -751,11 +1371,11 @@ class ConvertSHFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input files. This path may contain wildcards to
             process multiple inputs at once.
 
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Where the resulting file will be saved. (default '')
 
         out_file : string, optional
@@ -788,7 +1408,7 @@ class ConvertTensorsFlow(Workflow):
 
         Parameters
         ----------
-        tensor_files : variable string
+        tensor_files : variable string or Path
             Any number of tensor files
         from_format : string, optional
             Format of the input tensor files. Valid options are 'dipy',
@@ -796,7 +1416,7 @@ class ConvertTensorsFlow(Workflow):
         to_format : string, optional
             Format of the output tensor files. Valid options are 'dipy',
             'mrtrix', 'ants', 'fsl'.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tensor : string, optional
             Name of the resulting tensor file
@@ -804,7 +1424,7 @@ class ConvertTensorsFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for fpath, otensor in io_it:
-            logging.info(f"Converting {fpath}")
+            logger.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
             save_nifti(otensor, data, affine, hdr=image.header)
@@ -828,7 +1448,7 @@ class ConvertTractogramFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Any number of tractogram files
         reference : string, optional
             Reference anatomy for tck/vtk/fib/dpy file.
@@ -837,7 +1457,7 @@ class ConvertTractogramFlow(Workflow):
             Data type of the tractogram points, used for vtk files.
         offsets_dtype : string, optional
             Data type of the tractogram offsets, used for vtk files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tractogram : string, optional
             Name of the resulting tractogram
@@ -846,8 +1466,8 @@ class ConvertTractogramFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for fpath, otracks in io_it:
-            in_extension = fpath.lower().split(".")[-1]
-            out_extension = otracks.lower().split(".")[-1]
+            in_extension = Path(fpath).suffix.lower()
+            out_extension = Path(otracks).suffix.lower()
 
             if in_extension == out_extension:
                 warnings.warn(
@@ -856,19 +1476,18 @@ class ConvertTractogramFlow(Workflow):
                 )
                 continue
 
-            if not reference and in_extension in ["trx", "trk"]:
+            if not reference and in_extension in [".trx", ".trk"]:
                 reference = "same"
 
-            if not reference and in_extension not in ["trx", "trk"]:
+            if not reference and in_extension not in [".trx", ".trk"]:
                 raise ValueError(
-                    "No reference provided. It is needed for tck,"
-                    "fib, dpy or vtk files"
+                    "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
             sft = load_tractogram(fpath, reference, bbox_valid_check=False)
 
-            if out_extension != "trx":
-                if out_extension == "vtk":
+            if out_extension != ".trx":
+                if out_extension == ".vtk":
                     if sft.streamlines._data.dtype.name != pos_dtype:
                         sft.streamlines._data = sft.streamlines._data.astype(pos_dtype)
                     if offsets_dtype == "uint64" or offsets_dtype == "uint32":
@@ -911,22 +1530,22 @@ class NiftisToPamFlow(Workflow):
 
         Parameters
         ----------
-        peaks_dir_files : string
+        peaks_dir_files : string or Path
             Path to the input peaks directions volume. This path may contain
             wildcards to process multiple inputs at once.
-        peaks_values_files : string
+        peaks_values_files : string or Path
             Path to the input peaks values volume. This path may contain
             wildcards to process multiple inputs at once.
-        peaks_indices_files : string
+        peaks_indices_files : string or Path
             Path to the input peaks indices volume. This path may contain
             wildcards to process multiple inputs at once.
-        shm_files : string, optional
+        shm_files : string, optional or Path
             Path to the input spherical harmonics volume. This path may
             contain wildcards to process multiple inputs at once.
-        gfa_files : string, optional
+        gfa_files : string or Path, optional
             Path to the input generalized FA volume. This path may contain
             wildcards to process multiple inputs at once.
-        sphere_files : string, optional
+        sphere_files : string or Path, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used.
@@ -935,7 +1554,7 @@ class NiftisToPamFlow(Workflow):
             representation. This option can be superseded by
             sphere_files option. Possible options: ['symmetric362', 'symmetric642',
             'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory (default input file directory).
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -946,7 +1565,7 @@ class NiftisToPamFlow(Workflow):
         msg = f"pam5 files saved in {out_dir or 'current directory'}"
 
         for fpeak_dirs, fpeak_values, fpeak_indices, opam in io_it:
-            logging.info("Converting nifti files to pam5")
+            logger.info("Converting nifti files to pam5")
             peak_dirs, affine = load_nifti(fpeak_dirs)
             peak_values, _ = load_nifti(fpeak_values)
             peak_indices, _ = load_nifti(fpeak_indices)
@@ -965,7 +1584,7 @@ class NiftisToPamFlow(Workflow):
                 peak_indices=peak_indices,
                 pam_file=opam,
             )
-            logging.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", str(opam)))
 
 
 class TensorToPamFlow(Workflow):
@@ -986,13 +1605,13 @@ class TensorToPamFlow(Workflow):
 
         Parameters
         ----------
-        evals_files : string
+        evals_files : string or Path
             Path to the input eigen values volumes. This path may contain
             wildcards to process multiple inputs at once.
-        evecs_files : string
+        evecs_files : string or Path
             Path to the input eigen vectors volumes. This path may contain
             wildcards to process multiple inputs at once.
-        sphere_files : string, optional
+        sphere_files : string or Path, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used.
@@ -1001,7 +1620,7 @@ class TensorToPamFlow(Workflow):
             representation. This option can be superseded by sphere_files
             option. Possible options: ['symmetric362', 'symmetric642',
             'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory (default input file directory).
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1012,7 +1631,7 @@ class TensorToPamFlow(Workflow):
         msg = f"pam5 files saved in {out_dir or 'current directory'}"
 
         for fevals, fevecs, opam in io_it:
-            logging.info("Converting tensor files to pam5...")
+            logger.info("Converting tensor files to pam5...")
             evals, affine = load_nifti(fevals)
             evecs, _ = load_nifti(fevecs)
 
@@ -1023,7 +1642,7 @@ class TensorToPamFlow(Workflow):
                 sphere = get_sphere(name=default_sphere_name)
 
             tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
-            logging.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", str(opam)))
 
 
 class PamToNiftisFlow(Workflow):
@@ -1085,7 +1704,7 @@ class PamToNiftisFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info("Converting %s file to niftis...", ipam)
+            logger.info(f"Converting file {ipam} to niftis...")
             pam = load_pam(ipam)
             pam_to_niftis(
                 pam,
@@ -1098,7 +1717,7 @@ class PamToNiftisFlow(Workflow):
                 fname_b=ob,
                 fname_qa=oqa,
             )
-            logging.info(msg)
+            logger.info(msg)
 
 
 class MathFlow(Workflow):
@@ -1106,8 +1725,39 @@ class MathFlow(Workflow):
     def get_short_name(cls):
         return "math_flow"
 
+    def broadcast_arrays(self, vol_dict, operation):
+        variables = re.findall(r"\b\w+\b", operation)
+        variables = [var for var in variables if var in vol_dict]
+
+        shapes = [vol_dict[var].shape for var in variables]
+        max_dims = max(len(shape) for shape in shapes)
+
+        for var in variables:
+            shape = vol_dict[var].shape
+            if len(shape) < max_dims:
+                new_shape = shape + (1,) * (max_dims - len(shape))
+                vol_dict[var] = vol_dict[var].reshape(new_shape)
+
+        updated_shapes = [vol_dict[var].shape for var in variables]
+        try:
+            broadcast_shape = np.broadcast_shapes(*updated_shapes)
+        except ValueError as e:
+            raise ValueError(f"Shape mismatch after adding dimensions: {e}") from e
+
+        for var in variables:
+            if vol_dict[var].shape != broadcast_shape:
+                vol_dict[var] = np.broadcast_to(vol_dict[var], broadcast_shape)
+
+        return vol_dict
+
     def run(
-        self, operation, input_files, dtype=None, out_dir="", out_file="math_out.nii.gz"
+        self,
+        operation,
+        input_files,
+        dtype=None,
+        disable_check=False,
+        out_dir="",
+        out_file="math_out.nii.gz",
     ):
         """Perform mathematical operations on volume input files.
 
@@ -1149,10 +1799,13 @@ class MathFlow(Workflow):
                   parts.
                 - ``contains(np.str, np.str) -> bool``: returns True for every string
                   in op1 that contains op2.
-        input_files : variable string
+        input_files : variable string or Path
             Any number of Nifti1 files
         dtype : string, optional
             Data type of the resulting file.
+        disable_check : bool, optional
+            If True, the workflow will not check if all input files have the same
+            shape and affine matrix.
         out_dir : string, optional
             Output directory
         out_file : string, optional
@@ -1164,16 +1817,17 @@ class MathFlow(Workflow):
         info_msg = ""
         have_errors = False
         for i, fname in enumerate(input_files, start=1):
-            if not os.path.isfile(fname):
-                logging.error(f"Input file {fname} does not exist.")
+            if not Path(fname).is_file():
+                logger.error(f"Input file {fname} does not exist.")
                 raise SystemExit()
 
-            if not (fname.endswith(".nii.gz") or fname.endswith(".nii")):
+            _, ext = split_filename_extension(fname)
+            if ext not in [".nii.gz", ".nii"]:
                 msg = (
                     f"Wrong volume type: {fname}. Only Nifti files are supported"
                     " (*.nii or *.nii.gz)."
                 )
-                logging.error(msg)
+                logger.error(msg)
                 raise SystemExit()
 
             data, affine = load_nifti(fname)
@@ -1192,19 +1846,22 @@ class MathFlow(Workflow):
             )
 
         if have_errors:
-            logging.warning(info_msg)
-            msg = "All input files must have the same shape and affine matrix."
-            logging.error(msg)
-            raise SystemExit()
+            logger.warning(info_msg)
+            if not disable_check:
+                msg = "All input files must have the same shape and affine matrix."
+                logger.error(msg)
+                raise SystemExit()
 
         try:
+            if disable_check:
+                vol_dict = self.broadcast_arrays(vol_dict, operation)
             res = ne.evaluate(operation, local_dict=vol_dict)
         except KeyError as e:
             msg = (
                 f"Impossible key {e} in the operation. You have {len(input_files)}"
                 f" volumes available with the following keys: {list(vol_dict.keys())}"
             )
-            logging.error(msg)
+            logger.error(msg)
             raise SystemExit() from e
 
         if dtype:
@@ -1215,9 +1872,11 @@ class MathFlow(Workflow):
                     f"Impossible to cast to {dtype}. Check possible numpy type here:"
                     "https://numpy.org/doc/stable/reference/arrays.interface.html"
                 )
-                logging.error(msg)
+                logger.error(msg)
                 raise SystemExit() from e
 
-        out_fname = os.path.join(out_dir, out_file)
-        logging.info(f"Saving result to {out_fname}")
+        if res.dtype == bool:
+            res = res.astype(np.uint8)
+        out_fname = Path(out_dir) / out_file
+        logger.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)

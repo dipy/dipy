@@ -105,7 +105,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         cnp.npy_intp prz = patch_radius if n2 > 1 else 0
         cnp.npy_intp norm = (2 * prx + 1) * (2 * pry + 1) * (2 * prz + 1)
         double sum_reg, temp1
-        double[:, :, :] I = np.zeros((n0, n1, n2))
+        double[:, :, :] eig_img = np.zeros((n0, n1, n2))
 
     # check dimensions of data
     if (dsm != 1) and (dsm < 2 * patch_radius + 1):
@@ -124,21 +124,21 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     W = Vt.T
 
     if images_as_samples:
-        W = W.astype('double')
+        W = W.astype("double")
         # #vox(features) >> # img(samples), last eigval zero (X is centered)
         idx = n3 - 2  # use second-to-last eigvec
         V = W[:, idx].reshape(n0, n1, n2)
 
         # ref [1]_ method is ambiguous on how to use image-shaped eigvec
         # since eigvec is normalized, used eigval=variance for scale
-        I = V * S[idx]
+        eig_img = V * S[idx]
     else:
         # Project into the data space
         V = X.dot(W)
 
         # Grab the column corresponding to the smallest eigen-vector/-value:
         # #vox(samples) >> #img(features), last eigenvector is meaningful
-        I = V[:, -1].reshape(n0, n1, n2)
+        eig_img = V[:, -1].reshape(n0, n1, n2)
 
     del V, W, X, U, S, Vt
 
@@ -157,7 +157,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                     for i0 in range(-prx, prx + 1):
                         for j0 in range(-pry, pry + 1):
                             for k0 in range(-prz, prz + 1):
-                                sum_reg += I[i + i0, j + j0, k + k0] / norm
+                                sum_reg += eig_img[i + i0, j + j0, k + k0] / norm
                                 for l0 in range(n3):
                                     temp1 += (data0temp[i + i0, j + j0, k + k0, l0])\
                                              / (norm * n3)
@@ -166,7 +166,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                         for j0 in range(-pry, pry + 1):
                             for k0 in range(-prz, prz + 1):
                                 sigma_sq[i + i0, j + j0, k + k0] += (
-                                    I[i + i0, j + j0, k + k0] - sum_reg) ** 2
+                                    eig_img[i + i0, j + j0, k + k0] - sum_reg) ** 2
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j + j0, k + k0] += 1
 
@@ -180,7 +180,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         # xi is practically equal to 1 above 37.4, and we overflow, raising
         # warnings and creating ot-a-numbers.
         # Instead, we will replace these values with 1 below
-        with np.errstate(over='ignore', invalid='ignore'):
+        with np.errstate(over="ignore", invalid="ignore"):
             xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
                   ((2 + snr_sq) * sps.iv(0, snr_sq / 4) +
                   snr_sq * sps.iv(1, snr_sq / 4)) ** 2).astype(float)

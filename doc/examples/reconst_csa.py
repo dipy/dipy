@@ -17,7 +17,7 @@ from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.segment.mask import median_otsu
+from dipy.segment.mask import bounding_box, crop, median_otsu
 from dipy.viz import actor, window
 
 ###############################################################################
@@ -42,8 +42,18 @@ print(f"data.shape {data.shape}")
 # Remove most of the background using DIPY's mask module.
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
 )
+
+"""
+We crop the data and mask to the smallest possible region that contains all
+the non-zero voxels. The ``crop`` function requires the volume to crop and
+the minimum and maximum indices for each dimension.
+"""
+
+mins, maxs = bounding_box(mask)
+maskdata = crop(maskdata, mins, maxs)
+mask = crop(mask, mins, maxs)
 
 ###############################################################################
 # We instantiate our CSA model with spherical harmonic order ($l$) of 4
@@ -86,11 +96,6 @@ print(f"GFA.shape {GFA.shape}")
 
 data_small = maskdata[13:43, 44:74, 28:29]
 
-# Enables/disables interactive visualization
-interactive = False
-
-scene = window.Scene()
-
 csaodfs = csamodel.fit(data_small).odf(default_sphere)
 
 ###############################################################################
@@ -98,16 +103,13 @@ csaodfs = csamodel.fit(data_small).odf(default_sphere)
 # using ``np.clip``
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
-csa_odfs_actor = actor.odf_slicer(
-    csaodfs, sphere=default_sphere, colormap="plasma", scale=0.4
-)
-csa_odfs_actor.display(z=0)
+csa_odfs_actor = actor.odf_slicer(sh_func=csaodfs, sphere=default_sphere, scale=0.4)
 
-scene.add(csa_odfs_actor)
-print("Saving illustration as csa_odfs.png")
-window.record(scene=scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="csa_odfs", size=(600, 600))
+screen = show_manager.screens[0]
+screen.scene.add(csa_odfs_actor)
+window.set_camera_from_axis(screen, (0, 0, 1))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
