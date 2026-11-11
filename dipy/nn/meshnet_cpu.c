@@ -30,6 +30,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#if defined(_MSC_VER) && defined(MESHNET_MSVC_AVX2) && \
+    (defined(_M_X64) || defined(_M_IX86))
+#include <intrin.h>
+#define MN_MSVC_DISPATCH 1
+#else
+#define MN_MSVC_DISPATCH 0
+#endif
+
 #define MN_CS MESHNET_STRIDE
 #define MN_BLOCK 4
 #define MN_EPS 1e-5
@@ -48,7 +56,10 @@
 /* GCC and Clang can build a second copy of the hot loops for AVX2 + FMA and
    pick it at run time, so that wheels built for baseline x86-64 still use the
    wider registers: 4 blocks of 16 channels fit in 8 ymm registers, but spill
-   out of the 16 xmm ones. MSVC has no per-function target attribute. */
+   out of the 16 xmm ones. MSVC has no per-function target attribute, so meson
+   compiles this file a second time with /arch:AVX2 and MESHNET_AVX2_UNIT,
+   which keeps only the AVX2 kernels, and defines MESHNET_MSVC_AVX2 for the
+   main build. */
 #if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__) && \
     !defined(_MSC_VER)
 #define MN_X86_DISPATCH 1
@@ -269,7 +280,7 @@ typedef struct {
  * a literal input channel count lets the compiler fully unroll the inner
  * loop; skipping MindGrab's zero padding lane saves ~15%.
  */
-#define MN_DEFINE_KERNELS(SUFFIX, TARGET)                                      \
+#define MN_DEFINE_KERNELS(SUFFIX, TARGET, STORAGE)                             \
     TARGET static void mn_conv_first_##SUFFIX(const mn_conv_job *job, int z)   \
     {                                                                          \
         mn_conv_slice(job->source, job->destination, job->weights,            \
@@ -296,13 +307,33 @@ typedef struct {
     {                                                                          \
         mn_gelu_slice(buffer, mean, invstd, shape, z);                         \
     }                                                                          \
-    static const mn_kernels mn_kernels_##SUFFIX = {                            \
+    STORAGE const mn_kernels mn_kernels_##SUFFIX = {                           \
         #SUFFIX, mn_conv_first_##SUFFIX, mn_conv_hidden_##SUFFIX,              \
         mn_moments_##SUFFIX, mn_gelu_##SUFFIX};
 
-MN_DEFINE_KERNELS(baseline, )
+#ifdef MESHNET_AVX2_UNIT
+MN_DEFINE_KERNELS(avx2, , )
+#else
+MN_DEFINE_KERNELS(baseline, , static)
 #if MN_X86_DISPATCH
-MN_DEFINE_KERNELS(avx2, MN_TARGET_AVX2)
+MN_DEFINE_KERNELS(avx2, MN_TARGET_AVX2, static)
+#elif MN_MSVC_DISPATCH
+extern const mn_kernels mn_kernels_avx2;
+
+/* AVX also needs the OS to save the ymm registers, which OSXSAVE and XCR0
+   tell. */
+static int mn_cpu_has_avx2_fma(void)
+{
+    const int fma = 1 << 12, osxsave = 1 << 27, avx = 1 << 28;
+    int info[4];
+    __cpuid(info, 0);
+    if (info[0] < 7) return 0;
+    __cpuid(info, 1);
+    if ((info[2] & (fma | osxsave | avx)) != (fma | osxsave | avx)) return 0;
+    if ((_xgetbv(0) & 6) != 6) return 0;
+    __cpuidex(info, 7, 0);
+    return (info[1] & (1 << 5)) != 0;
+}
 #endif
 
 static int mn_simd_allowed = 1;
@@ -314,6 +345,8 @@ static const mn_kernels *mn_select_kernels(void)
     __builtin_cpu_init();
     if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
         return &mn_kernels_avx2;
+#elif MN_MSVC_DISPATCH
+    if (mn_cpu_has_avx2_fma()) return &mn_kernels_avx2;
 #endif
     return &mn_kernels_baseline;
 }
@@ -460,3 +493,4 @@ int meshnet_forward(const float *volume, float *logits, int nz, int ny, int nx,
     free(partial);
     return 0;
 }
+#endif
