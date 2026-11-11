@@ -37,7 +37,7 @@ int meshnet_forward(const float *volume, float *logits, int nz, int ny, int nx,
                     int n_threads);
 
 /* Name of the instruction set meshnet_forward runs with: "avx2" on x86 CPUs
-   with AVX2 and FMA, "baseline" otherwise. */
+   with AVX2 and FMA when built with GCC or Clang, "baseline" otherwise. */
 const char *meshnet_kernels(void);
 
 /* Allow (non-zero) or forbid (zero) the AVX2 kernels; they are allowed by
