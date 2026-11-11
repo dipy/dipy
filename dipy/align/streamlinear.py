@@ -390,7 +390,10 @@ class StreamlineLinearRegistration:
         halfway : bool, optional
             If True, use halfway streamline linear registration. In this case optimize()
             method returns a JointStreamlineRegistrationMap and does not support
-            centering or initial transformation matrix.
+            centering or initial transformation matrix. Halfway registration
+            uses JointBundleMinDistanceMetric, so ``metric`` must be None or an
+            instance of it. Passing a JointBundleMinDistanceMetric as
+            ``metric`` also enables halfway registration.
 
         References
         ----------
@@ -400,8 +403,16 @@ class StreamlineLinearRegistration:
         self.x0 = self._set_x0(x0)
         self.metric = metric
 
-        self.halfway = halfway
-        if halfway and metric is None:
+        # Halfway registration and JointBundleMinDistanceMetric always go
+        # together: passing the metric alone also enables halfway
+        joint_metric = isinstance(metric, JointBundleMinDistanceMetric)
+        if halfway and metric is not None and not joint_metric:
+            raise ValueError(
+                "Halfway registration requires JointBundleMinDistanceMetric "
+                f"(or metric=None), got {type(metric).__name__}."
+            )
+        self.halfway = halfway or joint_metric
+        if self.halfway and metric is None:
             self.metric = JointBundleMinDistanceMetric()
 
         if self.metric is None:

@@ -16,8 +16,11 @@ from dipy.align.streamlinear import (
     BundleMinDistanceMatrixMetric,
     BundleMinDistanceMetric,
     BundleSumDistanceMatrixMetric,
+    JointBundleMinDistanceMetric,
+    JointStreamlineRegistrationMap,
     StreamlineDistanceMetric,
     StreamlineLinearRegistration,
+    StreamlineRegistrationMap,
     compose_matrix44,
     decompose_matrix44,
     get_unique_pairs,
@@ -501,6 +504,34 @@ def test_wrong_num_threads(rng):
 
     slr = StreamlineLinearRegistration(num_threads=0)
     assert_raises(ValueError, slr.optimize, A, B)
+
+
+def test_halfway_metric():
+    static = simulated_bundle(no_streamlines=10, waves=True)
+    moving = transform_streamlines(static, compose_matrix44([0, 5, 0, 0, 0, 20]))
+
+    # halfway=True selects the joint metric and returns a joint map
+    slr = StreamlineLinearRegistration(halfway=True)
+    assert_(isinstance(slr.metric, JointBundleMinDistanceMetric))
+    assert_(isinstance(slr.optimize(static, moving), JointStreamlineRegistrationMap))
+
+    # Passing the joint metric alone also enables halfway registration
+    slr = StreamlineLinearRegistration(metric=JointBundleMinDistanceMetric())
+    assert_(slr.halfway)
+    assert_(isinstance(slr.optimize(static, moving), JointStreamlineRegistrationMap))
+
+    # Standard registration is unchanged
+    slr = StreamlineLinearRegistration()
+    assert_(not slr.halfway)
+    assert_(isinstance(slr.optimize(static, moving), StreamlineRegistrationMap))
+
+    # Halfway registration with any other metric is rejected
+    assert_raises(
+        ValueError,
+        StreamlineLinearRegistration,
+        metric=BundleMinDistanceMetric(),
+        halfway=True,
+    )
 
 
 def test_get_unique_pairs():
