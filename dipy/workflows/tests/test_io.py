@@ -45,6 +45,7 @@ from dipy.workflows.io import (
 )
 
 ne, have_ne, _ = optional_package("numexpr")
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 fname_log = mkstemp()[1]
 
@@ -422,7 +423,6 @@ def _gold_standard_tractograms():
     ]
 
 
-#: Streamlines in each of the gold standard tractograms.
 _STREAMLINES_EACH = 13
 
 
@@ -462,9 +462,6 @@ def test_concatenate_flow_single_input(tmp_path):
 
 @pytest.mark.parametrize("n_inputs", [1, 2])
 def test_concatenate_flow_writes_one_file_per_run(tmp_path, n_inputs):
-    # The iterator holds one output per input, and all of them stand for the
-    # single file this flow writes. Replacing them must keep that length:
-    # shortening the list raises from ``update_flat_outputs``.
     out_dir = tmp_path / f"n{n_inputs}"
     concatenate_flow = ConcatenateTractogramFlow()
     concatenate_flow.run(_gold_standard_tractograms()[:n_inputs], out_dir=out_dir)
@@ -477,7 +474,20 @@ def test_concatenate_flow_writes_one_file_per_run(tmp_path, n_inputs):
     )
 
 
-@pytest.mark.parametrize("extension", ["trk", "trx", "tck", "fib", "dpy", "vtk"])
+needs_polyxios = pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+
+
+@pytest.mark.parametrize(
+    "extension",
+    [
+        "trk",
+        "trx",
+        "tck",
+        pytest.param("fib", marks=needs_polyxios),
+        "dpy",
+        pytest.param("vtk", marks=needs_polyxios),
+    ],
+)
 def test_concatenate_flow_every_valid_extension(tmp_path, extension):
     out_dir = tmp_path / extension
     concatenate_flow = ConcatenateTractogramFlow()
@@ -487,14 +497,11 @@ def test_concatenate_flow_every_valid_extension(tmp_path, extension):
 
     fname = _written_output(concatenate_flow)
     npt.assert_equal(fname.name, f"concatenated_tractogram.{extension}")
-    # Nothing else is created: the extension is a setting, not an output path.
     npt.assert_equal(sorted(path.name for path in out_dir.iterdir()), [fname.name])
 
 
 @pytest.mark.parametrize("extension", ["TRX", "TrX", "trX"])
 def test_concatenate_flow_extension_is_case_insensitive(tmp_path, extension):
-    # The extension is validated case-insensitively, so the file name has to
-    # carry the lower case form that ``save_tractogram`` recognises.
     out_dir = tmp_path / extension
     concatenate_flow = ConcatenateTractogramFlow()
     concatenate_flow.run(
@@ -516,13 +523,10 @@ def test_concatenate_flow_rejects_invalid_extensions(tmp_path, extension):
         extension=extension,
         out_dir=out_dir,
     )
-    # Rejected before any output is touched, so the directory is not created.
     assert_true(not out_dir.exists())
 
 
 def test_concatenate_flow_default_out_dir(tmp_path, monkeypatch):
-    # With the default ``out_dir`` the output lands in the working directory,
-    # not beside the inputs.
     inputs = _gold_standard_tractograms()
     monkeypatch.chdir(tmp_path)
     concatenate_flow = ConcatenateTractogramFlow()
@@ -589,8 +593,6 @@ def test_concatenate_flow_out_extension_deprecated(tmp_path):
 
 
 def test_concatenate_flow_rejects_both_parameter_names(tmp_path):
-    # ``deprecated_params`` refuses the old and the new name together rather
-    # than silently preferring one of them.
     concatenate_flow = ConcatenateTractogramFlow()
     npt.assert_raises(
         TypeError,
@@ -605,10 +607,6 @@ def test_concatenate_flow_rejects_both_parameter_names(tmp_path):
 def test_concatenate_flow_overwrite(tmp_path):
     inputs = _gold_standard_tractograms()
 
-    # The overwrite check has to look at the file that is really written,
-    # ``<out_tractogram>.<extension>``, and not at the extension-less name.
-    # While it guarded the wrong name, an existing output was destroyed
-    # without ``--force``.
     existing = tmp_path / "concatenated_tractogram.trx"
     existing.write_bytes(b"not a tractogram")
 
@@ -625,8 +623,6 @@ def test_concatenate_flow_overwrite(tmp_path):
 
 @pytest.mark.parametrize("extension", ["trk", "trx"])
 def test_concatenate_flow_overwrite_respects_the_extension(tmp_path, extension):
-    # A file carrying another extension neither blocks the run nor is touched
-    # by it.
     other = "trx" if extension == "trk" else "trk"
     bystander = tmp_path / f"concatenated_tractogram.{other}"
     bystander.write_bytes(b"leave me alone")
