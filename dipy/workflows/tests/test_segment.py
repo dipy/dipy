@@ -6,7 +6,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.align.streamlinear import BundleMinDistanceMetric
-from dipy.data import get_fnames
+from dipy.data import get_fnames, read_mni_template
 from dipy.io.image import load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
@@ -374,6 +374,27 @@ def test_brain_mask_flow(tmp_path_factory, rng=None):
         npt.assert_equal(mask_data.shape, data.shape)
         npt.assert_equal(mask_data.min() >= 0, True)
         npt.assert_equal(mask_data.max() <= 1, True)
+
+
+def test_brain_mask_flow_mindgrab(tmp_path):
+    t1_img, ref_img = read_mni_template(version="c", contrast=["T1", "mask"])
+    t1, affine = np.asarray(t1_img.dataobj, dtype=np.float32), t1_img.affine
+    ref_mask = np.asarray(ref_img.dataobj) > 0.5
+    data_path = tmp_path / "t1_4d.nii.gz"
+    save_nifti(data_path, np.stack([t1, t1], axis=-1), affine)
+
+    flow = BrainMaskFlow()
+    flow.run(data_path, method="mindgrab", save_masked=True, out_dir=tmp_path)
+
+    mask = load_nifti_data(tmp_path / flow.last_generated_outputs["out_mask"])
+    masked = load_nifti_data(tmp_path / flow.last_generated_outputs["out_masked"])
+    npt.assert_equal(mask.shape, t1.shape)
+    npt.assert_array_equal(np.unique(mask), [0, 1])
+    npt.assert_array_equal(masked[..., 1], t1 * mask)
+
+    mask = mask.astype(bool)
+    dice = 2 * np.sum(mask & ref_mask) / (mask.sum() + ref_mask.sum())
+    npt.assert_equal(dice > 0.93, True)
 
 
 def test_cluster_streamlines_flow(tmp_path):

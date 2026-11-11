@@ -1,4 +1,5 @@
 import csv
+from functools import partial
 from pathlib import Path
 import sys
 from time import time
@@ -9,6 +10,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.nn.mindgrab import MindGrab
 from dipy.nn.synthseg import SynthSeg
 from dipy.nn.torch.synthseg import have_torch
 from dipy.segment.bundles import RecoBundles
@@ -623,7 +625,7 @@ class BrainMaskFlow(Workflow):
         self,
         input_files,
         *,
-        method="synthseg",
+        method="mindgrab",
         bvalues_files=None,
         b0_threshold=50,
         median_radius=2,
@@ -633,6 +635,8 @@ class BrainMaskFlow(Workflow):
         finalize_mask=True,
         save_masked=False,
         use_cuda=False,
+        device="auto",
+        num_threads=None,
         out_dir="",
         out_mask="brain_mask.nii.gz",
         out_masked="brain_masked.nii.gz",
@@ -652,6 +656,8 @@ class BrainMaskFlow(Workflow):
 
             - 'median_otsu': Classical median Otsu segmentation, DWI-focused.
             - 'evac': Deep learning EVACPlus method, T1-focused.
+            - 'mindgrab': Deep learning MindGrab method, lightweight and
+              works for all modalities.
             - 'synthseg': Deep learning SynthSeg method, works for all
               modalities.
 
@@ -679,12 +685,24 @@ class BrainMaskFlow(Workflow):
             'median_otsu' method.
         finalize_mask : bool, optional
             Whether to remove potential holes or islands. Useful for solving
-            minor errors. Used for 'median_otsu' and 'synthseg' methods.
+            minor errors. Used for 'median_otsu', 'synthseg' and 'mindgrab'
+            methods.
         save_masked : bool, optional
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
-            Use CUDA for GPU acceleration. Used only for 'evac' and
-            'synthseg' methods.
+            Use CUDA for GPU acceleration. Used only for 'evac', 'synthseg'
+            and 'mindgrab' methods. For 'mindgrab', same as ``device='cuda'``.
+        device : string, optional
+            Where to run 'mindgrab': 'auto', 'cpu', 'webgpu' or 'cuda'. 'auto'
+            uses any GPU through WebGPU if the wgpu package is installed,
+            otherwise CUDA if PyTorch finds an NVIDIA GPU, otherwise the CPU.
+            Used only for 'mindgrab' method.
+        num_threads : int, optional
+            Number of threads to use on the CPU. If None, the value of the
+            ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
+            all available cores. If < 0, the maximal number of threads minus
+            $|num_threads + 1|$ is used (enter -1 to use as many threads as
+            possible). 0 raises an error. Used only for 'mindgrab' method.
         out_dir : string or Path, optional
             Output directory.
         out_mask : string, optional
@@ -692,7 +710,7 @@ class BrainMaskFlow(Workflow):
         out_masked : string, optional
             Name of the masked volume to be saved.
         """
-        valid_methods = ["median_otsu", "synthseg", "evac"]
+        valid_methods = ["median_otsu", "synthseg", "evac", "mindgrab"]
         method = method.lower()
 
         if method not in valid_methods:
@@ -736,13 +754,32 @@ class BrainMaskFlow(Workflow):
             logger.info("Loading EVACPlus model...")
             from dipy.nn.evac import EVACPlus
 
-            evac_model = EVACPlus(use_cuda=use_cuda)
+            predict_mask = EVACPlus(use_cuda=use_cuda).predict
             logger.info("EVACPlus model loaded.")
 
         elif method == "synthseg":
             logger.info("Loading SynthSeg model...")
             synthseg_model = SynthSeg(verbose=True, use_cuda=use_cuda)
+
+            def predict_mask(vol, affine):
+                _, _, mask = synthseg_model.predict(
+                    vol, affine, finalize_mask=finalize_mask
+                )
+                return mask
+
             logger.info("SynthSeg model loaded.")
+
+        elif method == "mindgrab":
+            logger.info("Loading MindGrab model...")
+            predict_mask = partial(
+                MindGrab(
+                    verbose=True,
+                    device="cuda" if use_cuda else device,
+                    num_threads=num_threads,
+                ).predict,
+                finalize_mask=finalize_mask,
+            )
+            logger.info("MindGrab model loaded.")
 
         bvals_counter = 0
         for fpath, mask_out_path, masked_out_path in io_it:
@@ -775,29 +812,14 @@ class BrainMaskFlow(Workflow):
                     finalize_mask=finalize_mask,
                 )
 
-            elif method == "evac":
+            else:
                 if data.ndim == 4:
                     logger.warning(
                         f"{fpath} is a 4D image. Only the first volume will "
-                        "be used for 'evac' brain masking."
+                        f"be used for '{method}' brain masking."
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
-                mask_volume = evac_model.predict(vol, affine)
-                mask_for_apply = (
-                    mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
-                )
-                masked_volume = data * mask_for_apply
-
-            elif method == "synthseg":
-                if data.ndim == 4:
-                    logger.warning(
-                        f"{fpath} is a 4D image. Only the first volume will "
-                        "be used for 'synthseg' brain masking."
-                    )
-                vol = data[..., 0] if data.ndim == 4 else data
-                _, _, mask_volume = synthseg_model.predict(
-                    vol, affine, finalize_mask=finalize_mask
-                )
+                mask_volume = predict_mask(vol, affine)
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )

@@ -29,12 +29,6 @@ else:
     class Module:
         pass
 
-    logger.warning(
-        "This model requires Pytorch.\
-                    Please install these packages using \
-                    pip."
-    )
-
 
 class UNet3D(Module):
     """3D U-Net architecture for the DeepN4 model.
