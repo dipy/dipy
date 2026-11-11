@@ -11,15 +11,20 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.stats.analysis import SpectraGrid
 from dipy.testing import assert_true
 from dipy.testing.decorators import set_random_number_generator
-from dipy.tracking.streamline import Streamlines
+from dipy.tracking.streamline import Streamlines, set_number_of_points
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.stats import (
     BundleAnalysisTractometryFlow,
     BundleShapeAnalysis,
     LinearMixedModelsFlow,
     SNRinCCFlow,
+    SpectraFDRFlow,
+    SpectraHFDRExternalFlow,
+    SpectraLMMFlow,
+    SpectraProfileFlow,
     buan_bundle_profiles,
 )
 
@@ -391,3 +396,307 @@ def test_bundle_shape_analysis_flow(tmp_path, rng=None):
     sm_flow.run(sub, out_dir=out_dir)
 
     assert_true(Path(Path(out_dir) / "temp.npy").exists())
+
+
+def _save_spectra_bundle(path, reference, *, seed=0, n_lines=60):
+    """Save a straight synthetic bundle along x, as used by the SPECTRA tests."""
+    rng = np.random.default_rng(seed)
+    lines = [
+        np.c_[np.linspace(0, 50, 60), rng.normal(0, 3, 60), rng.normal(0, 3, 60)] + 25
+        for _ in range(n_lines)
+    ]
+    sft = StatefulTractogram(Streamlines(lines), reference, Space.RASMM)
+    save_tractogram(sft, path, bbox_valid_check=False)
+    return load_tractogram(path, reference="same", bbox_valid_check=False).streamlines
+
+
+def test_spectra_profile_flow(tmp_path):
+    rng = np.random.default_rng(1)
+    fa = rng.random((90, 60, 60))
+    md = rng.random((90, 60, 60))
+    for name, metric in (("fa", fa), ("md", md)):
+        save_nifti(tmp_path / f"{name}.nii.gz", metric, np.eye(4))
+    reference = tmp_path / "fa.nii.gz"
+
+    for folder in ("model", "rec", "org"):
+        (tmp_path / folder).mkdir()
+    model = _save_spectra_bundle(tmp_path / "model" / "AF_L.trk", reference)
+    rec = _save_spectra_bundle(tmp_path / "rec" / "AF_L.trk", reference, seed=1)
+    _save_spectra_bundle(tmp_path / "org" / "AF_L.trk", reference, seed=1)
+
+    out_dir = tmp_path / "profiles" / "sub01"
+    SpectraProfileFlow().run(
+        tmp_path / "model",
+        tmp_path / "rec",
+        tmp_path / "org",
+        tmp_path / "*.nii.gz",
+        out_dir=out_dir,
+    )
+
+    # Same profiles as SpectraGrid, on the evenly resampled bundle
+    grid = SpectraGrid(model)
+    rec = Streamlines(set_number_of_points(s, nb_points=len(s)) for s in rec)
+    for name, metric in (("fa", fa), ("md", md)):
+        saved = np.load(out_dir / "AF_L" / f"{name}.npz")
+        npt.assert_allclose(
+            saved["profile_2d"],
+            grid.profile(rec, rec, metric, np.eye(4)),
+            equal_nan=True,
+        )
+        npt.assert_allclose(
+            saved["profile_1d"],
+            grid.profile_1d_adaptive_buan(rec, rec, metric, np.eye(4)),
+            equal_nan=True,
+        )
+        assert saved["n_segments"] == grid.n_segments
+        assert saved["n_radial"] == grid.n_radial
+        npt.assert_allclose(saved["segment_length"], grid.segment_length_actual)
+
+    # Bundles with too few streamlines are skipped
+    out_dir = tmp_path / "skipped"
+    SpectraProfileFlow().run(
+        tmp_path / "model",
+        tmp_path / "rec",
+        tmp_path / "org",
+        reference,
+        min_streamlines=100,
+        out_dir=out_dir,
+    )
+    assert not (out_dir / "AF_L").exists()
+
+    with pytest.raises(ValueError):
+        SpectraProfileFlow().run(
+            tmp_path / "model", tmp_path / "rec", tmp_path / "missing", reference
+        )
+    with pytest.raises(ValueError):
+        SpectraProfileFlow().run(
+            tmp_path / "model",
+            tmp_path / "rec",
+            tmp_path / "org",
+            reference,
+            robust_method="cubic",
+        )
+
+
+def _spectra_study(tmp_path, *, n_subjects=90, seed=2):
+    """Model bundle, profiles and metadata of a simulated SPECTRA study.
+
+    The cases (AD) have a lower FA in the first 5 segments of the bundle.
+    """
+    from scipy.ndimage import gaussian_filter
+
+    reference = tmp_path / "ref.nii.gz"
+    save_nifti(reference, np.zeros((90, 60, 60)), np.eye(4))
+    (tmp_path / "model").mkdir()
+    model = _save_spectra_bundle(tmp_path / "model" / "AF_L.trk", reference)
+    grid = SpectraGrid(model)
+
+    rng = np.random.default_rng(seed)
+    metadata = pd.DataFrame(
+        {
+            "subject": [f"sub{i:02d}" for i in range(n_subjects)],
+            "dx": np.repeat(["AD", "CN"], n_subjects // 2),
+            "age": rng.normal(70, 8, n_subjects),
+            "sex": np.tile(["F", "M"], n_subjects // 2),
+            "site": np.tile(["a", "b", "c"], n_subjects // 3),
+        }
+    )
+    shape = (n_subjects, grid.n_segments, grid.n_radial)
+    noise = gaussian_filter(rng.standard_normal(shape), sigma=(0, 1, 0.5))
+    profiles = 0.5 + 0.02 * noise / noise.std()
+    profiles[metadata["dx"] == "AD", :5] -= 0.03
+    for subject, profile in zip(metadata["subject"], profiles):
+        folder = tmp_path / "profiles" / subject / "AF_L"
+        folder.mkdir(parents=True)
+        np.savez(folder / "fa.npz", profile_2d=profile, profile_1d=profile.mean(1))
+    # A subject without profile is left out
+    metadata.loc[n_subjects] = ["sub99", "AD", 70.0, "F", "a"]
+    metadata.to_csv(tmp_path / "metadata.csv", index=False)
+    return grid
+
+
+@pytest.mark.skipif(
+    not have_pandas or not have_statsmodels,
+    reason="Requires pandas and statsmodels",
+)
+def test_spectra_lmm_and_fdr_flows(tmp_path):
+    grid = _spectra_study(tmp_path)
+    args = (tmp_path / "metadata.csv", tmp_path / "profiles", tmp_path / "model")
+    kwargs = {"target_case": "AD", "target_ref": "CN", "mode": "2d"}
+
+    # Stage 1: fit the models of the bundle
+    SpectraLMMFlow().run(*args, **kwargs, out_dir=tmp_path / "fits")
+    fit = np.load(tmp_path / "fits" / "AF_L.npz")
+    assert fit["t"].shape == (grid.n_segments, grid.n_radial)
+    assert fit["n_subjects_total"] == 90
+    assert fit["l_s"] > 0
+    assert "residuals" not in fit
+
+    # Stage 2: hierarchical FDR, with a sweep of alpha_cell
+    out_dir = tmp_path / "hfdr"
+    SpectraFDRFlow().run(
+        tmp_path / "fits", tmp_path / "model", alpha_cell=[0.05, 0.25], out_dir=out_dir
+    )
+    cells = pd.read_csv(out_dir / "spectra_stats.csv")
+    blocks = pd.read_csv(out_dir / "spectra_blocks.csv")
+    summary = pd.read_csv(out_dir / "spectra_summary.csv")
+    for column in ("t", "p", "d_cohen", "p_cond", "p_hfdr", "block"):
+        assert column in cells.columns
+    assert blocks["significant"].any()
+    assert summary.loc[0, "n_subjects"] == 90
+    assert summary.loc[0, "n_significant_ac05"] <= summary.loc[0, "n_significant_ac25"]
+    significant = cells.groupby(cells["segment"] < 5)["significant_ac05"].mean()
+    assert significant[True] > 0.8
+    assert significant[False] < 0.1
+
+    # Benjamini-Hochberg over all the cells
+    out_dir = tmp_path / "fdr"
+    SpectraFDRFlow().run(
+        tmp_path / "fits",
+        tmp_path / "model",
+        stats_mode="fdr",
+        adaptive=True,
+        out_dir=out_dir,
+    )
+    cells = pd.read_csv(out_dir / "spectra_stats.csv")
+    assert "p_fdr" in cells.columns
+    assert not (out_dir / "spectra_blocks.csv").exists()
+    assert cells.loc[cells["segment"] < 5, "significant"].mean() > 0.8
+
+    # 1D profiles with one block per bundle; edge cells are left out
+    SpectraLMMFlow().run(
+        *args,
+        target_case="AD",
+        target_ref="CN",
+        stats_mode="hfdr_bundle",
+        edge_mask=[1],
+        out_dir=tmp_path / "fits_1d",
+    )
+    fit = np.load(tmp_path / "fits_1d" / "AF_L.npz")
+    assert fit["t"].shape == (grid.n_segments, 1)
+    assert not fit["mask"][[0, -1]].any()
+    SpectraFDRFlow().run(
+        tmp_path / "fits_1d",
+        tmp_path / "model",
+        stats_mode="hfdr_bundle",
+        out_dir=tmp_path / "hfdr_1d",
+    )
+    assert len(pd.read_csv(tmp_path / "hfdr_1d" / "spectra_blocks.csv")) == 1
+
+    # Fits without length scales cannot be used for the hierarchical FDR
+    SpectraLMMFlow().run(
+        *args, **kwargs, stats_mode="fdr", out_dir=tmp_path / "fits_fdr"
+    )
+    with pytest.raises(ValueError):
+        SpectraFDRFlow().run(tmp_path / "fits_fdr", tmp_path / "model")
+
+    # The grid options must be those of the profiles
+    with pytest.raises(ValueError):
+        SpectraLMMFlow().run(*args, **kwargs, segment_length=2.0, out_dir=tmp_path)
+    with pytest.raises(ValueError):
+        SpectraLMMFlow().run(*args, **kwargs, stats_mode="anova", out_dir=tmp_path)
+
+
+@pytest.mark.skipif(
+    not have_pandas or not have_statsmodels,
+    reason="Requires pandas and statsmodels",
+)
+def test_spectra_hfdr_external_flow(tmp_path):
+    from scipy import stats
+
+    from dipy.stats.analysis import (
+        estimate_length_scales,
+        fit_grid_lmm,
+        hierarchical_fdr,
+    )
+
+    grid = _spectra_study(tmp_path)
+    metadata = pd.read_csv(tmp_path / "metadata.csv").iloc[:90]
+    profiles = np.array(
+        [
+            np.load(tmp_path / "profiles" / s / "AF_L" / "fa.npz")["profile_2d"]
+            for s in metadata["subject"]
+        ]
+    )
+    fit = fit_grid_lmm(
+        profiles,
+        metadata,
+        "dx",
+        groups="site",
+        case_group="AD",
+        ref_group="CN",
+        fit_reduced=True,
+    )
+
+    # Statistics and residuals in the CSV formats of SPECTRA
+    s_idx, r_idx = np.nonzero(fit["mask"])
+    pd.DataFrame(
+        {
+            "grid_name": "AF_L",
+            "s_idx": s_idx,
+            "r_idx": r_idx,
+            "t_stat": fit["t"][s_idx, r_idx],
+            "p_value": fit["p"][s_idx, r_idx],
+            "beta": fit["beta"][s_idx, r_idx],
+        }
+    ).to_csv(tmp_path / "stats.csv", index=False)
+    (tmp_path / "residuals").mkdir()
+    s_all, r_all, subject = np.nonzero(~np.isnan(fit["residuals_reduced"]))
+    pd.DataFrame(
+        {
+            "s_idx": s_all,
+            "r_idx": r_all,
+            "subject_id": metadata["subject"].to_numpy()[subject],
+            "residual": fit["residuals_reduced"][s_all, r_all, subject],
+        }
+    ).to_csv(tmp_path / "residuals" / "AF_L_residuals.csv", index=False)
+
+    out_dir = tmp_path / "external"
+    SpectraHFDRExternalFlow().run(
+        tmp_path / "stats.csv",
+        tmp_path / "model",
+        residuals_folder=tmp_path / "residuals",
+        out_dir=out_dir,
+    )
+    cells = pd.read_csv(out_dir / "spectra_stats.csv")
+    summary = pd.read_csv(out_dir / "spectra_summary.csv")
+
+    # Same result as the library functions
+    l_s, l_r = estimate_length_scales(fit["residuals_reduced"], grid)
+    npt.assert_allclose(summary.loc[0, ["l_s", "l_r"]].to_numpy(float), [l_s, l_r])
+    # As in SPECTRA, the z-scores use p-values bounded to [1e-15, 1 - 1e-15]
+    p_bounded = np.clip(fit["p"], 1e-15, 1 - 1e-15)
+    z = np.sign(fit["t"]) * stats.norm.ppf(1 - p_bounded / 2)
+    bundle = {
+        "grid": grid,
+        "t": fit["t"],
+        "p": fit["p"],
+        "z": z,
+        "l_s": l_s,
+        "l_r": l_r,
+    }
+    p_hfdr, _ = hierarchical_fdr({"AF_L": bundle})
+    npt.assert_allclose(
+        cells["p_hfdr"].to_numpy(float),
+        p_hfdr["AF_L"][cells["segment"], cells["radial"]],
+        equal_nan=True,
+    )
+    assert cells.loc[cells["segment"] < 5, "significant_ac05"].mean() > 0.8
+    # The uncorrected p-values are saved as given
+    npt.assert_allclose(cells["p_value"], fit["p"][cells["segment"], cells["radial"]])
+
+    # Bundle mode needs no residuals
+    SpectraHFDRExternalFlow().run(
+        tmp_path / "stats.csv",
+        tmp_path / "model",
+        no_resel_blocks=True,
+        out_dir=tmp_path / "external_bundle",
+    )
+    blocks = pd.read_csv(tmp_path / "external_bundle" / "spectra_blocks.csv")
+    assert len(blocks) == 1
+
+    pd.DataFrame({"grid_name": ["AF_L"], "s_idx": [0]}).to_csv(
+        tmp_path / "bad.csv", index=False
+    )
+    with pytest.raises(ValueError):
+        SpectraHFDRExternalFlow().run(tmp_path / "bad.csv", tmp_path / "model")
