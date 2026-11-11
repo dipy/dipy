@@ -1,4 +1,5 @@
 import csv
+from functools import partial
 from pathlib import Path
 import sys
 from time import time
@@ -753,20 +754,30 @@ class BrainMaskFlow(Workflow):
             logger.info("Loading EVACPlus model...")
             from dipy.nn.evac import EVACPlus
 
-            evac_model = EVACPlus(use_cuda=use_cuda)
+            predict_mask = EVACPlus(use_cuda=use_cuda).predict
             logger.info("EVACPlus model loaded.")
 
         elif method == "synthseg":
             logger.info("Loading SynthSeg model...")
             synthseg_model = SynthSeg(verbose=True, use_cuda=use_cuda)
+
+            def predict_mask(vol, affine):
+                _, _, mask = synthseg_model.predict(
+                    vol, affine, finalize_mask=finalize_mask
+                )
+                return mask
+
             logger.info("SynthSeg model loaded.")
 
         elif method == "mindgrab":
             logger.info("Loading MindGrab model...")
-            mindgrab_model = MindGrab(
-                verbose=True,
-                device="cuda" if use_cuda else device,
-                num_threads=num_threads,
+            predict_mask = partial(
+                MindGrab(
+                    verbose=True,
+                    device="cuda" if use_cuda else device,
+                    num_threads=num_threads,
+                ).predict,
+                finalize_mask=finalize_mask,
             )
             logger.info("MindGrab model loaded.")
 
@@ -801,44 +812,14 @@ class BrainMaskFlow(Workflow):
                     finalize_mask=finalize_mask,
                 )
 
-            elif method == "evac":
+            else:
                 if data.ndim == 4:
                     logger.warning(
                         f"{fpath} is a 4D image. Only the first volume will "
-                        "be used for 'evac' brain masking."
+                        f"be used for '{method}' brain masking."
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
-                mask_volume = evac_model.predict(vol, affine)
-                mask_for_apply = (
-                    mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
-                )
-                masked_volume = data * mask_for_apply
-
-            elif method == "synthseg":
-                if data.ndim == 4:
-                    logger.warning(
-                        f"{fpath} is a 4D image. Only the first volume will "
-                        "be used for 'synthseg' brain masking."
-                    )
-                vol = data[..., 0] if data.ndim == 4 else data
-                _, _, mask_volume = synthseg_model.predict(
-                    vol, affine, finalize_mask=finalize_mask
-                )
-                mask_for_apply = (
-                    mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
-                )
-                masked_volume = data * mask_for_apply
-
-            elif method == "mindgrab":
-                if data.ndim == 4:
-                    logger.warning(
-                        f"{fpath} is a 4D image. Only the first volume will "
-                        "be used for 'mindgrab' brain masking."
-                    )
-                vol = data[..., 0] if data.ndim == 4 else data
-                mask_volume = mindgrab_model.predict(
-                    vol, affine, finalize_mask=finalize_mask
-                )
+                mask_volume = predict_mask(vol, affine)
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )

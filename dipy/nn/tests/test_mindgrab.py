@@ -54,28 +54,6 @@ def random_meshnet(rng, *, channels, n_layers, n_classes):
     return kernels, classifier, bias
 
 
-def test_orientation_round_trip():
-    volume = np.arange(4 * 5 * 6).reshape((4, 5, 6))
-    lia = mindgrab.ras_to_lia(volume)
-
-    npt.assert_equal(lia.shape, (4, 6, 5))
-    # LIA axes point to the left, inferior and anterior, so its first voxel
-    # is the most right, superior and posterior one.
-    npt.assert_equal(lia[0, 0, 0], volume[-1, 0, -1])
-    npt.assert_array_equal(mindgrab.lia_to_ras(lia), volume)
-
-
-def test_quantile_normalize():
-    volume = np.linspace(-10, 90, 1000).reshape((10, 10, 10))
-    normalized = mindgrab.quantile_normalize(volume)
-
-    npt.assert_equal(normalized.dtype, np.float32)
-    npt.assert_almost_equal(normalized.min(), 0)
-    npt.assert_almost_equal(normalized.max(), 1)
-    npt.assert_equal(np.mean(normalized == 0) > 0.01, True)
-    npt.assert_equal(np.mean(normalized == 1) > 0.01, True)
-
-
 @set_random_number_generator()
 def test_meshnet_forward_cpu(rng=None):
     # Volumes narrower and wider than twice the dilations, so that both the

@@ -8,6 +8,7 @@ project (https://github.com/neuroneural/brainchop-cli, MIT license). The CPU
 inference code is adapted from brainchopC (MIT license).
 """
 
+from nibabel.orientations import apply_orientation, axcodes2ornt, ornt_transform
 import numpy as np
 from scipy.special import expit
 
@@ -16,6 +17,7 @@ from dipy.nn.meshnet import meshnet_forward_cpu
 from dipy.nn.meshnet_webgpu import meshnet_forward_webgpu, webgpu_device, wgpu
 from dipy.nn.utils import (
     load_state_dict,
+    normalize,
     recover_img,
     set_logger_level,
     transform_img,
@@ -40,65 +42,9 @@ DILATIONS = (16, 8, 4, 2, 1) * 5
 CHANNELS = 15
 N_CLASSES = 2
 DEVICES = ("auto", "cpu", "webgpu", "cuda")
-
-
-def ras_to_lia(volume):
-    """Reorient a RAS-aligned volume to the FreeSurfer LIA orientation.
-
-    MindGrab was trained on volumes conformed to the FreeSurfer convention,
-    where the voxel axes point Left, Inferior and Anterior.
-
-    Parameters
-    ----------
-    volume : np.ndarray (X, Y, Z)
-        Volume whose voxel axes point Right, Anterior and Superior.
-
-    Returns
-    -------
-    np.ndarray (X, Z, Y)
-        Volume whose voxel axes point Left, Inferior and Anterior.
-    """
-    return np.flip(volume, axis=(0, 2)).transpose(0, 2, 1)
-
-
-def lia_to_ras(volume):
-    """Reorient a FreeSurfer LIA volume back to a RAS-aligned volume.
-
-    Parameters
-    ----------
-    volume : np.ndarray (X, Z, Y)
-        Volume whose voxel axes point Left, Inferior and Anterior.
-
-    Returns
-    -------
-    np.ndarray (X, Y, Z)
-        Volume whose voxel axes point Right, Anterior and Superior.
-    """
-    return np.flip(volume.transpose(0, 2, 1), axis=(0, 2))
-
-
-def quantile_normalize(volume, *, qmin=0.02, qmax=0.98, eps=1e-3):
-    """Rescale intensities to [0, 1] between two quantiles, then clip.
-
-    Parameters
-    ----------
-    volume : np.ndarray
-        Input volume.
-    qmin : float, optional
-        Lower quantile mapped to 0.
-    qmax : float, optional
-        Upper quantile mapped to 1.
-    eps : float, optional
-        Added to the denominator to avoid a division by zero.
-
-    Returns
-    -------
-    np.ndarray
-        Normalized volume, as float32.
-    """
-    qlow, qhigh = np.quantile(volume, (qmin, qmax))
-    volume = (volume - qlow) / (qhigh - qlow + eps)
-    return np.clip(volume, 0, 1).astype(np.float32)
+# MindGrab was trained on volumes conformed to the FreeSurfer LIA orientation.
+_RAS_TO_LIA = ornt_transform(axcodes2ornt("RAS"), axcodes2ornt("LIA"))
+_LIA_TO_RAS = ornt_transform(axcodes2ornt("LIA"), axcodes2ornt("RAS"))
 
 
 def read_mindgrab_weights(fname):
@@ -449,8 +395,11 @@ class MindGrab:
                 final_size=MODEL_SHAPE,
                 order=1,
             )
-            t_img = quantile_normalize(ras_to_lia(t_img))
-            prob = lia_to_ras(self._predict_volume(t_img))
+            t_img = apply_orientation(t_img, _RAS_TO_LIA)
+            qlow, qhigh = np.quantile(t_img, (0.02, 0.98))
+            t_img = normalize(t_img, min_v=qlow, max_v=qhigh, new_min=0, new_max=1)
+            prob = self._predict_volume(t_img.astype(np.float32))
+            prob = apply_orientation(prob, _LIA_TO_RAS)
             output = np.clip(recover_img(prob, params, order=1), 0, 1)
             if not return_prob:
                 output = (output >= 0.5).astype(np.uint8)
