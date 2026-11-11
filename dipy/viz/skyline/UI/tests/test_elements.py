@@ -20,9 +20,7 @@ else:
         normalize_picker_color,
     )
 
-_, has_imgui, _ = optional_package(
-    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
-)
+_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 
 if has_imgui:
     from dipy.viz.skyline.UI.elements import (
@@ -43,7 +41,7 @@ if has_imgui:
     )
 
 requires_imgui = pytest.mark.skipif(
-    not has_imgui, reason="Requires imgui_bundle>=1.92.600,<=1.92.801"
+    not has_imgui, reason="Requires imgui_bundle>=1.93.0"
 )
 
 # Hit points measured from a real frame drawn at the harness origin (50, 50).
