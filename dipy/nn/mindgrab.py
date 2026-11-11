@@ -21,7 +21,6 @@ from dipy.nn.utils import (
     transform_img,
 )
 from dipy.segment.utils import remove_holes_and_islands
-from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
 
@@ -226,7 +225,6 @@ class MindGrab:
     .. footbibliography::
     """
 
-    @doctest_skip_parser
     def __init__(
         self, *, verbose=False, device="auto", half_precision=False, num_threads=None
     ):
