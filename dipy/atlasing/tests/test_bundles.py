@@ -8,6 +8,7 @@ import pytest
 
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.streamwarp import bundlewarp
+from dipy.atlasing import bundles as atlasing_bundles
 from dipy.atlasing.bundles import (
     _load_bundle,
     combine_bundles,
@@ -28,6 +29,7 @@ from dipy.tracking.streamline import (
     Streamlines,
     relist_streamlines,
     select_random_set_of_streamlines,
+    transform_streamlines,
     unlist_streamlines,
 )
 from dipy.utils.optpkg import optional_package
@@ -404,3 +406,143 @@ def test_bundlewarp_return_order():
 
         assert_equal(len(deformed), len(moving))
         assert_equal(len(moving_aligned), len(moving))
+
+
+def _mock_mni_reference(monkeypatch, in_dir, ref_dir, bundle_names):
+    # Use a shifted copy of a subject as reference to avoid downloading the
+    # HCP-842 atlas. Its dimensions differ so the output space can be identified.
+    os.makedirs(os.path.join(ref_dir, "bundles"))
+    shift = np.eye(4)
+    shift[:3, 3] = [40, -30, 25]
+    whole_brain = Streamlines()
+
+    def save(streamlines, file):
+        sft = StatefulTractogram(streamlines, reference=header, space=Space.RASMM)
+        save_trk(sft, file, bbox_valid_check=False)
+
+    for name in bundle_names:
+        file = os.path.join(in_dir, "sub_1", f"{name}.trk")
+        sft = load_tractogram(file, reference="same", bbox_valid_check=False)
+        affine, dimensions, voxel_sizes, voxel_order = sft.space_attributes
+        dimensions = np.asarray(dimensions) + 7
+        header = create_tractogram_header(
+            file, affine, dimensions, voxel_sizes, voxel_order
+        )
+        bundle = Streamlines(transform_streamlines(sft.streamlines, shift))
+        whole_brain.extend(bundle)
+        save(bundle, os.path.join(ref_dir, "bundles", f"{name}.trk"))
+
+    whole_brain_file = os.path.join(ref_dir, "whole_brain_MNI.trk")
+    save(whole_brain, whole_brain_file)
+    pattern = os.path.join(ref_dir, "bundles", "*.trk")
+
+    monkeypatch.setattr(atlasing_bundles, "fetch_30_bundle_atlas_hcp842", lambda: None)
+    monkeypatch.setattr(
+        atlasing_bundles,
+        "get_bundle_atlas_hcp842",
+        lambda size: (whole_brain_file, pattern),
+    )
+    return dimensions
+
+
+def _centre(streamlines):
+    return np.mean(np.concatenate(list(streamlines)), axis=0)
+
+
+def _output_dir(out_dir):
+    name = [x for x in os.listdir(out_dir) if x.startswith("bundle_atlasing")][0]
+    return os.path.join(out_dir, name)
+
+
+def _dimensions(file):
+    sft = load_tractogram(file, reference="same", bbox_valid_check=False)
+    return sft.dimensions
+
+
+def test_compute_atlas_bundle_mni(monkeypatch):
+    example_tracts = get_fnames(name="minimal_bundles")
+    names = ["AF_L", "CST_R", "CC_ForcepsMajor"]
+    kwargs = {"bundle_names": names, "n_stream_max": 50}
+
+    with (
+        tempfile.TemporaryDirectory() as in_dir,
+        tempfile.TemporaryDirectory() as ref_dir,
+    ):
+        with zipfile.ZipFile(example_tracts, "r") as zip_ref:
+            zip_ref.extractall(in_dir)
+
+        # The reference does not have CC_ForcepsMajor
+        ref_dims = _mock_mni_reference(monkeypatch, in_dir, ref_dir, names[:2])
+        ref = {n: _load_bundle(f"{ref_dir}/bundles/{n}.trk") for n in names[:2]}
+
+        # Test argument errors
+        for kwarg in [
+            {"final_transform": "similarity"},
+            {"final_registration": "imaginary_method"},
+        ]:
+            assert_raises(ValueError, compute_atlas_bundle, in_dir=in_dir, **kwarg)
+
+        # No bundle has a reference
+        with tempfile.TemporaryDirectory() as out_dir:
+            assert_raises(
+                ValueError,
+                compute_atlas_bundle,
+                in_dir=in_dir,
+                out_dir=out_dir,
+                bundle_names=names[2:],
+                final_registration="bundle",
+            )
+
+        # Default: the atlas stays where it was built
+        with tempfile.TemporaryDirectory() as out_dir:
+            atlas, _ = compute_atlas_bundle(in_dir=in_dir, out_dir=out_dir, **kwargs)
+            out = _output_dir(out_dir)
+            assert not os.path.isdir(f"{out}/build_space")
+            native_dims = _dimensions(f"{out}/AF_L.trk")
+            assert not np.array_equal(native_dims, ref_dims)
+            assert np.linalg.norm(_centre(atlas[0]) - _centre(ref["AF_L"])) > 30
+
+        # Per bundle registration
+        with tempfile.TemporaryDirectory() as out_dir:
+            atlas, merged = compute_atlas_bundle(
+                in_dir=in_dir,
+                out_dir=out_dir,
+                merge_out=True,
+                final_registration="bundle",
+                **kwargs,
+            )
+            out = _output_dir(out_dir)
+            for i, name in enumerate(names[:2]):
+                assert np.linalg.norm(_centre(atlas[i]) - _centre(ref[name])) < 10
+                assert_equal(_dimensions(f"{out}/{name}.trk"), ref_dims)
+                assert_equal(_dimensions(f"{out}/build_space/{name}.trk"), native_dims)
+
+                # the default rigid transformation does not change the size
+                affine = np.loadtxt(f"{out}/build_space/{name}_to_mni_affine.txt")
+                singular_values = np.linalg.svd(affine[:3, :3], compute_uv=False)
+                assert_array_almost_equal(singular_values, np.ones(3), decimal=5)
+
+            # A bundle without reference stays as built and is not merged
+            assert_equal(_dimensions(f"{out}/CC_ForcepsMajor.trk"), native_dims)
+            assert not os.path.exists(f"{out}/build_space/CC_ForcepsMajor.trk")
+            assert_equal(len(merged), len(atlas[0]) + len(atlas[1]))
+
+        # Whole brain registration enables merge_out and includes all the bundles,
+        # also the ones without reference
+        with tempfile.TemporaryDirectory() as out_dir:
+            atlas, merged = compute_atlas_bundle(
+                in_dir=in_dir,
+                out_dir=out_dir,
+                final_registration="whole_brain",
+                final_transform="affine",
+                **kwargs,
+            )
+            out = _output_dir(out_dir)
+            assert merged is not None
+            assert_equal(len(merged), sum(len(bundle) for bundle in atlas))
+            assert_equal(_dimensions(f"{out}/whole_brain.trk"), ref_dims)
+            assert_equal(_dimensions(f"{out}/AF_L.trk"), ref_dims)
+            assert_equal(_dimensions(f"{out}/CC_ForcepsMajor.trk"), ref_dims)
+            assert_equal(_dimensions(f"{out}/build_space/whole_brain.trk"), native_dims)
+            assert os.path.isfile(f"{out}/build_space/whole_brain_to_mni_affine.txt")
+            assert np.linalg.norm(_centre(atlas[0]) - _centre(ref["AF_L"])) < 10

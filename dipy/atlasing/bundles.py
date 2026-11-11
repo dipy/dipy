@@ -12,17 +12,19 @@ Available functions:
 """
 
 from datetime import datetime
+from glob import glob
 import logging
 from os import getcwd, listdir, makedirs, mkdir
-from os.path import exists, isdir, join, splitext
-from shutil import copyfile, rmtree
+from os.path import basename, exists, isdir, join, splitext
+from shutil import copyfile, move, rmtree
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from dipy.align.bundlemin import distance_matrix_mdf
-from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.streamlinear import StreamlineLinearRegistration, slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
+from dipy.data.fetcher import fetch_30_bundle_atlas_hcp842, get_bundle_atlas_hcp842
 from dipy.io.streamline import (
     Space,
     StatefulTractogram,
@@ -36,6 +38,7 @@ from dipy.tracking.streamline import (
     orient_by_streamline,
     select_random_set_of_streamlines,
     set_number_of_points,
+    transform_streamlines,
 )
 from dipy.utils.optpkg import optional_package
 from dipy.viz.streamline import show_bundles
@@ -362,6 +365,142 @@ def _load_bundle(file, return_header=False):
     return bundle
 
 
+def _get_mni_reference():
+    """Fetch the HCP-842 30 bundle atlas, which is in MNI 2009a space.
+
+    Returns
+    -------
+    whole_brain : Streamlines
+        Whole brain tractogram of the atlas.
+    header : TrkFile
+        Tractogram header defining the MNI 2009a space.
+    bundle_files : dict
+        Path to each atlas bundle file, with the bundle names as keys.
+    """
+    fetch_30_bundle_atlas_hcp842()
+    whole_brain_file, bundle_pattern = get_bundle_atlas_hcp842(size=30)
+    whole_brain, header = _load_bundle(str(whole_brain_file), return_header=True)
+    bundle_files = {
+        splitext(basename(file))[0]: file for file in glob(str(bundle_pattern))
+    }
+
+    return whole_brain, header, bundle_files
+
+
+def _slr_bundle(static, moving, x0):
+    """Compute the SLR transformation between two versions of a single bundle.
+
+    Parameters
+    ----------
+    static : Streamlines
+        Reference bundle.
+    moving : Streamlines
+        Bundle to be registered.
+    x0 : str
+        Transformation type ('rigid' or 'affine').
+
+    Returns
+    -------
+    affine : ndarray (4, 4)
+        Transformation from ``moving`` to ``static``.
+    """
+    _, affine, _, _ = slr_with_qbx(
+        static,
+        moving,
+        x0=x0,
+        rm_small_clusters=1,
+        greater_than=0,
+        less_than=np.inf,
+        qbx_thr=[5],
+    )
+    return affine
+
+
+def _register_atlas_to_mni(
+    atlas,
+    bundle_names,
+    out_dir,
+    header,
+    method,
+    x0,
+    mni_whole_brain,
+    mni_header,
+    mni_bundle_files,
+):
+    """Register finished atlas bundles to MNI 2009a space.
+
+    The atlas bundles saved in ``out_dir`` are replaced with the registered ones.
+    The atlas as it was built and the transformations are kept in a
+    ``build_space`` folder inside ``out_dir``.
+
+    Parameters
+    ----------
+    atlas : list of Streamlines
+        Atlas bundles.
+    bundle_names : list of str
+        Name of each atlas bundle.
+    out_dir : str
+        Folder where the atlas bundles were saved.
+    header : TrkFile
+        Tractogram header of the atlas as built.
+    method : str
+        Either 'bundle' or 'whole_brain'.
+    x0 : str
+        Transformation type ('rigid' or 'affine').
+    mni_whole_brain : Streamlines
+        Whole brain tractogram in MNI 2009a space.
+    mni_header : TrkFile
+        Tractogram header defining the MNI 2009a space.
+    mni_bundle_files : dict
+        Path to each reference bundle file, with the bundle names as keys.
+
+    Returns
+    -------
+    registered : list of Streamlines
+        Atlas bundles. Bundles without a reference are returned unchanged.
+    """
+    build_dir = join(out_dir, "build_space")
+    makedirs(build_dir)
+
+    affines = {}
+    if method == "whole_brain":
+        merged = Streamlines()
+        for streamlines in atlas:
+            merged.extend(streamlines)
+
+        _, affine, _, _ = slr_with_qbx(
+            mni_whole_brain, merged, x0=x0, rm_small_clusters=1
+        )
+        np.savetxt(join(build_dir, "whole_brain_to_mni_affine.txt"), affine)
+
+        new_tractogram = StatefulTractogram(merged, reference=header, space=Space.RASMM)
+        save_trk(new_tractogram, f"{build_dir}/whole_brain.trk", bbox_valid_check=False)
+        affines = dict.fromkeys(bundle_names, affine)
+    else:
+        for bundle, streamlines in zip(bundle_names, atlas):
+            if bundle in mni_bundle_files:
+                reference = _load_bundle(mni_bundle_files[bundle])
+                affines[bundle] = _slr_bundle(reference, streamlines, x0)
+                np.savetxt(
+                    join(build_dir, f"{bundle}_to_mni_affine.txt"), affines[bundle]
+                )
+
+    registered = []
+    for bundle, streamlines in zip(bundle_names, atlas):
+        if bundle in affines:
+            move(f"{out_dir}/{bundle}.trk", f"{build_dir}/{bundle}.trk")
+            streamlines = Streamlines(
+                transform_streamlines(streamlines, affines[bundle])
+            )
+            new_tractogram = StatefulTractogram(
+                streamlines, reference=mni_header, space=Space.RASMM
+            )
+            save_trk(new_tractogram, f"{out_dir}/{bundle}.trk", bbox_valid_check=False)
+        registered.append(streamlines)
+
+    return registered
+
+
 def compute_atlas_bundle(
     in_dir,
     subjects=None,
@@ -382,6 +521,8 @@ def compute_atlas_bundle(
     d_max=1000.0,
     qbx_thr=5,
     alpha=0.5,
+    final_registration=None,
+    final_transform="rigid",
 ):
     """Compute a population specific bundle atlas.
 
@@ -430,6 +571,9 @@ def compute_atlas_bundle(
     reg_method : str, optional
         Registration method to be used ('slr', 'hslr', 'bundlewarp').
         Default is 'hslr'.
+    x0 : str, optional
+        Transformation type used to register each bundle pair. Default is
+        'affine'.
     skip_pairs : boolean, optional
         If true bundle combination steps are randomly skipped. This helps to
         obtain a sharper result. Default is False.
@@ -441,6 +585,20 @@ def compute_atlas_bundle(
     alpha : float, optional
         Controls deformation strength of bundlewarp. Lower values allow more
         deformation. Only used if reg_method is 'bundlewarp'. Default is 0.5.
+    final_registration : str, optional
+        If None the atlas is saved as it was built, so it stays in the original
+        subject space or in the common space the input bundles were already in.
+        If 'bundle', each atlas bundle is registered to the HCP-842 bundle with
+        the same name in MNI 2009a space. This is the accurate option. Bundles
+        without an HCP-842 counterpart are not registered. If 'whole_brain', all
+        atlas bundles are merged and registered at once to the HCP-842 whole brain
+        tractogram, and ``merge_out`` is enabled. This is a whole brain
+        transformation and might not be fully accurate compared to 'bundle'.
+        The atlas as built and the transformations
+        are saved in a ``build_space`` folder. Default is None.
+    final_transform : str, optional
+        Transformation type used by ``final_registration`` ('rigid' or 'affine').
+        Default is 'rigid', which preserves the shape and size of the atlas.
 
     Returns
     -------
@@ -448,6 +606,7 @@ def compute_atlas_bundle(
         A list with the computed atlas bundles.
     atlas_merged : Streamlines
         A single bundle containing all the computed atlas bundles together.
+        Bundles not registered by ``final_registration`` are left out.
     """
     if not isinstance(in_dir, str):
         raise TypeError(f"in_dir {in_dir} is {type(in_dir)} but must be a string")
@@ -469,6 +628,21 @@ def compute_atlas_bundle(
         raise ValueError(f"n_point {n_point} is not >= 2")
     if reg_method not in ["slr", "hslr", "bundlewarp"]:
         raise ValueError("reg_method value not supported")
+    if final_registration not in [None, "bundle", "whole_brain"]:
+        raise ValueError(f"final_registration {final_registration} is not supported")
+    if final_transform not in ["rigid", "affine"]:
+        raise ValueError(f"final_transform {final_transform} is not supported")
+
+    if final_registration == "whole_brain":
+        merge_out = True
+        logger.warning(
+            "final_registration='whole_brain' applies one whole brain "
+            "transformation, which might not be fully accurate compared to "
+            "final_registration='bundle', especially if the bundles cover the "
+            "brain differently from the HCP-842 atlas. HSLR atlases are the most "
+            "robust to this. With other methods such as SLR use "
+            "final_registration='bundle' instead."
+        )
 
     logger.info("Input directory:" + in_dir)
     logger.info("Output directory:" + out_dir)
@@ -513,6 +687,24 @@ def compute_atlas_bundle(
         raise ValueError("Bundle names cannot be duplicated")
 
     logger.info(f"{len(bundle_names)} bundles to be processed: {bundle_names}")
+
+    # Get the MNI 2009a reference
+    unregistered = []
+    if final_registration is not None:
+        mni_whole_brain, mni_header, mni_bundle_files = _get_mni_reference()
+
+    if final_registration == "bundle":
+        unregistered = [name for name in bundle_names if name not in mni_bundle_files]
+        if len(unregistered) == len(bundle_names):
+            raise ValueError(
+                "None of the bundles has a HCP-842 counterpart. Use "
+                "final_registration='whole_brain' instead."
+            )
+        if unregistered:
+            logger.warning(
+                "Bundles without a HCP-842 counterpart will not be registered and "
+                f"will stay in the space they were built in: {unregistered}"
+            )
 
     # Create a dictionary with all bundle files
     bundle_files = {}
@@ -687,9 +879,30 @@ def compute_atlas_bundle(
     if not save_temp:
         rmtree(temp_dir)
 
+    if final_registration is not None:
+        logger.info("Registering the atlas to MNI 2009a")
+        atlas = _register_atlas_to_mni(
+            atlas,
+            bundle_names,
+            out_dir,
+            header,
+            final_registration,
+            final_transform,
+            mni_whole_brain,
+            mni_header,
+            mni_bundle_files,
+        )
+        header = mni_header
+
     atlas_merged = None
     if merge_out:
-        atlas_merged = np.concatenate(atlas)
+        atlas_merged = np.concatenate(
+            [
+                streamlines
+                for bundle, streamlines in zip(bundle_names, atlas)
+                if bundle not in unregistered
+            ]
+        )
         file = f"{out_dir}/whole_brain.trk"
         new_tractogram = StatefulTractogram(
             atlas_merged, reference=header, space=Space.RASMM

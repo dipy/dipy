@@ -30,6 +30,8 @@ class BundleAtlasFlow(Workflow):
         d_max=1000,
         qbx_thr=5,
         alpha=0.5,
+        final_registration=None,
+        final_transform="rigid",
     ):
         """Workflow of bundle atlas generation.
 
@@ -92,6 +94,21 @@ class BundleAtlasFlow(Workflow):
             Threshold for QuickBundles clustering. Default is 5.
         alpha : float, optional
             Parameter for BundleWarp registration. Default is 0.5.
+        final_registration : str, optional
+            If not set the atlas is saved as it was built, so it stays in the
+            original subject space or in the common space the input bundles were
+            already in. If 'bundle', each atlas bundle is registered to the HCP-842
+            bundle with the same name in MNI 2009a space. This is the accurate
+            option. If 'whole_brain', all atlas bundles are registered at once to
+            the HCP-842 whole brain tractogram and ``merge_out`` is enabled. This
+            is a whole brain transformation and might not be fully accurate
+            compared to 'bundle', especially if the bundles cover the brain
+            differently from the HCP-842 atlas. HSLR atlases are the most robust
+            to this. With other methods such as SLR use 'bundle' instead.
+        final_transform : str, optional
+            Transformation type used by ``final_registration`` ('rigid' or
+            'affine'). Default is 'rigid', which preserves the shape and size of
+            the atlas while 'affine' can distort them.
         """
         logging.info("workflow running")
 
@@ -115,4 +132,6 @@ class BundleAtlasFlow(Workflow):
             d_max=d_max,
             qbx_thr=qbx_thr,
             alpha=alpha,
+            final_registration=final_registration,
+            final_transform=final_transform,
         )

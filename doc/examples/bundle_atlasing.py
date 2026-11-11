@@ -192,6 +192,26 @@ show_bundles(
 # Setting ``merge_out=True`` will merge the output atlases into a single bundle that
 # will be returned as the second output argument.
 #
+# Choosing the space of the atlas
+# ===============================
+#
+# By default the atlas is saved as it was built, so it stays in the original subject
+# space or in the common space the input bundles were already in. The atlas can
+# be registered to MNI 2009a space with ``final_registration``, using the HCP-842
+# atlas as reference:
+#
+#  - ``"bundle"``: each atlas bundle is registered to the HCP-842 bundle with the same
+#    name. This is the accurate option.
+#
+#  - ``"whole_brain"``: all the bundles are registered at once and ``merge_out`` is
+#    enabled. This is a whole brain transformation and might not be fully accurate
+#    compared to ``"bundle"``, especially if the bundles cover the brain differently
+#    from the HCP-842 atlas. HSLR atlases are the most robust to this. With other
+#    methods such as SLR use ``"bundle"`` instead.
+#
+# ``final_transform`` selects a ``"rigid"`` (default) or ``"affine"`` registration.
+# Rigid preserves the shape and size of the atlas while affine can distort them.
+#
 # References
 # ----------
 #
