@@ -47,7 +47,42 @@ opens its own controls and can be removed from the scene.
 You can also start with an empty window and load everything from the menu,
 which opens automatically. ::
 
-  dipy_skyline run
+  dipy_skyline
+
+``dipy_skyline run`` does the same.
+
+
+-----------------------------------------
+Open Skyline from the desktop and reports
+-----------------------------------------
+
+Run this once, in the Python environment where DIPY is installed. ::
+
+  dipy_skyline --setup
+
+It installs the visualization packages that are missing from that environment,
+after asking for confirmation, and registers Skyline as an application of your
+user account: a *DIPY SKYLINE* icon in the Start menu or application menu and on
+the desktop, an *Open with* entry for Skyline files and the ``dipy-skyline://``
+links that the HTML reports of ``dipy_auto`` use for their *Open in Skyline*
+buttons. Those buttons then work even when a report is opened by double-click.
+
+The icon is downloaded to the ``.dipy-skyline`` folder of your home directory
+with the other Skyline assets, and the log of the application is written to
+``.dipy-skyline/skyline_app.log``.
+
+``dipy_auto`` registers Skyline by itself, without asking anything, when it
+finishes a pipeline or serves a report. It keeps an existing registration of
+any environment as long as its interpreter still exists, and replaces a missing
+or broken one with a registration for its own environment. It logs what it
+registered; the missing visualization packages are only reported, and
+``dipy_skyline --setup`` installs them.
+
+Only one environment can own the registration, and the last ``--setup`` wins.
+To use the Skyline of another environment, run ``dipy_skyline --setup`` there.
+To remove the registration from any environment, run ::
+
+  dipy_skyline --remove_setup
 
 
 -------------------------
@@ -251,23 +286,23 @@ A ``.pam5`` file given as an input file is shown as peaks. ::
 
   dipy_skyline recons_csd_output/peaks.pam5
 
-To show its ODF glyphs, pass the same file to ``--odfs``. Use ``run`` as the
-input file when you only load files through options. ::
+To show its ODF glyphs, pass the same file to ``--odfs``, without any input
+file. ::
 
-  dipy_skyline run --odfs recons_csd_output/peaks.pam5
+  dipy_skyline --odfs recons_csd_output/peaks.pam5
 
 Peaks and ODFs can also come from NIfTI files. ``--peaks`` accepts volumes of
 shape (X, Y, Z, 3*N) or (X, Y, Z, N, 3), and ``--odfs`` accepts 4D volumes of
 SH coefficients, such as the ``peaks_dirs.nii.gz`` and ``shm.nii.gz`` files
 that ``dipy_fit_csd --extract_pam_values`` writes. ::
 
-  dipy_skyline run --peaks recons_csd_output/peaks_dirs.nii.gz --odfs recons_csd_output/shm.nii.gz
+  dipy_skyline --peaks recons_csd_output/peaks_dirs.nii.gz --odfs recons_csd_output/shm.nii.gz
 
 ``--sh_basis`` declares the SH convention of the ODF files:
 ``descoteaux07`` (the default, current DIPY), ``descoteaux07_legacy`` (older
 DIPY), ``tournier07`` (MRtrix 0.2) or ``tournier19`` (MRtrix3). ::
 
-  dipy_skyline run --odfs wm_fod.nii.gz --sh_basis tournier19
+  dipy_skyline --odfs wm_fod.nii.gz --sh_basis tournier19
 
 Peaks and ODFs have *Synchronize Slices*, *Scale*, *Opacity* and *Slice*
 controls, so you can step through them together with an image such as FA.

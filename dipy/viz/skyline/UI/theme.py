@@ -1,9 +1,6 @@
 """Theme utilities for Skyline UI components."""
 
-from pathlib import Path
-from urllib.request import urlretrieve
-
-from dipy.utils.logging import logger
+from dipy.utils.assets import asset_home, fetch_asset
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
@@ -12,9 +9,8 @@ if has_fury:
 else:
     Image = fury
 
-DIPY_DATA_MIRROR = "https://github.com/dipy/dipy_data/raw/refs/heads/master"
-SKYLINE_HOME = Path("~").expanduser() / ".dipy-skyline"
 
+SKYLINE_HOME = asset_home("dipy-skyline")
 if not SKYLINE_HOME.exists():
     SKYLINE_HOME.mkdir(parents=True, exist_ok=True)
 
@@ -30,11 +26,8 @@ IMAGES = ASSETS / "images"
 if not IMAGES.exists():
     IMAGES.mkdir(parents=True, exist_ok=True)
 
-LOGO = IMAGES / "dipy-logo.png"
+LOGO = fetch_asset("dipy-skyline", "images/dipy-logo.png")
 LOGO_SMALL = IMAGES / "dipy-logo-small.png"
-if not LOGO.exists():
-    logger.info("Downloading Skyline UI logo...")
-    urlretrieve(f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/images/dipy-logo.png", LOGO)
 
 if has_fury:
     with Image.open(LOGO) as img:
@@ -56,20 +49,8 @@ if has_fury:
         img_small.save(LOGO_SMALL, format="PNG", optimize=True)
 
 
-FONT = FONTS / "Inter_18pt-Regular.ttf"
-if not FONT.exists():
-    logger.info("Downloading Skyline UI font...")
-    urlretrieve(
-        f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/fonts/Inter_18pt-Regular.ttf", FONT
-    )
-
-FONT_AWESOME = FONTS / "fontawesome-webfont.ttf"
-if not FONT_AWESOME.exists():
-    logger.info("Downloading Font Awesome Icons for Skyline UI...")
-    urlretrieve(
-        f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/fonts/fontawesome-webfont.ttf",
-        FONT_AWESOME,
-    )
+FONT = fetch_asset("dipy-skyline", "fonts/Inter_18pt-Regular.ttf")
+FONT_AWESOME = fetch_asset("dipy-skyline", "fonts/fontawesome-webfont.ttf")
 
 
 def hex_to_rgba(hex_color, *, alpha=1.0):

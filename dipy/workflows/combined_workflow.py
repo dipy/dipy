@@ -63,7 +63,7 @@ from dipy.io.bids import (
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
-from dipy.workflows import interactive, report, templates
+from dipy.workflows import interactive, report, skyline_app, templates
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.multi_io import _resolve_path_or_pattern, connect_output_paths
 from dipy.workflows.qc import qc_result, run_stage_qc
@@ -2384,6 +2384,9 @@ def execute_semantic_pipeline(
         logger.warning(f"Failed to generate HTML report: {e}")
         logger.debug(traceback.format_exc())
 
+    if execution_info["report"] is not None:
+        skyline_app.ensure_app_registered()
+
     return execution_info
 
 
@@ -2962,6 +2965,13 @@ def _validate_mask_file(*, mask_file):
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
+_DETACHED_PROCESS = (
+    {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    if os.name == "nt"
+    else {"start_new_session": True}
+)
+
+
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
@@ -2970,8 +2980,9 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     a ``POST /qc-open`` request. A launch requires that token, so that no
     other web page can trigger one. The request names the file by its
     :func:`~dipy.workflows.report.skyline_key`, and only files Skyline can
-    display under the served directory are known. The response body is the message the page shows when the
-    launch fails. Anything else is served statically.
+    display under the served directory are known. The response body is the
+    message the page shows when the launch fails. Anything else is served
+    statically.
 
     Parameters
     ----------
@@ -2980,13 +2991,19 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     token : str, optional
         Secret a launch request must carry. Without it, every launch request
         is refused.
+    launcher : list of str, optional
+        Command prefix that opens a file in Skyline; the file path is appended.
+        When None, the serving interpreter is used and a launch is refused with
+        a 404 when its viewer packages are missing. A custom launcher may run
+        another environment, so it is not checked.
     **kwargs
         Keyword arguments of :class:`http.server.SimpleHTTPRequestHandler`.
     """
 
-    def __init__(self, *args, token=None, **kwargs):
+    def __init__(self, *args, token=None, launcher=None, **kwargs):
         # The base class handles the request from its constructor.
         self.token = token
+        self.launcher = launcher
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
@@ -3027,14 +3044,18 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         # A lookup, so that no file path is ever built from the request.
         elif (path := report.skyline_files(root=self.directory).get(target)) is None:
             self._reply(403, f"'{target}' is not a file served by this report.")
-        elif (skyline := shutil.which("dipy_skyline")) is None:
+        elif self.launcher is None and (
+            missing := skyline_app.missing_viz_requirements()
+        ):
             self._reply(
                 404,
-                "Skyline (dipy_skyline) was not found in this environment. "
-                "Install it, or run the command below yourself.",
+                "Skyline needs packages that are not installed: "
+                f'{", ".join(missing)}. Run "dipy_skyline --setup" in the '
+                "environment serving this report.",
             )
         else:
-            subprocess.Popen([skyline, report.skyline_argument(path=path)])
+            launcher = self.launcher or skyline_app.launcher_command()
+            subprocess.Popen([*launcher, str(path)], **_DETACHED_PROCESS)
             self._reply(200, f"Skyline launched on {path.name}.")
 
     def _send_page(self, *, page):
@@ -3101,6 +3122,7 @@ def _serve_html_report(*, report_path):
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
+    skyline_app.ensure_app_registered()
     webbrowser.open(url)
     with socketserver.TCPServer((host, port), handler) as httpd:
         try:

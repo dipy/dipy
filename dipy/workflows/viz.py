@@ -1,22 +1,33 @@
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWire
+from dipy.workflows import skyline_app
 from dipy.workflows.workflow import Workflow
 
 fury_pckg_msg = (
     "Skyline requires FURY version 2.1.0 or higher. "
     "Please install or upgrade FURY using pip install -U fury."
 )
-fury, has_fury, _ = optional_package(
-    "fury", trip_msg=fury_pckg_msg, min_version="2.1.0"
-)
-if has_fury:
-    from dipy.viz import skyline_from_files
+missing_viewer_packages = skyline_app.missing_viz_requirements()
+if missing_viewer_packages:
+    skyline_from_files = TripWire(
+        "Skyline needs packages that are not installed: "
+        f'{", ".join(missing_viewer_packages)}. Run "dipy_skyline --setup".'
+    )
 else:
-    skyline_from_files = fury
+    fury, has_fury, _ = optional_package(
+        "fury", trip_msg=fury_pckg_msg, min_version="2.1.0"
+    )
+    if has_fury:
+        from dipy.viz import skyline_from_files
+    else:
+        skyline_from_files = fury
 
 
 class SkylineFlow(Workflow):
+    inputs_are_optional = True
+
     @classmethod
     def get_short_name(cls):
         return "skyline"
@@ -40,15 +51,17 @@ class SkylineFlow(Workflow):
         buan_pvals=None,
         stealth=False,
         rgb=None,
+        setup=False,
+        remove_setup=False,
         out_dir="",
         out_stealth_png="out_skyline.png",
     ):
         """Launch Skyline GUI.
 
-        If you want to load only odfs or rois.
-        use dipy_skyline run --odfs <Your ODF files> or
-        dipy_skyline run --rois <Your ROI files> respectively. You can also load
-        peaks with dipy_skyline run --peaks <Your peak files>.
+        If you want to load only odfs or rois,
+        use dipy_skyline --odfs <Your ODF files> or
+        dipy_skyline --rois <Your ROI files> respectively. You can also load
+        peaks with dipy_skyline --peaks <Your peak files>.
 
         These options should be used in stealth mode. For GUI mode, the files can be
         loaded through the file dialog.
@@ -113,6 +126,12 @@ class SkylineFlow(Workflow):
         rgb : bool or None, optional
             ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
             ``--rgb`` forces RGB; ``--no-rgb`` disables it entirely.
+        setup : bool, optional
+            Install missing viewer packages into this Python environment and
+            register Skyline as an application (menu and desktop icon, report
+            links, Open with).
+        remove_setup : bool, optional
+            Remove the application registration.
         out_dir : str or Path, optional
             Output directory for offscreen figures.
         out_stealth_png : str, optional
@@ -120,13 +139,32 @@ class SkylineFlow(Workflow):
 
         Returns
         -------
-        Skyline
+        Skyline or None
             The viewer, returned once its window is closed or the offscreen
-            figure is saved.
+            figure is saved. None when ``setup`` or ``remove_setup`` is used.
+
+        Raises
+        ------
+        ValueError
+            If ``setup`` and ``remove_setup`` are combined.
+        RuntimeError
+            If ``setup`` fails.
         """
         super().__init__(force=True)
+
+        if setup and remove_setup:
+            raise ValueError("setup and remove_setup cannot be combined")
+        if setup:
+            if not skyline_app.setup_app():
+                raise RuntimeError(
+                    "Skyline setup did not finish; see the messages above."
+                )
+            return None
+        if remove_setup:
+            skyline_app.unregister_app()
+            return None
         skyline_input_files = []
-        start_gui = input_files is not None and input_files[0] in (
+        start_gui = not input_files or input_files[0] in (
             "run",
             "start",
             "launch",
@@ -170,6 +208,8 @@ class SkylineFlow(Workflow):
 
 
 class HorizonFlow(SkylineFlow):
+    inputs_are_optional = False
+
     @classmethod
     def get_short_name(cls):
         return "horizon"
