@@ -20,19 +20,11 @@ from dipy.align.metrics import CCMetric
 from dipy.align.reslice import reslice
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
+from dipy.nn.deepn4 import DeepN4
+from dipy.nn.mindgrab import MindGrab
+from dipy.nn.synb0 import Synb0
 from dipy.nn.utils import normalize
 from dipy.utils.logging import logger
-from dipy.utils.optpkg import optional_package
-
-_, _have_torch, _ = optional_package("torch", min_version="2.2.0")
-_, _have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
-
-try:
-    from dipy.nn.synb0 import Synb0
-
-    HAVE_SYNB0 = _have_torch or _have_tf
-except ImportError:
-    HAVE_SYNB0 = False
 
 
 def _validate_b0_index(b0_index, n_volumes, image_name):
@@ -253,11 +245,12 @@ def synb0_syn(
         corrected DWI data.
     apply_deepn4 : bool, optional
         If True, apply DeepN4 bias field correction to the T1 image
-        before the first affine registration. Default is False.
+        before the first affine registration. DeepN4 requires PyTorch or
+        TensorFlow.
     apply_skull_strip : bool, optional
-        If True, apply SynthSeg skull stripping to both the T1 and DWI b0
+        If True, apply MindGrab skull stripping to both the T1 and DWI b0
         images before registration. The resulting masks are used as
-        ``T1_mask`` and ``dwi_mask`` respectively. Default is False.
+        ``T1_mask`` and ``dwi_mask`` respectively.
     debug_dir : str or Path, optional
         Directory to save intermediate debug NIfTI volumes.
     **kwargs :
@@ -275,12 +268,6 @@ def synb0_syn(
     """
     dwi = np.asarray(dwi)
     T1 = np.asarray(T1)
-
-    if not HAVE_SYNB0:
-        raise ImportError(
-            "Synb0 model not available. Install PyTorch or TensorFlow to use "
-            "Synb0-DISCO distortion correction."
-        )
 
     if dwi.ndim not in (3, 4):
         raise ValueError(f"dwi must be a 3D or 4D array. Got shape {dwi.shape}.")
@@ -314,16 +301,12 @@ def synb0_syn(
     mni_mask, _ = load_nifti(mni_mask_path)
     mni_mask = mni_mask.astype(np.int32)
 
-    # ── Optional: SynthSeg skull stripping on T1 and DWI ─────────────────
+    # ── Optional: MindGrab skull stripping on T1 and DWI ─────────────────
     if apply_skull_strip:
-        from dipy.nn.synthseg import SynthSeg
-
-        logger.info("Applying SynthSeg skull stripping to T1 and DWI b0...")
-        synthseg_model = SynthSeg(verbose=True)
-        _, _, T1_mask = synthseg_model.predict(T1_for_reg, T1_affine)
-        T1_mask = T1_mask.astype(bool)
-        _, _, dwi_mask = synthseg_model.predict(dwi_for_field, dwi_affine)
-        dwi_mask = dwi_mask.astype(bool)
+        logger.info("Applying MindGrab skull stripping to T1 and DWI b0...")
+        mindgrab_model = MindGrab(verbose=True)
+        T1_mask = mindgrab_model.predict(T1_for_reg, T1_affine).astype(bool)
+        dwi_mask = mindgrab_model.predict(dwi_for_field, dwi_affine).astype(bool)
         _save_debug_volume(
             debug_dir=debug_dir,
             name="00a_t1_skull_strip_mask",
@@ -342,8 +325,6 @@ def synb0_syn(
         T1_for_reg = T1_for_reg * T1_mask
     # ── Optional: DeepN4 bias field correction on T1 ────────────────────
     if apply_deepn4:
-        from dipy.nn.deepn4 import DeepN4
-
         logger.info("Applying DeepN4 bias field correction to T1...")
         deepn4_model = DeepN4(verbose=True)
         T1_for_reg = deepn4_model.predict(T1_for_reg, T1_affine)
@@ -454,21 +435,21 @@ def synb0_syn(
         masked_T1_reg_to_template,
         mni_t1_affine,
         mni_t1_zooms,
-        synb0_zooms,
+        new_zooms=synb0_zooms,
         new_shape=synb0_shape,
     )
     masked_dwi_reg_resized, _ = reslice(
         masked_dwi_reg_to_template,
         mni_t1_affine,
         mni_t1_zooms,
-        synb0_zooms,
+        new_zooms=synb0_zooms,
         new_shape=synb0_shape,
     )
     mni_mask_resized, _ = reslice(
         mni_mask.astype(np.float32),
         mni_t1_affine,
         mni_t1_zooms,
-        synb0_zooms,
+        new_zooms=synb0_zooms,
         new_shape=synb0_shape,
         order=0,
     )

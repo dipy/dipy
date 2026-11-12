@@ -1,15 +1,16 @@
+import nibabel as nib
 import numpy as np
 from numpy.testing import assert_array_equal, assert_equal
 import pytest
 
 from dipy.align.disco import (
-    HAVE_SYNB0,
     _save_debug_volume,
     _select_3d_volume,
     _validate_b0_index,
     _warp_image,
     synb0_syn,
 )
+from dipy.data import get_fnames
 
 
 def test_validate_b0_index_valid():
@@ -94,9 +95,6 @@ def test_save_debug_volume_bool_data(tmp_path):
     assert (tmp_path / "mask.nii.gz").exists()
 
 
-@pytest.mark.skipif(
-    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
-)
 def test_synb0_syn_wrong_dwi_ndim():
     with pytest.raises(ValueError, match="dwi must be a 3D or 4D"):
         synb0_syn(
@@ -107,9 +105,6 @@ def test_synb0_syn_wrong_dwi_ndim():
         )
 
 
-@pytest.mark.skipif(
-    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
-)
 def test_synb0_syn_wrong_t1_ndim():
     with pytest.raises(ValueError, match="T1 must be a 3D or 4D"):
         synb0_syn(
@@ -120,9 +115,6 @@ def test_synb0_syn_wrong_t1_ndim():
         )
 
 
-@pytest.mark.skipif(
-    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
-)
 def test_synb0_syn_bad_b0_index():
     with pytest.raises(ValueError, match="must be in"):
         synb0_syn(
@@ -134,9 +126,6 @@ def test_synb0_syn_bad_b0_index():
         )
 
 
-@pytest.mark.skipif(
-    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
-)
 def test_synb0_syn_b0_index_type_error():
     with pytest.raises(TypeError, match="must be an integer"):
         synb0_syn(
@@ -148,37 +137,22 @@ def test_synb0_syn_b0_index_type_error():
         )
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
-def test_synb0_syn_import_error_without_backend():
-    with pytest.raises(ImportError, match="Synb0 model not available"):
-        synb0_syn(
-            dwi=np.zeros((5, 5, 5)),
-            T1=np.zeros((5, 5, 5)),
-            dwi_affine=np.eye(4),
-            T1_affine=np.eye(4),
-        )
-
-
-@pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
 def test_synb0_syn_4d_input():
-    """Run full pipeline on small 4D DWI dataset."""
-    # Each dimension must exceed 36 voxels: synb0_syn runs SyN with a 3-level
-    # Gaussian pyramid, so the coarsest level is size / 4, and CCMetric (radius 4)
-    # requires every dimension there to be > 2 * radius + 1 = 9.
-    shape = (48, 48, 48)
-    dwi = np.random.rand(*shape, 2).astype(np.float32) * 1000
-    t1 = np.random.rand(*shape).astype(np.float32) * 150
-    mask = np.ones(shape, dtype=np.float32)
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    """Run full pipeline on a real 4D DWI and T1 of the same subject."""
+    # Random volumes do not register to the MNI template, so the synthesized
+    # b0 can miss the DWI grid entirely and SyN then gets an empty image.
+    fraw, _, _ = get_fnames(name="stanford_hardi")
+    dwi_img = nib.load(fraw)
+    dwi = np.asarray(dwi_img.dataobj[..., :2], dtype=np.float32)
+    t1_img = nib.load(get_fnames(name="stanford_t1"))
 
     corrected, field = synb0_syn(
         dwi=dwi,
-        T1=t1,
-        dwi_affine=affine,
-        T1_affine=affine,
-        dwi_mask=mask,
-        T1_mask=mask,
+        T1=t1_img.get_fdata(dtype=np.float32),
+        dwi_affine=dwi_img.affine,
+        T1_affine=t1_img.affine,
         return_field=True,
     )
     assert_equal(corrected.shape, dwi.shape)
     assert_equal(field.shape, dwi[..., 0].shape)
+    assert np.all(np.isfinite(field))

@@ -5,6 +5,7 @@ import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
+from dipy.align.disco import synb0_syn
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
@@ -1276,11 +1277,12 @@ class Synb0SynFlow(Workflow):
         t1_mask_file : string or Path, optional
             Path to the T1 brain mask file. If empty, no masking is applied.
         apply_skull_strip : bool, optional
-            If True, apply SynthSeg skull stripping to both the T1 and
-            DWI b0 images before registration. Default is False.
+            If True, apply MindGrab skull stripping to both the T1 and
+            DWI b0 images before registration.
         apply_deepn4 : bool, optional
             If True, apply DeepN4 bias field correction to the T1 image
-            before the first affine registration. Default is False.
+            before the first affine registration. DeepN4 requires PyTorch
+            or TensorFlow.
         out_dir : string or Path, optional
             Directory to save the corrected image and field map.
         out_corrected : string, optional
@@ -1292,8 +1294,6 @@ class Synb0SynFlow(Workflow):
         ----------
         .. footbibliography::
         """
-        from dipy.align.disco import synb0_syn
-
         io_it = self.get_io_iterator()
 
         for dwi_path, t1_path, ocorrected, ofield in io_it:
