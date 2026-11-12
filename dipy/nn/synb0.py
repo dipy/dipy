@@ -32,7 +32,9 @@ else:
 
 
 _SYNB0_INPUT_SHAPE = (77, 91, 77)
-_SYNB0_PADDED_SHAPE = (80, 96, 80)
+# The network was trained on volumes with the axes ordered (z, x, y).
+_SYNB0_TO_NETWORK = (0, 1, 4, 2, 3)
+_SYNB0_FROM_NETWORK = (0, 1, 3, 4, 2)
 _SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
 _SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
 N_FOLDS = 5
@@ -41,6 +43,8 @@ DEVICES = ("auto", "cpu", "cuda")
 
 class UNet3D(Module):
     """3D UNet of Synb0, in PyTorch.
+
+    The network was trained on volumes with the axes ordered (z, x, y).
 
     ``dipy.nn.unet3d.unet3d_forward_cpu`` runs the same network on the CPU
     without PyTorch.
@@ -375,13 +379,14 @@ class Synb0:
 
         Parameters
         ----------
-        x_test : np.ndarray (batch, 2, 80, 96, 80)
-            Image should match the required shape of the model.
+        x_test : np.ndarray (batch, 2, 80, 80, 96)
+            Image should match the required shape of the model, with the
+            axes ordered (z, x, y).
 
         Returns
         -------
-        np.ndarray (batch, 1, 80, 96, 80)
-            Reconstructed b-inf image(s)
+        np.ndarray (batch, 1, 80, 80, 96)
+            Reconstructed b-inf image(s), with the axes ordered (z, x, y).
         """
         if self.model is not None:
             with torch.no_grad():
@@ -466,7 +471,8 @@ class Synb0:
             batch_size = 1
 
         input_data = np.stack((b0, T1), axis=1).astype(np.float32)
-        prediction = np.empty((shape[0], 1) + _SYNB0_PADDED_SHAPE, dtype=np.float32)
+        input_data = np.ascontiguousarray(input_data.transpose(_SYNB0_TO_NETWORK))
+        prediction = np.empty((shape[0], 1) + input_data.shape[2:], dtype=np.float32)
         if average:
             mean_pred = np.zeros(shape, dtype=np.float32)
 
@@ -481,7 +487,7 @@ class Synb0:
                 stop = min(start + batch_size, shape[0])
                 prediction[start:stop] = self._predict(input_data[start:stop])
 
-            unpadded = prediction[_SYNB0_UNPAD]
+            unpadded = prediction.transpose(_SYNB0_FROM_NETWORK)[_SYNB0_UNPAD]
             for j in range(shape[0]):
                 unpadded[j] = unnormalize(unpadded[j], -1, 1, 0, p99[j])
 

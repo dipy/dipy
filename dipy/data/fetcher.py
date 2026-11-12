@@ -635,14 +635,14 @@ fetch_synb0_torch_weights = _make_fetcher(
     "fetch_synb0_torch_weights",
     Path(dipy_home) / "synb0",
     "https://ndownloader.figshare.com/files/",
-    ["60676858", "60555233", "60555227", "60555230", "60676861"],
+    ["60555227", "60676861", "60555230", "60676858", "60555233"],
     [Path(f"synb0_default_torch_weights{i}.pth") for i in range(1, 6)],
     md5_list=[
+        "81c8320d494034538f31dc4e78cb30df",
+        "44808a9e4007c6ff3ebdd8fa5f8cb0a0",
+        "08e72dc41fcee86e2c5248b9920552cb",
         "0ac4438cbbc63ac8ce4d0f0213e4239a",
         "35bb00294e15bb61a3953dfc92c9ecf9",
-        "81c8320d494034538f31dc4e78cb30df",
-        "08e72dc41fcee86e2c5248b9920552cb",
-        "44808a9e4007c6ff3ebdd8fa5f8cb0a0",
     ],
     doc="Download Synb0 PyTorch model weights for Schilling et. al 2019",
 )

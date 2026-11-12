@@ -76,6 +76,15 @@ def test_cpu_matches_torch():
         npt.assert_allclose(synb0_model._predict(x), expected, rtol=0, atol=1e-4)
 
 
+def test_predict_matches_tensorflow():
+    # The TensorFlow port normalizes with an epsilon of 1e-3 instead of the
+    # 1e-5 the network was trained with, hence the tolerance.
+    b0, t1, target = load_test_data()
+    result = Synb0(device="cpu").predict(b0, t1, batch_size=2, average=False)
+    npt.assert_allclose(result, target, rtol=0, atol=0.1)
+    npt.assert_(np.mean(np.abs(result - target)) < 0.005)
+
+
 def test_predict():
     b0, t1, _ = load_test_data()
     synb0_model = Synb0(device="cpu")
