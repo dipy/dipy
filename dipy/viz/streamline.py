@@ -21,7 +21,7 @@ _VIEW_LABELS = {"sagittal": "L", "axial": "S", "coronal": "A"}
 
 
 def _show_scene(scene, *, view_label, size, fname=None, interactive=False):
-    """Save a scene to a png and/or display it in an interactive window.
+    """Display a scene in an interactive window or save it to a png.
 
     Parameters
     ----------
@@ -33,11 +33,18 @@ def _show_scene(scene, *, view_label, size, fname=None, interactive=False):
     size : tuple of int
         Window size in pixels as ``(width, height)``.
     fname : str or Path, optional
-        If not None, the scene is rendered offscreen into a png with that name.
+        If not None and ``interactive`` is False, the scene is rendered
+        offscreen into a png with that name. If ``interactive`` is True, it only
+        sets the window title.
     interactive : bool, optional
-        If True, a 3D interactive window is opened after saving.
+        If True, a 3D interactive window is opened and no png is saved here.
     """
-    if fname is not None:
+    if interactive:
+        title = "DIPY" if fname is None else Path(fname).stem
+        manager = window.ShowManager(scene=scene, title=title, size=size)
+        actor.click_gizmo(manager, actor.gizmo(manager), view_label)
+        manager.start()
+    elif fname is not None:
         manager = window.ShowManager(
             scene=scene, window_type="offscreen", size=size, pixel_ratio=1.0
         )
@@ -50,12 +57,6 @@ def _show_scene(scene, *, view_label, size, fname=None, interactive=False):
         finally:
             manager.window.close()
             scene.ui_scene.remove(gizmo)
-
-    if interactive:
-        title = "DIPY" if fname is None else Path(fname).stem
-        manager = window.ShowManager(scene=scene, title=title, size=size)
-        actor.click_gizmo(manager, actor.gizmo(manager), view_label)
-        manager.start()
 
 
 @warning_for_keywords()
@@ -79,7 +80,7 @@ def show_bundles(
     bundles : list
         Bundles to be rendered.
     interactive : bool, optional
-        If True a 3D interactive window is opened.
+        If True a 3D interactive window is opened and ``save_as`` is ignored.
     view : str, optional
         Viewing angle. Supported options: 'sagittal', 'axial' and 'coronal'.
     colors : list, optional
@@ -88,7 +89,8 @@ def show_bundles(
     linewidth : float, optional
         Thickness of each rendered streamline.
     save_as : str or Path, optional
-        If not None, the rendered scene is stored in a png file with that name.
+        If not None and ``interactive`` is False, the rendered scene is stored in
+        a png file with that name.
     scalar_bar : fury.actor.Group, optional
         Color bar created with ``dipy.viz.actor.scalar_bar``, added to the scene
         to show how values map to colors.
@@ -141,13 +143,14 @@ def viz_two_bundles(b1, b2, fname, *, c1=(1, 0, 0), c2=(0, 1, 0), interactive=Fa
     b2 : Streamlines
         Bundle two to be rendered.
     fname : str or Path
-        Rendered scene is stored in a png file with that name.
+        Rendered scene is stored in a png file with that name unless
+        ``interactive`` is True.
     c1 : tuple, optional
         Color to be used for first bundle.
     c2 : tuple, optional
         Color to be used for second bundle.
     interactive : bool, optional
-        If True a 3D interactive window is opened.
+        If True a 3D interactive window is opened and no png is saved.
     """
     scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
     scene.add(actor.streamlines(b1, colors=c1, thickness=0.3, outline_thickness=0))
@@ -186,11 +189,12 @@ def viz_vector_field(
     offsets : array-like
         Vector field magnitudes, used as the scale of each arrow.
     fname : str or Path
-        Rendered scene is stored in a png file with that name.
+        Rendered scene is stored in a png file with that name unless
+        ``interactive`` is True.
     bundle : Streamlines, optional
         Bundle to be rendered together with the vector field.
     interactive : bool, optional
-        If True a 3D interactive window is opened.
+        If True a 3D interactive window is opened and no png is saved.
 
     Notes
     -----
@@ -234,9 +238,10 @@ def viz_displacement_mag(bundle, offsets, fname, *, interactive=False):
     offsets : array-like
         Displacement magnitudes, one value per point of ``bundle``.
     fname : str or Path
-        Rendered scene is stored in a png file with that name.
+        Rendered scene is stored in a png file with that name unless
+        ``interactive`` is True.
     interactive : bool, optional
-        If True a 3D interactive window is opened.
+        If True a 3D interactive window is opened and no png is saved.
 
     Notes
     -----

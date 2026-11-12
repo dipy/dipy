@@ -201,7 +201,7 @@ def test_show_bundles_deprecated_sagital_still_renders(tmp_path):
     assert _tinted(_read(output), 0) > 20
 
 
-def test_show_bundles_interactive_offscreen_capture(tmp_path):
+def test_show_bundles_interactive_offscreen_captures_once(tmp_path):
     output_directory = tmp_path / "out"
     output_directory.mkdir()
     output = output_directory / "bundles.png"
@@ -223,9 +223,8 @@ def test_show_bundles_interactive_offscreen_capture(tmp_path):
                 os.environ["FURY_OFFSCREEN"] = previous_fury
 
     start_capture = tmp_path / "bundles.png"
-    assert output.is_file()
+    assert not output.exists()
     assert start_capture.is_file()
-    assert _tinted(_read(output), 0) > 20
     assert _tinted(_read(start_capture), 0) > 20
 
 
