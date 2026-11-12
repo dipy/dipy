@@ -130,7 +130,8 @@ MN_INLINE void mn_conv_slice(const float *MN_RESTRICT source,
             int tap_count = 0;
             for (int row = 0; row < row_count; row++)
                 for (int tx = tap_x_low; tx <= tap_x_high; tx++) {
-                    tap_voxel[tap_count] = row_offset[row] + (tx - 1) * dilation;
+                    tap_voxel[tap_count] =
+                        row_offset[row] + (ptrdiff_t)(tx - 1) * dilation;
                     tap_weight[tap_count] =
                         weights + (size_t)(row_tap[row] + tx) * weight_layer;
                     tap_count++;
