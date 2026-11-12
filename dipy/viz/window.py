@@ -7,14 +7,19 @@ from dipy.utils.optpkg import optional_package
 fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from fury.lib import loop
-    from fury.window import *
-    from fury.window import Scene, ShowManager as FuryShowManager
+    from fury.window import (
+        Scene,
+        ShowManager as FuryShowManager,
+        set_camera_from_axis,
+        snapshot,
+        update_camera,
+    )
 else:
 
     class FuryShowManager:
         """Stand-in base class used when FURY is not installed."""
 
-    Scene = loop = fury
+    Scene = loop = set_camera_from_axis = snapshot = update_camera = fury
 
 
 # TODO(fury#1416): rendercanvas 3.0 requests a paint after a title-bar close

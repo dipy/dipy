@@ -36,7 +36,6 @@ ignore = [
 "dipy/viz/__init__.py" = ["F401"]
 "dipy/viz/actor.py" = ["F403"]
 "dipy/viz/colormap.py" = ["F403"]
-"dipy/viz/window.py" = ["F403"]
 "doc/examples/**" = ["E402"]
 "doc/conf.py" = ["E402"]
 
