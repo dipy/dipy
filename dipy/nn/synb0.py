@@ -1,23 +1,20 @@
-#!/usr/bin/python
-"""
-Class and helper functions for fitting the Synb0 model using PyTorch.
+"""Class and helper functions for the Synb0 model.
+
+Inference runs on the CPU with a compiled kernel that needs no deep learning
+framework, or with PyTorch on a GPU.
 """
 
 import numpy as np
 
 from dipy.data import get_fnames
-from dipy.nn.utils import normalize, set_logger_level, unnormalize
-from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.deprecator import warning_for_keywords
-from dipy.utils.logging import logger
+from dipy.nn.unet3d import pack_unet3d_weights, unet3d_forward_cpu
+from dipy.nn.utils import load_state_dict, normalize, set_logger_level, unnormalize
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
 
-torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+logger = get_logger(name="dipy.nn")
 
-_SYNB0_INPUT_SHAPE = (77, 91, 77)
-_SYNB0_PADDED_SHAPE = (80, 96, 80)
-_SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
-_SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
+torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
     from torch.nn import (
         Conv3d,
@@ -33,13 +30,23 @@ else:
     class Module:
         pass
 
-    logger.warning(
-        "This model requires PyTorch. Please install PyTorch using pip or conda."
-    )
+
+_SYNB0_INPUT_SHAPE = (77, 91, 77)
+_SYNB0_PADDED_SHAPE = (80, 96, 80)
+_SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
+_SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
+N_FOLDS = 5
+DEVICES = ("auto", "cpu", "cuda")
 
 
 class UNet3D(Module):
-    def __init__(self, n_in, n_out):
+    """3D UNet of Synb0, in PyTorch.
+
+    ``dipy.nn.unet3d.unet3d_forward_cpu`` runs the same network on the CPU
+    without PyTorch.
+    """
+
+    def __init__(self, *, n_in, n_out):
         """Initialize the UNet3D model.
 
         Parameters
@@ -252,7 +259,7 @@ class UNet3D(Module):
 
 class Synb0:
     """
-    PyTorch implementation of the Synb0 model.
+    This class is intended for the Synb0 model.
 
     Synb0 :footcite:p:`Schilling2019`, :footcite:p:`Schilling2020` uses a neural
     network to synthesize a b0 volume for distortion correction in DWI images.
@@ -260,14 +267,15 @@ class Synb0:
     The model is the deep learning part of the Synb0-Disco pipeline, thus
     stand-alone usage is not recommended.
 
+    Inference runs on the CPU with a compiled kernel that needs no deep
+    learning framework, or with PyTorch on CUDA.
+
     References
     ----------
     .. footbibliography::
     """
 
-    @doctest_skip_parser
-    @warning_for_keywords()
-    def __init__(self, *, verbose=False):
+    def __init__(self, *, verbose=False, device="auto", num_threads=None):
         r"""
         Initialize the Synb0 model.
 
@@ -284,21 +292,41 @@ class Synb0:
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
-        """
-        if not have_torch:
-            raise ImportError(
-                "PyTorch is required for this model. "
-                "Please install it using: pip install torch"
-            )
+        device : {'auto', 'cpu', 'cuda'}, optional
+            Where to run the network.
 
+            - 'auto': CUDA if PyTorch finds an NVIDIA GPU, otherwise the CPU.
+            - 'cpu': compiled CPU kernel, which needs no extra package.
+            - 'cuda': PyTorch on CUDA, or on the Apple MPS GPU.
+
+            If the requested GPU is not available, the CPU is used.
+        num_threads : int, optional
+            Number of threads to use on the CPU. If None, the value of the
+            ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
+            all available cores. If < 0, the maximal number of threads minus
+            $|num_threads + 1|$ is used (enter -1 to use as many threads as
+            possible). 0 raises an error. The matrix products use the threads
+            of the BLAS library.
+        """
+        if device not in DEVICES:
+            raise ValueError(f"device should be one of {DEVICES}, got {device!r}")
         log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
-        # Initialize the model
-        self.model = UNet3D(n_in=2, n_out=1)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-        self.model.eval()
+        self.num_threads = num_threads
+        self.torch_device = None
+        if device in ("auto", "cuda") and have_torch:
+            if torch.cuda.is_available():
+                self.torch_device = torch.device("cuda")
+            elif device == "cuda" and torch.backends.mps.is_available():
+                self.torch_device = torch.device("mps")
+        if self.torch_device is None and device == "cuda":
+            logger.warning("No GPU found by PyTorch, switching to CPU")
+        self.device = "cpu" if self.torch_device is None else self.torch_device.type
+        logger.info(f"Synb0 runs on {self.device}")
+
+        self.model = None
+        self.weights = None
 
     def fetch_default_weights(self, idx):
         r"""
@@ -322,20 +350,24 @@ class Synb0:
 
         Parameters
         ----------
-        weights_path : str
+        weights_path : str or Path
             Path to the file containing the weights (.pth file saved by PyTorch)
         """
         try:
-            state_dict = torch.load(
-                weights_path, map_location=self.device, weights_only=True
-            )
-            self.model.load_state_dict(state_dict)
-            self.model.eval()
-        except Exception as e:
+            state = load_state_dict(weights_path)
+            weights = pack_unet3d_weights(state)
+        except ValueError as e:
             raise ValueError(
                 "Expected input for the provided model weights "
                 "do not match the declared model"
             ) from e
+        if self.torch_device is None:
+            self.weights = weights
+            return
+
+        self.model = UNet3D(n_in=2, n_out=1)
+        self.model.load_state_dict({k: torch.from_numpy(v) for k, v in state.items()})
+        self.model.to(self.torch_device).eval()
 
     def _predict(self, x_test):
         r"""
@@ -343,7 +375,7 @@ class Synb0:
 
         Parameters
         ----------
-        x_test : torch.Tensor (batch, 2, 80, 96, 80)
+        x_test : np.ndarray (batch, 2, 80, 96, 80)
             Image should match the required shape of the model.
 
         Returns
@@ -351,12 +383,17 @@ class Synb0:
         np.ndarray (batch, 1, 80, 96, 80)
             Reconstructed b-inf image(s)
         """
-        with torch.no_grad():
-            x_test = torch.from_numpy(x_test).float().to(self.device)
-            prediction = self.model(x_test)
-            return prediction.cpu().numpy()
+        if self.model is not None:
+            with torch.no_grad():
+                x_test = torch.from_numpy(x_test).float().to(self.torch_device)
+                return self.model(x_test).cpu().numpy()
+        return np.stack(
+            [
+                unet3d_forward_cpu(x, self.weights, num_threads=self.num_threads)
+                for x in x_test
+            ]
+        )
 
-    @warning_for_keywords()
     def predict(self, b0, T1, *, batch_size=None, average=True):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
@@ -383,7 +420,8 @@ class Synb0:
         average : bool, optional
             Whether the function follows the Synb0-Disco pipeline and
             averages the prediction of 5 different models.
-            If False, it uses the loaded weights for prediction.
+            If False, it uses the loaded weights for prediction, or the
+            first default weights if none were loaded.
 
         Returns
         -------
@@ -432,7 +470,10 @@ class Synb0:
         if average:
             mean_pred = np.zeros(shape, dtype=np.float32)
 
-        for model_idx in range(5 if average else 1):
+        if not average and self.model is None and self.weights is None:
+            self.fetch_default_weights(0)
+
+        for model_idx in range(N_FOLDS if average else 1):
             if average:
                 self.fetch_default_weights(model_idx)
 
@@ -447,7 +488,7 @@ class Synb0:
             if average:
                 mean_pred += unpadded
 
-        prediction = mean_pred / 5 if average else unpadded
+        prediction = mean_pred / N_FOLDS if average else unpadded
 
         if dim == 3:
             prediction = prediction[0]

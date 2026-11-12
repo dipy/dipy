@@ -20,7 +20,7 @@ Releases
 ~~~~~~~~
 * Unreleased
 
-- NF: Add PyTorch Synb0 and Synb0-SyN susceptibility distortion correction with a CLI.
+- NF: Add Synb0-SyN susceptibility distortion correction with a CLI. Synb0 runs on the CPU without PyTorch.
 
 * 1.12.0 (Friday, March 13, 2026)
 

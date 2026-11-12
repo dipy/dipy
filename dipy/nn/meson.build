@@ -16,11 +16,21 @@ py3.extension_module('meshnet',
   subdir: 'dipy/nn'
 )
 
+py3.extension_module('unet3d',
+  cython_gen.process('unet3d.pyx'),
+  c_args: cython_c_args,
+  include_directories: [incdir_numpy, inc_local],
+  dependencies: [omp],
+  install: true,
+  subdir: 'dipy/nn'
+)
+
 
 python_sources = [
   '__init__.py',
   'meshnet_webgpu.py',
   'mindgrab.py',
+  'synb0.py',
   'utils.py',
   ]
 
