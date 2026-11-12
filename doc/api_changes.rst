@@ -124,6 +124,25 @@ DIPY 1.13.0 changes
   tuples with nibabel images, preserving metadata and RGB detection. Direct
   viewer inputs still accept ndarrays.
 
+**Visualization**
+
+- ``dipy.viz.window`` is now a DIPY module that exposes ``Scene``,
+  ``ShowManager``, ``show``, ``snapshot``, ``update_camera`` and
+  ``set_camera_from_axis`` from FURY, instead of the whole ``fury.window``
+  module. ``ShowManager`` and ``show`` reset the render loop after a window
+  closes. Import any other name from ``fury.window`` directly.
+
+- ``dipy.viz.streamline.show_bundles``, ``viz_two_bundles``, ``viz_vector_field``
+  and ``viz_displacement_mag`` no longer save a png when ``interactive=True``;
+  ``save_as`` or ``fname`` is only used when ``interactive=False``. Until 1.12.1
+  the png was always written. Pass ``interactive=False`` to keep saving it::
+
+      show_bundles(bundles, interactive=True, save_as="bundles.png")  # no png
+
+  becomes::
+
+      show_bundles(bundles, interactive=False, save_as="bundles.png")
+
 DIPY 1.12.0 changes
 -------------------
 

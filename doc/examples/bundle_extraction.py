@@ -45,8 +45,8 @@ target_header = create_tractogram_header(target_file, *sft_target.space_attribut
 ###############################################################################
 # let's visualize atlas tractogram and target tractogram before registration
 
-# interactive=True opens a FURY window besides saving the image; use
-# interactive=False to only save it.
+# ``interactive=True`` opens a FURY window and does not save the image; use
+# ``interactive=False`` to only save it.
 show_bundles(
     [atlas, target],
     colors=[(1, 0, 1), (1, 1, 0)],

@@ -46,8 +46,8 @@ bundle = dix["cg.left"]
 # This is the default option of ``show_bundles``: when ``colors`` is not given,
 # each streamline gets one RGB color computed from the direction between its
 # end points. ``show_bundles`` takes a list of bundles, so we pass ``[bundle]``.
-# ``save_as`` saves the scene into a png and ``interactive=True`` also opens a
-# window; use ``interactive=False`` to only save the png.
+# ``interactive=True`` opens a window and does not save the png; use
+# ``interactive=False`` to save the scene into the png ``save_as``.
 
 show_bundles([bundle], interactive=True, save_as="bundle1.png")
 

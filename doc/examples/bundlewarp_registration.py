@@ -83,8 +83,8 @@ print("time taken by BundleWarp registration in seconds = ", end - start)
 
 ###############################################################################
 # Let's visualize static bundle in red and moved (warped) in green. Note: the
-# visualization functions in this tutorial open an interactive window besides
-# saving the image; use interactive=False to only save it.
+# visualization functions in this tutorial open an interactive window and do
+# not save the image; use interactive=False to only save it.
 
 viz_two_bundles(
     static,
