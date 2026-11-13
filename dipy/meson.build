@@ -438,6 +438,7 @@ cython_gen_cpp = generator(cython,
 # ------------------------------------------------------------------------
 
 subdir('align')
+subdir('atlasing')
 subdir('core')
 subdir('data')
 subdir('denoise')

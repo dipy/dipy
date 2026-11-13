@@ -312,6 +312,7 @@ class StreamlineLinearRegistration:
         options=None,
         evolution=False,
         num_threads=None,
+        halfway=False,
     ):
         r"""Linear registration of 2 sets of streamlines.
 
@@ -384,6 +385,14 @@ class StreamlineLinearRegistration:
             -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
+        halfway : bool, optional
+            If True, use halfway streamline linear registration. In this case optimize()
+            method returns a JointStreamlineRegistrationMap and does not support
+            centering or initial transformation matrix. Halfway registration
+            uses JointBundleMinDistanceMetric, so ``metric`` must be None or an
+            instance of it. Passing a JointBundleMinDistanceMetric as
+            ``metric`` also enables halfway registration.
+
         References
         ----------
         .. footbibliography::
@@ -391,6 +400,18 @@ class StreamlineLinearRegistration:
         """
         self.x0 = self._set_x0(x0)
         self.metric = metric
+
+        # Halfway registration and JointBundleMinDistanceMetric always go
+        # together: passing the metric alone also enables halfway
+        joint_metric = isinstance(metric, JointBundleMinDistanceMetric)
+        if halfway and metric is not None and not joint_metric:
+            raise ValueError(
+                "Halfway registration requires JointBundleMinDistanceMetric "
+                f"(or metric=None), got {type(metric).__name__}."
+            )
+        self.halfway = halfway or joint_metric
+        if self.halfway and metric is None:
+            self.metric = JointBundleMinDistanceMetric()
 
         if self.metric is None:
             self.metric = BundleMinDistanceMetric(num_threads=num_threads)
@@ -435,6 +456,9 @@ class StreamlineLinearRegistration:
 
         if not np.all(np.array(list(map(len, moving))) == static[0].shape[0]):
             raise ValueError(f"Static and moving streamlines {msg}")
+
+        # Halfway registration does not support centering
+        mat = np.eye(4) if self.halfway else mat
 
         if mat is None:
             static_centered, static_shift = center_streamlines(static)
@@ -489,10 +513,6 @@ class StreamlineLinearRegistration:
         if self.verbose:
             opt.print_summary()
 
-        opt_mat = compose_matrix44(opt.xopt)
-
-        mat = compose_transformations(moving_mat, opt_mat, static_mat)
-
         if opt.evolution is None:
             mat_history = []
         else:
@@ -501,15 +521,15 @@ class StreamlineLinearRegistration:
                 for vecs in opt.evolution
             ]
 
-        # If we are running halfway streamline linear registration (for
-        # groupwise registration or atlasing) the registration map is different
-        if isinstance(self.metric, JointBundleMinDistanceMetric):
-            srm = JointStreamlineRegistrationMap(
-                opt.xopt, opt.fopt, mat_history, opt.nfev, opt.nit
-            )
-        else:
+        if not self.halfway:
+            opt_mat = compose_matrix44(opt.xopt)
+            mat = compose_transformations(moving_mat, opt_mat, static_mat)
             srm = StreamlineRegistrationMap(
                 mat, opt.xopt, opt.fopt, mat_history, opt.nfev, opt.nit
+            )
+        else:
+            srm = JointStreamlineRegistrationMap(
+                opt.xopt, opt.fopt, mat_history, opt.nfev, opt.nit
             )
 
         del opt
@@ -1321,8 +1341,6 @@ def groupwise_slr(
     if rng is None:
         rng = np.random.default_rng()
 
-    metric = JointBundleMinDistanceMetric()
-
     bundles = bundles.copy()
     n_bundle = len(bundles)
 
@@ -1374,8 +1392,8 @@ def groupwise_slr(
             centroids1 = centroids[ind1]
             centroids2 = centroids[ind2]
 
-            hslr = StreamlineLinearRegistration(x0=x0, metric=metric)
-            hsrm = hslr.optimize(static=centroids1, moving=centroids2, mat=np.eye(4))
+            hslr = StreamlineLinearRegistration(x0=x0, halfway=True)
+            hsrm = hslr.optimize(static=centroids1, moving=centroids2)
 
             # Update transformation matrices
             aff_list[ind1] = np.dot(hsrm.matrix1, aff_list[ind1])
@@ -1401,7 +1419,7 @@ def groupwise_slr(
 
         if d_improve < tol:
             if verbose:
-                logger.info("Registration converged {d_improve} < {tol}")
+                logger.info(f"Registration converged {d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)
