@@ -33,6 +33,7 @@ from dipy.io.utils import has_rgb_dtype, split_filename_extension, unpack_rgb_ar
 from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
@@ -1269,6 +1270,9 @@ class ConcatenateTractogramFlow(Workflow):
     def get_short_name(cls):
         return "concatracks"
 
+    @deprecated_params(
+        "out_extension", new_name="extension", since="1.13", until="1.15"
+    )
     def run(
         self,
         tractogram_files,
@@ -1278,8 +1282,8 @@ class ConcatenateTractogramFlow(Workflow):
         delete_groups=False,
         check_space_attributes=True,
         preallocation=False,
+        extension="trx",
         out_dir="",
-        out_extension="trx",
         out_tractogram="concatenated_tractogram",
     ):
         """Concatenate multiple tractograms into one.
@@ -1304,22 +1308,36 @@ class ConcatenateTractogramFlow(Workflow):
             Preallocated TrxFile has already been generated and is the first
             element in trx_list (Note: delete_groups must be set to True as
             well)
+        extension : string, optional
+            Extension of the resulting tractogram. Formerly named
+            ``out_extension``, deprecated since 1.13.0 and removed in 1.15.0.
         out_dir : string or Path, optional
             Output directory.
-        out_extension : string, optional
-            Extension of the resulting tractogram
         out_tractogram : string, optional
-            Name of the resulting tractogram
+            Name of the resulting tractogram, without extension.
 
         """
+        valid_extensions = ["trk", "trx", "tck", "fib", "dpy", "vtk"]
+        extension = extension.lower()
+        if extension not in valid_extensions:
+            raise ValueError(
+                f"Invalid extension. Valid extensions are: {valid_extensions}"
+            )
+
         io_it = self.get_io_iterator()
+        if not io_it:
+            return
+
+        out_fpath = Path(f"{self.flat_outputs[0]}.{extension}")
+        if not self.update_flat_outputs([out_fpath] * len(self.flat_outputs), io_it):
+            return
 
         trx_list = []
         has_group = False
-        for fpath, _, _ in io_it:
-            _, extension = split_filename_extension(fpath)
+        for fpath, _ in io_it:
+            _, in_extension = split_filename_extension(fpath)
             ref = reference
-            if extension.lower() in [".trx", ".trk"]:
+            if in_extension.lower() in [".trx", ".trk"]:
                 ref = "same"
 
             if not ref:
@@ -1344,13 +1362,6 @@ class ConcatenateTractogramFlow(Workflow):
             preallocation=preallocation,
         )
 
-        valid_extensions = ["trk", "trx", "tck", "fib", "dpy", "vtk"]
-        if out_extension.lower() not in valid_extensions:
-            raise ValueError(
-                f"Invalid extension. Valid extensions are: {valid_extensions}"
-            )
-
-        out_fpath = Path(out_dir) / f"{out_tractogram}.{out_extension}"
         save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
 
 

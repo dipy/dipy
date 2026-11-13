@@ -68,6 +68,13 @@ class Workflow:
             List of new values to update the flat_outputs.
         io_it : IOIterator
             The IOIterator object that was returned by get_io_iterator.
+
+        Returns
+        -------
+        bool
+            True if the workflow can keep processing, False if one of the new
+            outputs already exists and overwriting was not requested.
+
         """
         if len(new_flat_outputs) != len(self.flat_outputs):
             raise ValueError(
@@ -86,7 +93,8 @@ class Workflow:
             self.last_generated_outputs = dict(zip(io_it.out_keys, self.flat_outputs))
         else:
             self.last_generated_outputs = self.flat_outputs
-        self.manage_output_overwrite()
+
+        return self.manage_output_overwrite()
 
     def manage_output_overwrite(self):
         """Check if a file will be overwritten upon processing the inputs.
