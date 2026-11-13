@@ -19,9 +19,7 @@ fury, has_fury_v2, _ = optional_package(
 if has_fury_v2:
     from fury.actor import contour_from_roi, set_group_opacity
 
-imgui_bundle, has_imgui, _ = optional_package(
-    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
-)
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 if has_imgui:
     imgui = imgui_bundle.imgui
 

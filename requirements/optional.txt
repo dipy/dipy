@@ -7,7 +7,8 @@ tables
 torch
 wgpu>=0.31.0
 fury>=2.1.0
-imgui_bundle>=1.92.600,<=1.92.801
+imgui_bundle>=1.93.0
+wgpu>=0.33.0
 matplotlib
 cvxpy
 scikit-image

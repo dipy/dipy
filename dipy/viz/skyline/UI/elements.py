@@ -15,9 +15,7 @@ from dipy.viz.skyline.UI.theme import (
     WINDOW_THEME,
 )
 
-imgui_bundle, has_imgui, _ = optional_package(
-    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
-)
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 if has_imgui:
     imgui = imgui_bundle.imgui
     hello_imgui = imgui_bundle.hello_imgui
@@ -1124,13 +1122,13 @@ def segmented_switch(label, options, value, *, width=0, height=28):
         is_selected = option == current_value
         if is_selected:
             if count == 1:
-                corner_flags = imgui.ImDrawFlags_.round_corners_all
+                corner_flags = imgui.ImDrawFlags_.round_all
             elif idx == 0:
-                corner_flags = imgui.ImDrawFlags_.round_corners_left
+                corner_flags = imgui.ImDrawFlags_.round_left
             elif idx == count - 1:
-                corner_flags = imgui.ImDrawFlags_.round_corners_right
+                corner_flags = imgui.ImDrawFlags_.round_right
             else:
-                corner_flags = imgui.ImDrawFlags_.round_corners_none
+                corner_flags = imgui.ImDrawFlags_.round_none
             draw_list.add_rect_filled(
                 segment_start,
                 segment_end,

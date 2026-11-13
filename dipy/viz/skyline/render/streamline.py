@@ -51,9 +51,7 @@ if has_fury_v2:
 else:
     actor = fury
 
-imgui_bundle, has_imgui, _ = optional_package(
-    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
-)
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 if has_imgui:
     imgui = imgui_bundle.imgui
     icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6

@@ -9,9 +9,7 @@ import pytest
 
 from dipy.utils.optpkg import optional_package
 
-_, has_imgui, _ = optional_package(
-    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
-)
+_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 
 if has_imgui:
     from imgui_bundle import imgui
@@ -115,7 +113,7 @@ class ImGuiHarness:
 @pytest.fixture
 def ui():
     if not has_imgui:
-        pytest.skip("Requires imgui_bundle>=1.92.600,<=1.92.801")
+        pytest.skip("Requires imgui_bundle>=1.93.0")
     harness = ImGuiHarness()
     try:
         yield harness
