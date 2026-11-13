@@ -442,17 +442,15 @@ class _StateDictUnpickler(pickle.Unpickler):
     Parameters
     ----------
     file : file object
-        Opened ``data.pkl`` member of the archive.
-    archive : zipfile.ZipFile
-        Archive holding the tensor storages.
-    prefix : str
-        Top-level folder of the archive.
+        Opened pickle of the state dict.
+    load_storage : callable
+        Called as ``load_storage(dtype, key, numel)`` for each tensor storage
+        of the pickle, it returns the storage as a flat array.
     """
 
-    def __init__(self, file, *, archive, prefix):
+    def __init__(self, file, *, load_storage):
         super().__init__(file)
-        self.archive = archive
-        self.prefix = prefix
+        self.load_storage = load_storage
 
     def find_class(self, module, name):
         try:
@@ -463,9 +461,95 @@ class _StateDictUnpickler(pickle.Unpickler):
             ) from None
 
     def persistent_load(self, pid):
-        _, dtype, key, _, numel = pid
-        data = self.archive.read(f"{self.prefix}/data/{key}")
-        return np.frombuffer(data, dtype=np.dtype(dtype).newbyteorder("<"), count=numel)
+        # The legacy format appends a view metadata field to the zip one.
+        _, dtype, key, _, numel = pid[:5]
+        return self.load_storage(np.dtype(dtype).newbyteorder("<"), key, numel)
+
+
+# First pickle of the files written by torch.save before PyTorch 1.6.
+_LEGACY_MAGIC_NUMBER = 0x1950A86A20F9469CFC6C
+_LEGACY_PROTOCOL_VERSION = 1001
+
+
+def _load_zip_state_dict(fname):
+    """Read a state dict in the zip format used by PyTorch since 1.6.
+
+    Parameters
+    ----------
+    fname : str or Path
+        Path to the file.
+
+    Returns
+    -------
+    object
+        Unpickled state dict.
+    """
+    with zipfile.ZipFile(fname) as archive:
+        pickles = [n for n in archive.namelist() if n.endswith("/data.pkl")]
+        if len(pickles) != 1:
+            raise ValueError(f"{fname} is not a PyTorch state dict")
+        prefix = pickles[0][: -len("/data.pkl")]
+
+        def load_storage(dtype, key, numel):
+            data = archive.read(f"{prefix}/data/{key}")
+            return np.frombuffer(data, dtype=dtype, count=numel)
+
+        with archive.open(pickles[0]) as f:
+            return _StateDictUnpickler(f, load_storage=load_storage).load()
+
+
+def _load_legacy_state_dict(fname):
+    """Read a state dict in the format used by PyTorch before 1.6.
+
+    The file holds a magic number, a protocol version, system information,
+    the state dict and the list of its storage keys, each as a pickle,
+    followed by every storage as its number of elements (int64) and its raw
+    data, in the order of the keys. The storages come after the state dict,
+    so it is unpickled twice: once to find the type of every storage, then
+    once with the storages read.
+
+    Parameters
+    ----------
+    fname : str or Path
+        Path to the file.
+
+    Returns
+    -------
+    object
+        Unpickled state dict.
+    """
+    with open(fname, "rb") as f:
+        header = [_StateDictUnpickler(f, load_storage=None).load() for _ in range(3)]
+        magic, protocol, sys_info = header
+        if (
+            magic != _LEGACY_MAGIC_NUMBER
+            or protocol != _LEGACY_PROTOCOL_VERSION
+            or not isinstance(sys_info, dict)
+            or not sys_info.get("little_endian", False)
+        ):
+            raise ValueError(f"{fname} is not a PyTorch state dict")
+        start = f.tell()
+
+        dtypes = {}
+
+        def record_dtype(dtype, key, numel):
+            dtypes[key] = dtype
+            return np.zeros(numel, dtype=dtype)
+
+        _StateDictUnpickler(f, load_storage=record_dtype).load()
+        keys = _StateDictUnpickler(f, load_storage=None).load()
+        if not isinstance(keys, list) or set(keys) != set(dtypes):
+            raise ValueError(f"{fname} is not a PyTorch state dict")
+        storages = {}
+        for key in keys:
+            numel = int.from_bytes(f.read(8), "little")
+            data = f.read(numel * dtypes[key].itemsize)
+            storages[key] = np.frombuffer(data, dtype=dtypes[key], count=numel)
+
+        f.seek(start)
+        return _StateDictUnpickler(
+            f, load_storage=lambda dtype, key, numel: storages[key][:numel]
+        ).load()
 
 
 def load_state_dict(fname):
@@ -474,7 +558,8 @@ def load_state_dict(fname):
     Parameters
     ----------
     fname : str or Path
-        Path to the file, in the zip format used by PyTorch since 1.6.
+        Path to the file, either in the zip format used by PyTorch since 1.6
+        or in the legacy format used before.
 
     Returns
     -------
@@ -482,14 +567,18 @@ def load_state_dict(fname):
         Parameter names mapped to NumPy arrays.
     """
     try:
-        with zipfile.ZipFile(fname) as archive:
-            pickles = [n for n in archive.namelist() if n.endswith("/data.pkl")]
-            if len(pickles) != 1:
-                raise ValueError(f"{fname} is not a PyTorch state dict")
-            prefix = pickles[0][: -len("/data.pkl")]
-            with archive.open(pickles[0]) as f:
-                state = _StateDictUnpickler(f, archive=archive, prefix=prefix).load()
-    except (zipfile.BadZipFile, pickle.UnpicklingError, KeyError, ValueError) as e:
+        if zipfile.is_zipfile(fname):
+            state = _load_zip_state_dict(fname)
+        else:
+            state = _load_legacy_state_dict(fname)
+    except (
+        zipfile.BadZipFile,
+        pickle.UnpicklingError,
+        EOFError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as e:
         raise ValueError(f"Could not read the PyTorch state dict {fname}") from e
     if not isinstance(state, dict):
         raise ValueError(f"{fname} is not a PyTorch state dict")

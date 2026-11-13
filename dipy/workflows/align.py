@@ -5,6 +5,7 @@ import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
+from dipy.align.disco import synb0_syn
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
@@ -1227,3 +1228,107 @@ class BundleWarpFlow(Workflow):
 
         logger.info(f"Saving output file {out_matched_pairs}")
         np.save(Path(out_dir) / out_matched_pairs, mp)
+
+
+class Synb0SynFlow(Workflow):
+    """Workflow for Synb0-SyN susceptibility distortion correction."""
+
+    @classmethod
+    def get_short_name(cls):
+        return "synb0_syn"
+
+    def run(
+        self,
+        dwi_files,
+        t1_files,
+        b0_index=0,
+        pe_axis=1,
+        dwi_mask_file="",
+        t1_mask_file="",
+        apply_skull_strip=False,
+        apply_deepn4=False,
+        out_dir="",
+        out_corrected="corrected.nii.gz",
+        out_field="field.nii.gz",
+    ):
+        """Synb0-SyN distortion correction for diffusion MRI data.
+
+        This workflow Synb0-SyN to correct
+        susceptibility-induced distortions in diffusion MRI data
+        :footcite:p:`Chigurupati2024`, :footcite:p:`Schilling2019`,
+        :footcite:p:`Schilling2020`.
+
+        Parameters
+        ----------
+        dwi_files : string or Path
+            Path to the input diffusion MRI volumes. This path may contain
+            wildcards to process multiple inputs at once.
+        t1_files : string or Path
+            Path to the T1-weighted structural image files. This path may
+            contain wildcards to use multiple T1 files at once.
+        b0_index : int, optional
+            The index of the b0 volume used for field estimation when
+            the DWI data is 4D.
+        pe_axis : int, optional
+            The phase-encoding axis. 0 for 'x', 1 for 'y', 2 for 'z'.
+            The returned field will be restricted to this direction.
+        dwi_mask_file : string or Path, optional
+            Path to the DWI brain mask file. If empty, no masking is applied.
+        t1_mask_file : string or Path, optional
+            Path to the T1 brain mask file. If empty, no masking is applied.
+        apply_skull_strip : bool, optional
+            If True, apply MindGrab skull stripping to both the T1 and
+            DWI b0 images before registration.
+        apply_deepn4 : bool, optional
+            If True, apply DeepN4 bias field correction to the T1 image
+            before the first affine registration. DeepN4 requires PyTorch
+            or TensorFlow.
+        out_dir : string or Path, optional
+            Directory to save the corrected image and field map.
+        out_corrected : string, optional
+            Name for the saved distortion-corrected DWI image.
+        out_field : string, optional
+            Name for the saved estimated deformation field.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for dwi_path, t1_path, ocorrected, ofield in io_it:
+            logger.info(f"Loading DWI file {dwi_path}")
+            dwi_data, dwi_affine = load_nifti(dwi_path)
+
+            logger.info(f"Loading T1 file {t1_path}")
+            t1_data, t1_affine = load_nifti(t1_path)
+
+            dwi_mask = None
+            if dwi_mask_file:
+                logger.info(f"Loading DWI mask file {dwi_mask_file}")
+                dwi_mask, _ = load_nifti(dwi_mask_file)
+
+            t1_mask = None
+            if t1_mask_file:
+                logger.info(f"Loading T1 mask file {t1_mask_file}")
+                t1_mask, _ = load_nifti(t1_mask_file)
+
+            corrected_dwi, field = synb0_syn(
+                dwi=dwi_data,
+                T1=t1_data,
+                dwi_affine=dwi_affine,
+                T1_affine=t1_affine,
+                b0_index=b0_index,
+                dwi_mask=dwi_mask,
+                T1_mask=t1_mask,
+                pe_axis=pe_axis,
+                return_field=True,
+                apply_skull_strip=apply_skull_strip,
+                apply_deepn4=apply_deepn4,
+            )
+
+            logger.info(f"Saving corrected DWI to {ocorrected}")
+            save_nifti(ocorrected, corrected_dwi, dwi_affine)
+
+            logger.info(f"Saving deformation field to {ofield}")
+            save_nifti(ofield, field, dwi_affine)

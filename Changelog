@@ -18,6 +18,10 @@ The full VCS changelog is available here:
 
 Releases
 ~~~~~~~~
+* Unreleased
+
+- NF: Add Synb0-SyN susceptibility distortion correction with a CLI. Synb0 runs on the CPU without PyTorch.
+
 * 1.12.0 (Friday, March 13, 2026)
 
 - NF: FORCE recon model - new signal matching reconstruction model added.
