@@ -25,6 +25,7 @@ from dipy.workflows.align import (
     ResliceFlow,
     SlrWithQbxFlow,
     SynRegistrationFlow,
+    SynSDCFlow,
 )
 
 _, have_pd, _ = optional_package("pandas")
@@ -949,6 +950,43 @@ def test_syn_registration_flow(tmp_path):
     npt.assert_equal(Path(warped_path).is_file(), True)
     warped_map_path = syn_flow.last_generated_outputs["out_field"]
     npt.assert_equal(Path(warped_map_path).is_file(), True)
+
+
+def test_syn_sdc_flow(tmp_path):
+    from dipy.align.tests.test_sdc import _bump, _distort, _phantom
+
+    grid, brain, t1, t2 = _phantom()
+    affine = np.diag([2.0, 2.0, 2.5, 1.0])
+    u = _bump(grid, brain)
+    b0 = _distort(t2, grid, 1, u)
+    dwi = np.stack([b0, 0.5 * b0], axis=-1).astype(np.float32)
+    save_nifti(tmp_path / "dwi.nii.gz", dwi, affine)
+    save_nifti(tmp_path / "t1.nii.gz", t1.astype(np.float32), affine)
+    save_nifti(tmp_path / "mask.nii.gz", brain.astype(np.uint8), affine)
+
+    flow = SynSDCFlow()
+    flow._force_overwrite = True
+    flow.run(
+        str(tmp_path / "dwi.nii.gz"),
+        str(tmp_path / "t1.nii.gz"),
+        pe_axis=1,
+        anat_contrast="t1",
+        anat_mask_file=str(tmp_path / "mask.nii.gz"),
+        n_outer=1,
+        sigma_diff=3.0,
+        out_dir=tmp_path,
+    )
+    corrected, corrected_affine = load_nifti(
+        flow.last_generated_outputs["out_corrected"]
+    )
+    field = load_nifti_data(flow.last_generated_outputs["out_field"])
+    npt.assert_equal(corrected.shape, dwi.shape)
+    npt.assert_array_almost_equal(corrected_affine, affine)
+    npt.assert_equal(field.shape, b0.shape)
+    err = field - u
+    err -= np.median(err[brain])
+    err_before = np.abs(u - np.median(u[brain]))[brain].mean()
+    assert np.abs(err[brain]).mean() < 0.5 * err_before
 
 
 @pytest.mark.skipif(not have_pd, reason="Requires pandas")
