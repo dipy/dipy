@@ -411,6 +411,7 @@ def test_load_bundle_empty():
         assert_equal(len(bundle), 0)
 
 
+@pytest.mark.skipif(not has_pandas, reason="Requires Pandas")
 def test_bundlewarp_return_order():
     # compute_atlas_bundle relies on bundlewarp returning the warped MOVING
     # bundle first. Different sizes make the two arguments distinguishable, so
