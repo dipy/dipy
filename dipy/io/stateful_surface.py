@@ -135,10 +135,12 @@ class StatefulSurface:
         self.data_per_vertex = {} if data_per_vertex is None else data_per_vertex
         if dtype_dict is None:
             dtype_dict = {"vertices": np.float64, "faces": np.uint32}
-        self.dtype_dict = dtype_dict
 
-        self._vertices = np.array(vertices, dtype=self.dtype_dict["vertices"])
-        self._faces = np.array(faces, dtype=self.dtype_dict["faces"])
+        self._vertices = np.array(
+            vertices, dtype=dtype_dict.get("vertices", np.float64)
+        )
+        self._faces = np.array(faces, dtype=dtype_dict.get("faces", np.uint32))
+        self.dtype_dict = dtype_dict
 
         # Verify that vertices and faces are in the right format (if not empty)
         if self._vertices.size != 0 or self._faces.size != 0:
@@ -389,23 +391,15 @@ class StatefulSurface:
             Dictionary containing the desired datatype for positions, offsets
             and all dpp and dps keys. (To use with TRX file format):
         """
-        if not hasattr(self, "_vertices") or not hasattr(self, "_faces"):
-            self.dtype_dict[0] = 0
-            self.dtype_dict["vertices"] = dtype_dict["vertices"]
-            self.dtype_dict["faces"] = dtype_dict["faces"]
-            return
-
         if "faces" in dtype_dict:
             self._faces = self._faces.astype(dtype_dict["faces"])
         if "vertices" in dtype_dict:
             self._vertices = self._vertices.astype(dtype_dict["vertices"])
 
-        if "dpp" not in dtype_dict:
-            dtype_dict["dpp"] = {}
-
+        dpp_dtypes = dtype_dict.get("dpp", {})
         for key in self.data_per_vertex:
-            if key in dtype_dict["dpp"]:
-                dtype_to_use = dtype_dict["dpp"][key]
+            if key in dpp_dtypes:
+                dtype_to_use = dpp_dtypes[key]
                 self.data_per_vertex[key] = self.data_per_vertex[key].astype(
                     dtype_to_use
                 )

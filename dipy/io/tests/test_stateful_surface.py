@@ -440,3 +440,45 @@ def test_save_load_many_times(tmp_path, extension):
 
     # Final vertices should match original
     npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
+
+
+def test_stateful_surface_custom_dtype_dict():
+    vertices = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    faces = np.array([[0, 1, 2]])
+    dpp = {"intensity": np.array([1.0, 2.0, 3.0], dtype=np.float64)}
+    ref = (np.eye(4), np.array([10, 10, 10]), np.array([1.0, 1.0, 1.0]), "RAS")
+
+    custom_dtypes = {
+        "vertices": np.float32,
+        "faces": np.int64,
+        "dpp": {"intensity": np.uint8},
+    }
+
+    sfs = StatefulSurface(
+        vertices,
+        faces,
+        ref,
+        Space.RASMM,
+        data_per_vertex=dpp,
+        dtype_dict=custom_dtypes,
+    )
+
+    assert sfs.vertices.dtype == np.dtype(np.float32)
+    assert sfs.faces.dtype == np.dtype(np.int64)
+    assert sfs.data_per_vertex["intensity"].dtype == np.dtype(np.uint8)
+    assert sfs.dtype_dict["vertices"] == np.dtype(np.float32)
+    assert sfs.dtype_dict["faces"] == np.dtype(np.int64)
+    assert sfs.dtype_dict["dpp"]["intensity"] == np.dtype(np.uint8)
+
+    # Also verify partial dtype_dict does not raise KeyError or mutate caller dict
+    partial_dtypes = {"vertices": np.float32}
+    sfs_partial = StatefulSurface(
+        vertices,
+        faces,
+        ref,
+        Space.RASMM,
+        dtype_dict=partial_dtypes,
+    )
+    assert sfs_partial.vertices.dtype == np.dtype(np.float32)
+    assert sfs_partial.faces.dtype == np.dtype(np.uint32)
+    assert partial_dtypes == {"vertices": np.float32}
