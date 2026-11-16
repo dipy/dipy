@@ -9,10 +9,17 @@ import numpy as np
 
 from dipy.core.gradients import unique_bvals_tolerance
 from dipy.direction.peaks import PeaksAndMetrics, _pam_from_attrs
+from dipy.reconst._force_align import (
+    alignment_system as _alignment_system,
+    coherence_sweeps as _coherence_sweeps,
+    fiber_edges as _fiber_edges,
+    kernel_signal as _kernel_signal,
+)
 from dipy.reconst._force_search import search_inner_product as _cython_search
 from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.reconst.dirspeed import peak_directions
 from dipy.reconst.multi_voxel import MultiVoxelFit, multi_voxel_fit
-from dipy.reconst.shm import sf_to_sh, sh_to_sf_matrix
+from dipy.reconst.shm import real_sh_descoteaux, sf_to_sh, sh_to_sf_matrix
 from dipy.sims._force_core import (
     DEFAULT_THREE_FIBER_MIN_ANGLE,
     DEFAULT_TWO_FIBER_MIN_ANGLE,
@@ -711,37 +718,139 @@ def compute_microstructure_uncertainty_ambiguity(vals, weights, prior_range):
     return uncertainty, ambiguity
 
 
-def postprocess_peaks(preds, target_sphere, fracs):
-    original_shape = preds.shape[:-1]
-    preds_flat = preds.reshape(-1, preds.shape[-1])
-    fracs_flat = fracs.reshape(-1, fracs.shape[-1])
+def postprocess_peaks(
+    fits,
+    support,
+    *,
+    model=None,
+    max_uncertainty=15.0,
+    wm_threshold=0.5,
+    coherence_angle=5.0,
+    robust_angle=25.0,
+    continuity_alpha=0.25,
+    continuity_power=4.0,
+    max_link_angle=45.0,
+):
+    """Peaks of FORCE fits, aligned to the data and coherent across voxels.
 
-    n_voxels = preds_flat.shape[0]
-    vertices = target_sphere.vertices
+    The fibers of the library entry matched to each voxel keep their
+    fractions, diffusivities and dispersion; their axes are those aligned to
+    the voxel's data by ``FORCEModel.fit``, off the sphere grid. Fibers the
+    data cannot orient to within ``max_uncertainty`` are not reported.
+    White-matter voxels left without a peak take the peaks of their posterior
+    ODF. In a 3D volume the axes are then regularized by fiber continuity
+    between neighboring voxels, each axis yielding to its neighbors only as
+    far as its own data leave it undetermined; isotropic voxels are assumed.
 
-    # Initialize outputs using the total number of voxels
-    peaks_output = np.zeros((n_voxels, 5, 3), dtype=np.float32)
-    peak_indices = np.full((n_voxels, 5), -1, dtype=np.int32)
-    peak_vals = np.zeros((n_voxels, 5), dtype=np.float32)
+    Parameters
+    ----------
+    fits : ndarray of FORCEFit
+        Flattened fits, in the C order of ``support``.
+    support : ndarray of bool
+        Voxels for which peaks are returned.
+    model : FORCEModel, optional
+        Model of the fits; needed for the spatial stage.
+    max_uncertainty : float, optional
+        Peaks whose axis the data leave uncertain by more than this (RMS, in
+        degrees) are not reported.
+    wm_threshold : float, optional
+        Voxels with at least this white-matter fraction that are left without
+        a peak take the peaks of their posterior ODF. Use the ``wm_threshold``
+        the library was generated with (see ``FORCEModel.generate``).
+    coherence_angle : float, optional
+        Expected angle, in degrees, between a fiber and its continuation in
+        the next voxel; sets the strength of the continuity term.
+    robust_angle : float, optional
+        Scale, in degrees, of the robust (Welsch) continuity penalty.
+    continuity_alpha, continuity_power : float, optional
+        Fiber-continuity kernel ``alpha + (1 - alpha) |offset . axis|^power``
+        weighting each neighbor by how well it lies along the fiber.
+    max_link_angle : float, optional
+        Fibers of neighboring voxels further apart than this, in degrees, are
+        not linked.
 
-    for i in range(n_voxels):
-        mask = preds_flat[i] == 1
-        coords = vertices[mask]
-        indices = np.where(mask)[0]
+    Returns
+    -------
+    peak_dirs : ndarray (..., 5, 3)
+        Peak axes, by decreasing fiber fraction.
+    peak_indices : ndarray (..., 5)
+        Closest sphere vertex of each peak, -1 where there is none.
+    peak_values : ndarray (..., 5)
+        Fiber fraction of each peak.
+    """
+    from dipy.sims.force import default_sphere
 
-        num = min(len(coords), 5)
-        if num > 0:
-            peaks_output[i, :num] = coords[:num]
-            peak_indices[i, :num] = indices[:num]
+    flat = np.flatnonzero(support)
+    fits = fits[flat]
+    peak_dirs = np.zeros((support.size, 5, 3), dtype=np.float32)
+    peak_indices = np.full((support.size, 5), -1, dtype=np.int32)
+    peak_vals = np.zeros((support.size, 5), dtype=np.float32)
+    if len(fits):
+        fibers = {
+            key: np.stack([fit._params[f"fiber_{key}"] for fit in fits])
+            for key in ("dirs", "ref", "keep", "fractions", "hess", "grad", "aligned")
+        }
+        keep = fibers.pop("keep")
+        aligned = fibers.pop("aligned").astype(bool)
+        n_fib = keep.shape[1]
+        max_spread = np.deg2rad(max_uncertainty)
+        spread = _fiber_uncertainty(fibers["hess"], keep)
+        keep &= ~aligned[:, None] | (spread <= max_spread)
 
-        num_fracs = min(5, fracs_flat[i].shape[0])
-        peak_vals[i, :num_fracs] = fracs_flat[i][:num_fracs]
+        wm = np.array([fit._params["wm_fraction"] for fit in fits])
+        prior = np.eye(2 * n_fib) / max_spread**2
+        for row in np.flatnonzero(~keep.any(axis=1) & (wm >= wm_threshold)):
+            odf = fits[row].odf
+            if odf is None:
+                continue
+            axes, values, _ = peak_directions(
+                np.asarray(odf, dtype=np.float64),
+                default_sphere,
+                relative_peak_threshold=0.5,
+                min_separation_angle=25,
+            )
+            count = min(len(axes), n_fib)
+            fibers["dirs"][row] = 0.0
+            fibers["dirs"][row, :count] = axes[:count]
+            fibers["ref"][row] = fibers["dirs"][row]
+            fibers["fractions"][row] = 0.0
+            fibers["fractions"][row, :count] = values[:count] / values[:count].sum()
+            keep[row] = np.arange(n_fib) < count
+            fibers["hess"][row] = prior * np.repeat(keep[row], 2)[:, None]
+            fibers["grad"][row] = 0.0
+        fibers["valid"] = np.linalg.norm(fibers["ref"], axis=-1) > 0
 
-    peaks_output = peaks_output.reshape((*original_shape, 5, 3))
-    peak_indices = peak_indices.reshape((*original_shape, 5))
-    peak_vals = peak_vals.reshape((*original_shape, 5))
+        dirs = fibers["dirs"]
+        if support.ndim == 3 and keep.any() and aligned.any():
+            fibers["frames"] = _tangent_frames(dirs)
+            dirs = _align_coherent(
+                fibers,
+                keep,
+                _neighbor_graph(support, (1, 1, 1)),
+                max_angle=model.max_angle,
+                coherence_angle=coherence_angle,
+                robust_angle=robust_angle,
+                continuity_alpha=continuity_alpha,
+                continuity_power=continuity_power,
+                max_link_angle=max_link_angle,
+            )
 
-    return peaks_output, peak_indices, peak_vals
+        rank = np.argsort(
+            -np.where(keep, fibers["fractions"], -1.0), axis=1, kind="stable"
+        )
+        kept = np.take_along_axis(keep, rank, axis=1)
+        axes = np.take_along_axis(dirs, rank[..., None], axis=1)
+        values = np.take_along_axis(fibers["fractions"], rank, axis=1)
+        nearest = _nearest_vertex(axes, default_sphere.vertices)
+        peak_dirs[flat, :n_fib] = np.where(kept[..., None], axes, 0.0)
+        peak_vals[flat, :n_fib] = np.where(kept, values, 0.0)
+        peak_indices[flat, :n_fib] = np.where(kept, nearest, -1)
+
+    return (
+        peak_dirs.reshape((*support.shape, 5, 3)),
+        peak_indices.reshape((*support.shape, 5)),
+        peak_vals.reshape((*support.shape, 5)),
+    )
 
 
 class FORCEModel(ReconstModel):
@@ -757,6 +866,10 @@ class FORCEModel(ReconstModel):
         use_posterior=False,
         posterior_beta=2000.0,
         compute_odf=False,
+        max_angle=25.0,
+        max_step_angle=8.0,
+        match_dof=12,
+        max_basis_condition=20.0,
         verbose=False,
     ):
         r"""
@@ -786,6 +899,19 @@ class FORCEModel(ReconstModel):
             Softmax temperature for posterior.
         compute_odf : bool, optional
             Compute posterior ODF maps.
+        max_angle : float, optional
+            Largest rotation of a fiber axis away from its library axis, in
+            degrees, during the alignment and the spatial stage of
+            :func:`force_peaks`.
+        max_step_angle : float, optional
+            Largest rotation of a fiber axis in one Gauss-Newton iteration of
+            the alignment, in degrees.
+        match_dof : int, optional
+            Effective number of parameters absorbed by the match when the
+            residual is turned into a noise level.
+        max_basis_condition : float, optional
+            Largest condition number accepted for the spherical harmonic basis
+            of a shell; shells with a worse basis are not used to align fibers.
         verbose : bool, optional
             Show progress bar and status messages.
 
@@ -807,6 +933,10 @@ class FORCEModel(ReconstModel):
         self.use_posterior = use_posterior
         self.posterior_beta = posterior_beta
         self.compute_odf = compute_odf
+        self.max_angle = max_angle
+        self.max_step_angle = max_step_angle
+        self.match_dof = match_dof
+        self.max_basis_condition = max_basis_condition
         self.verbose = verbose
 
         self._index = None
@@ -1245,6 +1375,21 @@ class FORCEModel(ReconstModel):
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = np.full(n_vox, np.nan, dtype=np.float32)
 
+        # Fiber axes of the matched entry aligned to each voxel's data, with
+        # their precision; force_peaks filters and makes them coherent.
+        aligned = _align_voxelwise(data2d, lib_idx, self)
+        n_dof = max(len(self.gtab.bvals) - self.match_dof, 1)
+        noise = np.maximum(aligned["cost"], EPSILON) / n_dof
+        params_arrays["fiber_dirs"] = aligned["dirs"]
+        params_arrays["fiber_ref"] = aligned["ref"]
+        params_arrays["fiber_keep"] = aligned["valid"]
+        params_arrays["fiber_fractions"] = aligned["fractions"]
+        params_arrays["fiber_hess"] = aligned["hess"] / noise[:, None, None]
+        params_arrays["fiber_grad"] = aligned["grad"] / noise[:, None]
+        params_arrays["fiber_aligned"] = np.full(
+            n_vox, bool(_alignment_context(self)["ops"]["shells"])
+        )
+
         # Per-microstructure uncertainty and ambiguity from posterior density.
         # The FWHM-KDE ambiguity is the dominant serial cost; numpy releases the
         # GIL on its large reductions, so fan the per-parameter loop over threads.
@@ -1645,7 +1790,19 @@ def posterior_odf(odfs, weights, indices, n_dirs):
     return result
 
 
-def force_peaks(fitted_object, *, mask=None, sh_order=8):
+def force_peaks(
+    fitted_object,
+    *,
+    mask=None,
+    sh_order=8,
+    max_uncertainty=15.0,
+    wm_threshold=0.5,
+    coherence_angle=5.0,
+    robust_angle=25.0,
+    continuity_alpha=0.25,
+    continuity_power=4.0,
+    max_link_angle=45.0,
+):
     """Create a PeaksAndMetrics object from a FORCEFit or MultiVoxelFit.
 
     Parameters
@@ -1656,20 +1813,48 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         Optional brain mask.
     sh_order : int, optional
         Spherical harmonics order for the coefficients.
+    max_uncertainty : float, optional
+        Peaks whose axis the data leave uncertain by more than this (RMS, in
+        degrees) are not reported.
+    wm_threshold : float, optional
+        Voxels with at least this white-matter fraction that are left without
+        a peak take the peaks of their posterior ODF. Use the ``wm_threshold``
+        the library was generated with (see ``FORCEModel.generate``).
+    coherence_angle : float, optional
+        Expected angle, in degrees, between a fiber and its continuation in
+        the next voxel; sets the strength of the continuity term.
+    robust_angle : float, optional
+        Scale, in degrees, of the robust (Welsch) continuity penalty.
+    continuity_alpha, continuity_power : float, optional
+        Fiber-continuity kernel ``alpha + (1 - alpha) |offset . axis|^power``
+        weighting each neighbor by how well it lies along the fiber.
+    max_link_angle : float, optional
+        Fibers of neighboring voxels further apart than this, in degrees, are
+        not linked.
 
     Notes
     -----
-    Multi-voxel conversion uses 10,000-voxel blocks to bound temporary memory.
+    Multi-voxel ODF conversion uses 10,000-voxel blocks to bound temporary
+    memory. See :func:`postprocess_peaks` for how the peaks are obtained.
     """
     from dipy.sims.force import default_sphere
 
+    peak_params = {
+        "max_uncertainty": max_uncertainty,
+        "wm_threshold": wm_threshold,
+        "coherence_angle": coherence_angle,
+        "robust_angle": robust_angle,
+        "continuity_alpha": continuity_alpha,
+        "continuity_power": continuity_power,
+        "max_link_angle": max_link_angle,
+    }
     if not isinstance(fitted_object, MultiVoxelFit):
         # Single Voxel Case
-        labels = fitted_object.label
-        fracs = fitted_object.fracs
         odf = fitted_object.odf
         p_out, p_ind, p_val = postprocess_peaks(
-            labels[None, :], default_sphere, fracs[None, :]
+            np.array([fitted_object], dtype=object),
+            np.ones(1, dtype=bool),
+            **peak_params,
         )
         res_dirs, res_inds, res_vals = p_out[0], p_ind[0], p_val[0]
         res_sh = (
@@ -1682,10 +1867,6 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         original_shape = fitted_object.shape
         fits = fitted_object.fit_array.reshape(-1)
         fit_mask = fitted_object.mask.reshape(-1)
-        peak_mask = None if mask is None else mask.reshape(-1)
-        res_dirs = np.zeros((fits.size, 5, 3), dtype=np.float32)
-        res_inds = np.full((fits.size, 5), -1, dtype=np.int32)
-        res_vals = np.zeros((fits.size, 5), dtype=np.float32)
         res_sh = invB = None
 
         for start in range(0, fits.size, 10_000):
@@ -1693,14 +1874,6 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
             if not fit_mask[chunk].any():
                 continue
             block = MultiVoxelFit(fitted_object.model, fits[chunk], fit_mask[chunk])
-            labels, fracs = block.label, block.fracs
-            output = chunk
-            if peak_mask is not None:
-                labels, fracs = labels[peak_mask[chunk]], fracs[peak_mask[chunk]]
-                output = start + np.flatnonzero(peak_mask[chunk])
-            p_out, p_ind, p_val = postprocess_peaks(labels, default_sphere, fracs)
-            res_dirs[output], res_inds[output], res_vals[output] = p_out, p_ind, p_val
-
             odf = block.odf
             if np.issubdtype(odf.dtype, np.floating):
                 if invB is None:
@@ -1712,11 +1885,15 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
                     v_max > 1.0, (odf - v_min) / (v_max - v_min + 1e-12), odf
                 )
                 res_sh[chunk] = np.dot(odf, invB)
-            del block, labels, fracs, odf, p_out, p_ind, p_val
+            del block, odf
 
-        res_dirs = res_dirs.reshape((*original_shape, 5, 3))
-        res_inds = res_inds.reshape((*original_shape, 5))
-        res_vals = res_vals.reshape((*original_shape, 5))
+        support = fit_mask if mask is None else fit_mask & mask.reshape(-1)
+        res_dirs, res_inds, res_vals = postprocess_peaks(
+            fits,
+            support.reshape(original_shape),
+            model=fitted_object.model,
+            **peak_params,
+        )
         if res_sh is not None:
             res_sh = res_sh.reshape((*original_shape, res_sh.shape[-1]))
     return _pam_from_attrs(
@@ -1731,3 +1908,636 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         None,
         None,
     )
+
+
+_NEIGHBOR_OFFSETS = np.array(
+    [
+        (i, j, k)
+        for i in (-1, 0, 1)
+        for j in (-1, 0, 1)
+        for k in (-1, 0, 1)
+        if (i, j, k) != (0, 0, 0)
+    ],
+    dtype=np.int64,
+)
+
+
+def _legendre_monomials(degree):
+    """Coefficients of the even powers of ``t`` in the Legendre polynomial."""
+    coeffs = np.zeros(degree + 1)
+    coeffs[degree] = 1.0
+    return np.polynomial.legendre.leg2poly(coeffs)[::2]
+
+
+def _alignment_operators(
+    gtab, sphere, *, sh_order_max=8, shell_tol=50.0, max_condition=20.0
+):
+    """Operators that expose the fiber kernels hidden in a library signal.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Gradient table of the library.
+    sphere : Sphere
+        Sphere whose vertices carry the library's fiber axes.
+    sh_order_max : int, optional
+        Largest spherical harmonic degree used on a shell. Shells with too
+        few directions for it use the largest degree they can support.
+    shell_tol : float, optional
+        b-values closer than this are treated as one shell.
+    max_condition : float, optional
+        Largest condition number accepted for the SH basis of a shell.
+
+    Returns
+    -------
+    ops : dict
+        ``shell`` (M,) shell index of each measurement (``-1`` where the
+        measurement carries no orientation information), ``gdirs`` (M, 3),
+        ``n_term`` number of polynomial terms of a kernel, and ``shells``,
+        a list with, for every usable shell: ``idx`` measurement indices,
+        ``pinv`` signal-to-SH operator, ``basis`` SH basis on the sphere
+        vertices, ``starts`` first SH coefficient of each even degree,
+        ``degrees`` and ``mono`` monomial coefficients of ``P_l``.
+    """
+    from dipy.core.geometry import cart2sphere
+
+    bvals = np.asarray(gtab.bvals, dtype=np.float64)
+    bvecs = np.asarray(gtab.bvecs, dtype=np.float64)
+    dwi = bvals > gtab.b0_threshold
+    rounded = np.round(bvals / shell_tol) * shell_tol
+    vertices = np.asarray(sphere.vertices, dtype=np.float64)
+
+    def basis(points, order):
+        _, theta, phi = cart2sphere(points[:, 0], points[:, 1], points[:, 2])
+        mat, _, degree = real_sh_descoteaux(order, theta, phi, legacy=False)
+        return mat, np.asarray(degree)
+
+    shells = []
+    shell = np.full(len(bvals), -1, dtype=np.int32)
+    for b in np.unique(rounded[dwi]):
+        idx = np.flatnonzero(dwi & (rounded == b))
+        # Largest order the directions of this shell determine well; shells
+        # that cannot resolve any anisotropy carry no orientation information.
+        order = 0
+        for candidate in range(sh_order_max - sh_order_max % 2, 1, -2):
+            if (candidate + 1) * (candidate + 2) // 2 > len(idx):
+                continue
+            mat, degree_of = basis(bvecs[idx], candidate)
+            singular = np.linalg.svd(mat, compute_uv=False)
+            if singular[0] <= max_condition * singular[-1]:
+                order = candidate
+                break
+        if order < 2:
+            continue
+        degrees = np.arange(2, order + 2, 2)
+        mono = np.zeros((len(degrees), sh_order_max // 2 + 1))
+        for i, degree in enumerate(degrees):
+            mono[i, : degree // 2 + 1] = _legendre_monomials(degree)
+        shell[idx] = len(shells)
+        shells.append(
+            {
+                "idx": idx,
+                "pinv": np.linalg.pinv(mat),
+                "basis": basis(vertices, order)[0],
+                "starts": np.array(
+                    [np.flatnonzero(degree_of == d)[0] for d in degrees]
+                ),
+                "degrees": degrees,
+                "mono": mono,
+            }
+        )
+    return {
+        "shell": shell,
+        "gdirs": np.ascontiguousarray(bvecs),
+        "n_term": sh_order_max // 2 + 1,
+        "shells": shells,
+    }
+
+
+def _fiber_vertices(labels, *, max_fibers=3):
+    """Sphere vertex of each fiber from binary label rows.
+
+    Parameters
+    ----------
+    labels : ndarray (N, n_vertices)
+        Non-zero at the vertices carrying a fiber.
+    max_fibers : int, optional
+        Number of fiber slots returned.
+
+    Returns
+    -------
+    vertex : ndarray of int (N, max_fibers)
+        Vertex index of each fiber, ascending; ``0`` in unused slots.
+    valid : ndarray of bool (N, max_fibers)
+        True where the slot holds a fiber.
+    """
+    present = np.asarray(labels) > 0
+    vertex = np.argsort(~present, axis=1, kind="stable")[:, :max_fibers]
+    valid = np.take_along_axis(present, vertex, axis=1)
+    return np.where(valid, vertex, 0), valid
+
+
+def _pair_fractions(vertex, valid, odf, fractions):
+    """Give every fiber vertex the fraction it was simulated with.
+
+    The library stores fiber fractions in simulation order but fiber vertices
+    as an unordered mask. All fibers of an entry share one dispersion, so the
+    ODF amplitude at a fiber's vertex ranks the fibers by fraction.
+
+    Parameters
+    ----------
+    vertex : ndarray of int (N, F)
+        Vertex index of each fiber.
+    valid : ndarray of bool (N, F)
+        True where the slot holds a fiber.
+    odf : ndarray (N, n_vertices) or None
+        ODF of each entry. Without it the stored order is kept.
+    fractions : ndarray (N, >=F)
+        Fiber fractions in simulation order.
+
+    Returns
+    -------
+    paired : ndarray (N, F)
+        Fraction of the fiber in each slot, zero in unused slots.
+    """
+    n_fib = valid.shape[1]
+    fractions = np.asarray(fractions, dtype=np.float64)[:, :n_fib]
+    if odf is None:
+        return np.where(valid, fractions, 0.0)
+    amplitude = np.take_along_axis(np.asarray(odf, dtype=np.float32), vertex, axis=1)
+    amplitude = np.where(valid, amplitude, -np.inf)
+    by_amplitude = np.argsort(-amplitude, axis=1, kind="stable")
+    paired = np.zeros(valid.shape)
+    np.put_along_axis(paired, by_amplitude, -np.sort(-fractions, axis=1), axis=1)
+    return np.where(valid, paired, 0.0)
+
+
+def _fiber_kernels(signals, vertex, valid, sphere, ops, *, prior=None, ridge=1e-3):
+    r"""Zonal kernel of every fiber of every library entry.
+
+    On each shell an entry's signal is a sum of axially symmetric kernels, one
+    per fiber, plus an isotropic part,
+
+    .. math::
+
+        S(\mathbf{g}) = R + \sum_k K_k(\mathbf{g} \cdot \mathbf{d}_k), \qquad
+        K_k(t) = \sum_{l = 2, 4, \dots} \kappa_{lk} P_l(t) .
+
+    The degree-:math:`l` part of the signal evaluated at the fiber axes,
+    :math:`f_l(\mathbf{d}_k)`, obeys
+    :math:`\sum_j P_l(\mathbf{d}_j \cdot \mathbf{d}_k) \kappa_{lj} =
+    f_l(\mathbf{d}_k)` (addition theorem), which determines the
+    :math:`\kappa_{lk}` of all fibers from the entry's signal alone.
+
+    Parameters
+    ----------
+    signals : ndarray (N, M)
+        Library signals.
+    vertex : ndarray of int (N, F)
+        Sphere vertex of each fiber.
+    valid : ndarray of bool (N, F)
+        True where the slot holds a fiber.
+    sphere : Sphere
+        Sphere carrying the fiber axes.
+    ops : dict
+        Output of :func:`_alignment_operators`.
+    prior : ndarray (N, F, S, D), optional
+        Expected :math:`\kappa_{lk}`; fills the components the signal leaves
+        undetermined (e.g. degree 2 of three mutually orthogonal fibers).
+    ridge : float, optional
+        Weight of ``prior`` relative to the signal equations.
+
+    Returns
+    -------
+    poly : ndarray (N, F, S, P)
+        Kernels as polynomial coefficients in :math:`t^2`.
+    kappa : ndarray (N, F, S, D)
+        Legendre coefficients :math:`\kappa_{lk}` (zero-padded over degrees).
+    """
+    n_vox, n_fib = valid.shape
+    n_shell = len(ops["shells"])
+    n_deg = ops["n_term"] - 1
+    axes = np.asarray(sphere.vertices, dtype=np.float64)[vertex]
+    cosines = np.clip(np.einsum("nja,nka->njk", axes, axes), -1.0, 1.0)
+    pair = valid[:, :, None] & valid[:, None, :]
+    unused = np.eye(n_fib, dtype=bool)[None] & ~pair
+    eye = np.eye(n_fib)[None]
+    poly = np.zeros((n_vox, n_fib, n_shell, ops["n_term"]))
+    kappa = np.zeros((n_vox, n_fib, n_shell, n_deg))
+    for s, shell in enumerate(ops["shells"]):
+        coef = signals[:, shell["idx"]].astype(np.float64) @ shell["pinv"].T
+        at_axes = shell["basis"][vertex] * coef[:, None, :]
+        f_l = np.add.reduceat(at_axes, shell["starts"], axis=2)
+        for i, degree in enumerate(shell["degrees"]):
+            order = np.zeros(degree + 1)
+            order[degree] = 1.0
+            gram = np.polynomial.legendre.legval(cosines, order)
+            gram = np.where(pair, gram, 0.0)
+            gram[np.broadcast_to(unused, gram.shape)] = 1.0
+            rhs = np.einsum("njk,nk->nj", gram, np.where(valid, f_l[:, :, i], 0.0))
+            if prior is not None:
+                rhs += ridge * np.where(valid, prior[:, :, s, i], 0.0)
+            k_l = np.linalg.solve(gram @ gram + ridge * eye, rhs[..., None])[..., 0]
+            kappa[:, :, s, i] = k_l
+            poly[:, :, s, :] += k_l[..., None] * shell["mono"][i]
+    return poly, kappa
+
+
+def _wm_dispersion(simulations, index):
+    """Orientation dispersion of the white-matter compartment of entries."""
+    wm = simulations["wm_fraction"][index].astype(np.float64)
+    iso = simulations["gm_fraction"][index].astype(np.float64)
+    iso += simulations["csf_fraction"][index]
+    dispersion = simulations["dispersion"][index].astype(np.float64)
+    return (dispersion - iso) / np.maximum(wm, 1e-6)
+
+
+def _kernel_prior_table(simulations, sphere, ops, *, max_entries=30000):
+    """Typical single-fiber kernel for each dispersion level of a library.
+
+    Single-fiber entries expose their kernel directly. Their median, per unit
+    white-matter fraction and for every dispersion value, is what a
+    multi-fiber entry is expected to hold for each of its fibers.
+
+    Parameters
+    ----------
+    simulations : dict
+        FORCE simulation library.
+    sphere : Sphere
+        Sphere carrying the fiber axes.
+    ops : dict
+        Output of :func:`_alignment_operators`.
+    max_entries : int, optional
+        Number of single-fiber entries used.
+
+    Returns
+    -------
+    table : dict
+        ``grid`` (G,) dispersion values and ``kappa`` (G, S, D) the median
+        kernel coefficients per unit white-matter fraction.
+    """
+    n_shell = len(ops["shells"])
+    n_deg = ops["n_term"] - 1
+    labels = simulations["labels"]
+    single = np.flatnonzero(
+        (simulations["num_fibers"] == 1) & (np.count_nonzero(labels, axis=1) == 1)
+    )[:max_entries]
+    if len(single) == 0 or n_shell == 0:
+        return {"grid": np.zeros(1), "kappa": np.zeros((1, n_shell, n_deg))}
+    vertex, valid = _fiber_vertices(labels[single], max_fibers=1)
+    _, kappa = _fiber_kernels(
+        simulations["signals"][single], vertex, valid, sphere, ops, ridge=0.0
+    )
+    unit = kappa[:, 0] / simulations["wm_fraction"][single, None, None]
+    dispersion = _wm_dispersion(simulations, single)
+    grid = np.unique(np.round(dispersion, 3))
+    nearest = np.abs(dispersion[:, None] - grid[None, :]).argmin(axis=1)
+    table = np.stack([np.median(unit[nearest == g], axis=0) for g in range(len(grid))])
+    return {"grid": grid, "kappa": table}
+
+
+def _alignment_context(model):
+    """Operators and kernel prior of a FORCE model (cached on the model)."""
+    from dipy.sims.force import default_sphere
+
+    simulations = model.simulations
+    cached = getattr(model, "_alignment_cache", None)
+    if cached is not None and cached["signals"] is simulations["signals"]:
+        return cached
+    ops = _alignment_operators(
+        model.gtab, default_sphere, max_condition=model.max_basis_condition
+    )
+    context = {
+        "signals": simulations["signals"],
+        "sphere": default_sphere,
+        "ops": ops,
+        "prior": _kernel_prior_table(simulations, default_sphere, ops),
+    }
+    model._alignment_cache = context
+    return context
+
+
+def _retract(dirs, frames, step):
+    """Move unit vectors along their tangent frames and renormalize."""
+    moved = dirs + np.einsum("nfca,nfc->nfa", frames, step)
+    norm = np.linalg.norm(moved, axis=-1, keepdims=True)
+    return moved / np.maximum(norm, EPSILON)
+
+
+def _clamp_to_cone(dirs, center, max_angle):
+    """Keep each axis within ``max_angle`` (radians) of its ``center`` axis."""
+    cos_max = np.cos(max_angle)
+    cosine = np.einsum("nfa,nfa->nf", dirs, center)
+    dirs = dirs * np.where(cosine < 0, -1.0, 1.0)[..., None]
+    cosine = np.abs(cosine)
+    outside = cosine < cos_max
+    if outside.any():
+        perp = dirs - cosine[..., None] * center
+        perp /= np.maximum(np.linalg.norm(perp, axis=-1, keepdims=True), EPSILON)
+        edge = cos_max * center + np.sin(max_angle) * perp
+        dirs = np.where(outside[..., None], edge, dirs)
+    return dirs
+
+
+def _align_voxelwise(signals, entries, model, *, n_iter=4):
+    """Maximum-likelihood fiber axes of each voxel, matched entry frozen.
+
+    Every fiber of the matched library entry keeps its kernel (fraction,
+    diffusivities, dispersion); its axis moves to maximize the cosine
+    similarity between the measured signal and the entry's signal, by damped
+    Gauss-Newton steps in the tangent planes of the axes.
+
+    Parameters
+    ----------
+    signals : ndarray (N, M)
+        Measured signals.
+    entries : ndarray of int (N,)
+        Matched library entry of each voxel.
+    model : FORCEModel
+        Model holding the library.
+    n_iter : int, optional
+        Number of Gauss-Newton iterations.
+
+    Returns
+    -------
+    result : dict
+        ``dirs`` (N, F, 3) aligned axes, ``ref`` (N, F, 3) library axes,
+        ``valid`` (N, F), ``fractions`` (N, F), ``hess`` (N, 2F, 2F) and
+        ``grad`` (N, 2F) Gauss-Newton system at ``dirs`` in the tangent
+        ``frames`` (N, F, 2, 3), and ``cost`` (N,) the final ``1 - rho^2``.
+    """
+    context = _alignment_context(model)
+    ops, sphere = context["ops"], context["sphere"]
+    simulations = model.simulations
+    vertex, valid = _fiber_vertices(simulations["labels"][entries])
+    n_vox, n_fib = valid.shape
+    odf = simulations["odfs"][entries] if "odfs" in simulations else None
+    fractions = _pair_fractions(
+        vertex, valid, odf, simulations["fraction_array"][entries]
+    )
+    ref = np.where(valid[..., None], np.asarray(sphere.vertices)[vertex], 0.0)
+    ref = np.ascontiguousarray(ref, dtype=np.float64)
+    out = {
+        "dirs": ref.copy(),
+        "ref": ref,
+        "valid": valid,
+        "fractions": fractions,
+        "hess": np.zeros((n_vox, 2 * n_fib, 2 * n_fib)),
+        "grad": np.zeros((n_vox, 2 * n_fib)),
+        "frames": np.zeros((n_vox, n_fib, 2, 3)),
+        "cost": np.ones(n_vox),
+    }
+    if n_vox == 0 or not ops["shells"]:
+        return out
+
+    table = context["prior"]
+    nearest = np.abs(
+        _wm_dispersion(simulations, entries)[:, None] - table["grid"][None, :]
+    ).argmin(axis=1)
+    weight = simulations["wm_fraction"][entries].astype(np.float64)[:, None] * fractions
+    prior = weight[:, :, None, None] * table["kappa"][nearest][:, None]
+    matched = simulations["signals"][entries]
+    poly, _ = _fiber_kernels(matched, vertex, valid, sphere, ops, prior=prior)
+    poly = np.ascontiguousarray(poly)
+    valid8 = np.ascontiguousarray(valid, dtype=np.uint8)
+    shell, gdirs = ops["shell"], ops["gdirs"]
+    rest = matched.astype(np.float32) - _kernel_signal(ref, valid8, poly, shell, gdirs)
+    signals = np.ascontiguousarray(signals, dtype=np.float32)
+
+    def system(dirs):
+        return _alignment_system(signals, rest, dirs, valid8, poly, shell, gdirs)
+
+    dirs = ref.copy()
+    hess, grad, cost, frames = system(dirs)
+    free = np.repeat(valid, 2, axis=1)
+    eye = np.eye(2 * n_fib)[None]
+    pinned = (~free)[:, :, None] * eye
+    damping = np.full(n_vox, 1e-2)
+    step_limit = np.tan(np.deg2rad(model.max_step_angle))
+    for _ in range(n_iter):
+        diag = np.einsum("npp->np", hess)
+        lhs = hess + (damping[:, None] * np.maximum(diag, EPSILON))[:, :, None] * eye
+        step = np.linalg.solve(lhs + pinned, grad[..., None])[..., 0]
+        step = step.reshape(n_vox, n_fib, 2)
+        length = np.linalg.norm(step, axis=-1, keepdims=True)
+        step *= np.minimum(1.0, step_limit / np.maximum(length, EPSILON))
+        trial = _clamp_to_cone(
+            _retract(dirs, frames, step), ref, np.deg2rad(model.max_angle)
+        )
+        trial = np.ascontiguousarray(np.where(valid[..., None], trial, 0.0))
+        hess_t, grad_t, cost_t, frames_t = system(trial)
+        better = cost_t < cost
+        damping = np.where(better, damping / 3.0, damping * 10.0)
+        dirs[better] = trial[better]
+        hess[better] = hess_t[better]
+        grad[better] = grad_t[better]
+        frames[better] = frames_t[better]
+        cost[better] = cost_t[better]
+    out.update(dirs=dirs, hess=hess, grad=grad, frames=frames, cost=cost)
+    return out
+
+
+def _fiber_uncertainty(precision, valid):
+    """Angular uncertainty of each fiber axis from the data alone.
+
+    Parameters
+    ----------
+    precision : ndarray (N, 2F, 2F)
+        Precision of the aligned axes in tangent coordinates: Gauss-Newton
+        Hessian of ``(1 - rho^2) / 2`` divided by the noise variance.
+    valid : ndarray of bool (N, F)
+        True where the slot holds a fiber.
+
+    Returns
+    -------
+    sd : ndarray (N, F)
+        Root-mean-square angular error of each axis (Laplace approximation),
+        in radians; ``inf`` in unused slots.
+    """
+    n_fib = valid.shape[1]
+    eye = np.eye(2 * n_fib)[None]
+    free = np.repeat(valid, 2, axis=1)
+    precision = precision + (~free)[:, :, None] * eye
+    # The floor keeps an axis the data cannot orient at a large, finite value.
+    cov = np.linalg.inv(precision + 1e-6 * eye)
+    var = np.einsum("npp->np", cov).reshape(-1, n_fib, 2).sum(axis=-1)
+    return np.where(valid, np.sqrt(np.maximum(var, 0.0)), np.inf)
+
+
+def _neighbor_graph(mask, voxel_size):
+    """26-neighborhood of the voxels selected by a 3D mask.
+
+    Parameters
+    ----------
+    mask : ndarray of bool (X, Y, Z)
+        Voxels of the graph, in C order.
+    voxel_size : sequence of 3 floats
+        Voxel dimensions.
+
+    Returns
+    -------
+    graph : dict
+        ``nbr`` (V, 26) neighbor index or ``-1``, ``unit`` (26, 3) unit
+        offsets, ``weight`` (26,) inverse squared distance (1 for the closest
+        neighbors), ``order`` (V,) voxels sorted by color and
+        ``color_start`` (9,); voxels of one color are never neighbors.
+    """
+    coords = np.argwhere(mask)
+    index = np.full(mask.shape, -1, dtype=np.int64)
+    index[tuple(coords.T)] = np.arange(len(coords))
+    shape = np.array(mask.shape)
+    nbr = np.full((len(coords), len(_NEIGHBOR_OFFSETS)), -1, dtype=np.int64)
+    for k, offset in enumerate(_NEIGHBOR_OFFSETS):
+        shifted = coords + offset
+        inside = np.all((shifted >= 0) & (shifted < shape), axis=1)
+        nbr[inside, k] = index[tuple(shifted[inside].T)]
+    physical = _NEIGHBOR_OFFSETS * np.asarray(voxel_size, dtype=np.float64)
+    dist2 = np.sum(physical**2, axis=1)
+    color = (coords % 2) @ np.array([1, 2, 4])
+    order = np.argsort(color, kind="stable").astype(np.int64)
+    return {
+        "nbr": nbr,
+        "unit": np.ascontiguousarray(physical / np.sqrt(dist2)[:, None]),
+        "weight": np.ascontiguousarray(dist2.min() / dist2),
+        "order": order,
+        "color_start": np.searchsorted(color[order], np.arange(9)).astype(np.int64),
+    }
+
+
+def _align_coherent(
+    fibers,
+    keep,
+    graph,
+    *,
+    max_angle,
+    coherence_angle,
+    robust_angle,
+    continuity_alpha,
+    continuity_power,
+    max_link_angle,
+    n_sweeps=10,
+):
+    """Spatially coherent fiber axes under the frozen-microstructure data term.
+
+    Minimizes the second-order model of the data term around the voxel-wise
+    solution plus a robust continuity term between linked fibers of
+    neighboring voxels.
+
+    Parameters
+    ----------
+    fibers : dict
+        Per-voxel ``dirs``, ``ref``, ``valid`` and ``frames`` of the fibers,
+        and the precision ``hess`` and linear term ``grad`` of their data term.
+    keep : ndarray of bool (V, F)
+        Fibers that take part in the continuity term.
+    graph : dict
+        Output of :func:`_neighbor_graph`.
+    max_angle, coherence_angle, robust_angle : float
+        Trust-region radius, expected angle between linked fibers and robust
+        scale, in degrees (see :func:`force_peaks`).
+    continuity_alpha, continuity_power : float
+        Fiber-continuity kernel (see :func:`force_peaks`).
+    max_link_angle : float
+        Largest angle, in degrees, between linked fibers.
+    n_sweeps : int, optional
+        Number of Gauss-Seidel sweeps.
+
+    Returns
+    -------
+    dirs : ndarray (V, F, 3)
+        Coherent fiber axes.
+    """
+    valid = fibers["valid"]
+    n_fib = valid.shape[1]
+    base = np.ascontiguousarray(fibers["dirs"], dtype=np.float64)
+    partner, weight = _fiber_edges(
+        base,
+        np.ascontiguousarray(keep, dtype=np.uint8),
+        graph["nbr"],
+        graph["unit"],
+        graph["weight"],
+        continuity_alpha,
+        continuity_power,
+        float(np.cos(np.deg2rad(max_link_angle))),
+    )
+    eye = np.eye(2 * n_fib)[None]
+    free = np.repeat(valid, 2, axis=1)
+    hess = fibers["hess"] + (~free)[:, :, None] * eye
+    lin = fibers["grad"].copy()
+    # A voxel whose system is not finite stays where the data put it.
+    usable = np.isfinite(hess).all(axis=(1, 2)) & np.isfinite(lin).all(axis=1)
+    hess[~usable] = eye[0] / EPSILON
+    lin[~usable] = 0.0
+    dirs = base.copy()
+    _coherence_sweeps(
+        dirs,
+        base,
+        np.ascontiguousarray(fibers["frames"], dtype=np.float64),
+        np.ascontiguousarray(hess),
+        np.ascontiguousarray(lin),
+        np.ascontiguousarray(valid, dtype=np.uint8),
+        np.ascontiguousarray(fibers["ref"], dtype=np.float64),
+        graph["nbr"],
+        partner,
+        weight,
+        graph["order"],
+        graph["color_start"],
+        1.0 / (2.0 * np.deg2rad(coherence_angle) ** 2),
+        np.deg2rad(robust_angle),
+        np.deg2rad(max_angle),
+        n_sweeps,
+        np.deg2rad(0.05),
+    )
+    return dirs
+
+
+def _nearest_vertex(axes, vertices, *, block_size=50_000):
+    """Index of the sphere vertex closest to each axis, up to sign.
+
+    Parameters
+    ----------
+    axes : ndarray (..., 3)
+        Unit vectors.
+    vertices : ndarray (n_vertices, 3)
+        Sphere vertices.
+    block_size : int, optional
+        Number of axes compared with the sphere at a time.
+
+    Returns
+    -------
+    index : ndarray of int (...)
+        Closest vertex of every axis.
+    """
+    vertices = np.ascontiguousarray(vertices, dtype=np.float32)
+    flat = np.ascontiguousarray(axes, dtype=np.float32).reshape(-1, 3)
+    index = np.empty(len(flat), dtype=np.int64)
+    for start in range(0, len(flat), block_size):
+        cosine = flat[start : start + block_size] @ vertices.T
+        index[start : start + block_size] = np.abs(cosine, out=cosine).argmax(axis=1)
+    return index.reshape(np.shape(axes)[:-1])
+
+
+def _tangent_frames(dirs):
+    """Two orthonormal vectors spanning the tangent plane at each unit vector.
+
+    Same construction as ``_tangent_frame`` in ``_force_align.pyx``.
+
+    Parameters
+    ----------
+    dirs : ndarray (..., 3)
+        Unit vectors.
+
+    Returns
+    -------
+    frames : ndarray (..., 2, 3)
+        Tangent frame of every vector.
+    """
+    d = np.asarray(dirs, dtype=np.float64)
+    zero = np.zeros(d.shape[:-1])
+    e1 = np.where(
+        (np.abs(d[..., 2]) < 0.9)[..., None],
+        np.stack([d[..., 1], -d[..., 0], zero], axis=-1),
+        np.stack([zero, d[..., 2], -d[..., 1]], axis=-1),
+    )
+    e1 /= np.maximum(np.linalg.norm(e1, axis=-1, keepdims=True), EPSILON)
+    return np.stack([e1, np.cross(d, e1)], axis=-2)

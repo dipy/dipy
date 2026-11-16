@@ -11,7 +11,11 @@ from numpy.testing import assert_almost_equal, assert_array_less
 import pytest
 
 from dipy.core.gradients import gradient_table
-from dipy.data import default_sphere
+from dipy.data import default_sphere, get_sphere
+from dipy.reconst._force_align import (
+    alignment_system as _alignment_system,
+    kernel_signal as _kernel_signal,
+)
 from dipy.reconst.force import (
     DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
@@ -19,7 +23,10 @@ from dipy.reconst.force import (
     FORCEFit,
     FORCEModel,
     SignalIndex,
+    _alignment_operators,
+    _fiber_kernels,
     _fwhm_kde_batch,
+    _kernel_prior_table,
     _odi_grid_matches,
     _seed_matches,
     _weighted_percentile,
@@ -50,10 +57,23 @@ def _make_gtab(shells):
     return gradient_table(np.array(bvals, dtype=float), bvecs=np.array(bvecs))
 
 
+# Fit parameters of a voxel whose matched entry carries no fiber.
+_NO_FIBERS = {
+    "fiber_dirs": np.zeros((3, 3)),
+    "fiber_ref": np.zeros((3, 3)),
+    "fiber_keep": np.zeros(3, dtype=bool),
+    "fiber_fractions": np.zeros(3),
+    "fiber_hess": np.zeros((6, 6)),
+    "fiber_grad": np.zeros(6),
+    "fiber_aligned": True,
+    "wm_fraction": 0.0,
+}
+
+
 @pytest.mark.parametrize("with_odf", [False, True])
 @pytest.mark.parametrize("use_mask", [False, True])
 def test_force_peaks_volume(with_odf, use_mask):
-    """Preserve peak placement and SH across sparse, non-contiguous volumes."""
+    """Preserve SH across sparse, non-contiguous volumes; no fiber, no peak."""
     shape = (3, 67, 101)
     fits = np.full((67, 101, 3), None, dtype=object).transpose(2, 0, 1)
     fit_mask = np.zeros(shape, dtype=bool)
@@ -68,13 +88,9 @@ def test_force_peaks_volume(with_odf, use_mask):
     # Leave the beginning empty and include separated voxels near the end.
     for i, flat_index in enumerate((10_000, 10_001, 19_999, 20_000, 20_300)):
         voxel = np.unravel_index(flat_index, shape)
-        indices = np.array([i + 2, i + 23])
-        labels = np.zeros(len(default_sphere.vertices), dtype=np.int8)
-        labels[indices] = 1
-        fracs = np.array([0.6, 0.3, 0.0], dtype=np.float32)
         odf = None
         if with_odf:
-            odf = np.linspace(i, i + 2, labels.size, dtype=np.float32)
+            odf = np.linspace(i, i + 2, len(default_sphere.vertices), dtype=np.float32)
             if i == 0:
                 odf *= 0.4
             elif i == 2:
@@ -85,13 +101,9 @@ def test_force_peaks_volume(with_odf, use_mask):
                 if odf.max() > 1
                 else odf
             )
-        fits[voxel] = FORCEFit(None, {"labels": labels, "fracs": fracs, "odf": odf})
+        fits[voxel] = FORCEFit(None, {"odf": odf, **_NO_FIBERS})
         fit_mask[voxel] = True
         peak_mask[voxel] = i != 1
-        if not use_mask or peak_mask[voxel]:
-            expected_dirs[voxel][:2] = default_sphere.vertices[indices]
-            expected_inds[voxel][:2] = indices
-            expected_vals[voxel][:3] = fracs
 
     fit = MultiVoxelFit(None, fits, fit_mask)
     with warnings.catch_warnings():
@@ -119,18 +131,8 @@ def test_force_peaks_volume(with_odf, use_mask):
 
 def test_force_peaks_single_voxel():
     """Single-voxel conversion retains its original ODF scaling."""
-    indices = np.array([6, 42])
-    labels = np.zeros(len(default_sphere.vertices), dtype=np.int8)
-    labels[indices] = 1
-    fracs = np.array([0.6, 0.3, 0.0], dtype=np.float32)
-    odf = np.linspace(1, 3, labels.size, dtype=np.float32)
-    fit = FORCEFit(None, {"labels": labels, "fracs": fracs, "odf": odf})
-    expected_dirs = np.zeros((5, 3), dtype=np.float32)
-    expected_dirs[:2] = default_sphere.vertices[indices]
-    expected_inds = np.full(5, -1, dtype=np.int32)
-    expected_inds[:2] = indices
-    expected_vals = np.zeros(5, dtype=np.float32)
-    expected_vals[:3] = fracs
+    odf = np.linspace(1, 3, len(default_sphere.vertices), dtype=np.float32)
+    fit = FORCEFit(None, {"odf": odf, **_NO_FIBERS})
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -141,9 +143,9 @@ def test_force_peaks_single_voxel():
         expected_sh = sf_to_sh(odf, default_sphere, sh_order_max=6)
         pam = force_peaks(fit, sh_order=6)
 
-    npt.assert_array_equal(pam.peak_dirs, expected_dirs)
-    npt.assert_array_equal(pam.peak_indices, expected_inds)
-    npt.assert_array_equal(pam.peak_values, expected_vals)
+    npt.assert_array_equal(pam.peak_dirs, np.zeros((5, 3)))
+    npt.assert_array_equal(pam.peak_indices, np.full(5, -1))
+    npt.assert_array_equal(pam.peak_values, np.zeros(5))
     npt.assert_allclose(pam.shm_coeff, expected_sh, rtol=1e-12, atol=1e-12)
 
 
@@ -609,3 +611,335 @@ def test_cache_registry_separates_min_crossing_angles(tmp_path, monkeypatch):
     )
     assert len(list(cache_dir.glob("force_sim_*.npz"))) == 2
     npt.assert_array_equal(again.simulations["signals"], relaxed.simulations["signals"])
+
+
+_VERTICES = default_sphere.vertices
+# A fiber vertex, one about 35 degrees from it and one about 70 degrees away.
+_V0 = 10
+_V35 = 67
+_V70 = 163
+# The ODF conversion still uses the legacy spherical harmonic basis.
+_legacy_sh_basis = pytest.mark.filterwarnings(
+    "ignore:The legacy descoteaux07 SH basis:PendingDeprecationWarning"
+)
+
+
+def _shell_gtab(*shells):
+    """GradientTable with one b0 and the given ``(b-value, n_directions)`` shells.
+
+    Without arguments: one shell of 64 directions at b = 2000.
+    """
+    dirs = get_sphere(name="repulsion100").vertices
+    bvals, bvecs, first = [0.0], [np.zeros((1, 3))], 0
+    for bval, n_dirs in shells or [(2000.0, 64)]:
+        bvals += [bval] * n_dirs
+        bvecs.append(dirs[first : first + n_dirs])
+        first += n_dirs
+    return gradient_table(np.array(bvals), bvecs=np.concatenate(bvecs))
+
+
+def _stick_signal(gtab, axes, weights):
+    """Signal of sticks along ``axes`` on top of an isotropic ball."""
+    signal = (1.0 - np.sum(weights)) * np.exp(-gtab.bvals * 1.0e-3)
+    for axis, weight in zip(axes, weights):
+        signal = signal + weight * np.exp(
+            -gtab.bvals * 2.0e-3 * (gtab.bvecs @ axis) ** 2
+        )
+    return 100.0 * signal
+
+
+def _stick_library(gtab, entries, *, wm=0.8):
+    """Hand-made FORCE library: sticks on sphere vertices plus a ball.
+
+    ``entries`` lists, for each entry, the sphere vertices of its fibers and
+    their fractions. As in the simulator, fractions are stored in an order
+    unrelated to the vertices and the ODF marks which fiber is which.
+    """
+    n_entries = len(entries)
+    sims = {
+        "signals": np.zeros((n_entries, len(gtab.bvals)), dtype=np.float32),
+        "labels": np.zeros((n_entries, len(_VERTICES)), dtype=np.uint8),
+        "odfs": np.zeros((n_entries, len(_VERTICES)), dtype=np.float16),
+        "fraction_array": np.zeros((n_entries, 3), dtype=np.float32),
+        "num_fibers": np.zeros(n_entries, dtype=np.float32),
+    }
+    for i, (vertex, fractions) in enumerate(entries):
+        vertex, fractions = list(vertex), np.asarray(fractions, dtype=float)
+        sims["signals"][i] = _stick_signal(gtab, _VERTICES[vertex], wm * fractions)
+        sims["labels"][i, vertex] = 1
+        sims["odfs"][i, vertex] = fractions
+        sims["fraction_array"][i, : len(vertex)] = fractions[::-1]
+        sims["num_fibers"][i] = len(vertex)
+    for key, value in (
+        ("wm_fraction", wm),
+        ("gm_fraction", 1.0 - wm),
+        ("csf_fraction", 0.0),
+        ("dispersion", 1.0 - wm),
+        ("nd", 0.5),
+        ("fa", 0.5),
+        ("md", 1.0e-3),
+        ("rd", 5.0e-4),
+    ):
+        sims[key] = np.full(n_entries, value, dtype=np.float32)
+    return sims
+
+
+def _tilt(axis, toward, degrees):
+    """Unit vector ``degrees`` away from ``axis``, in the plane of ``toward``."""
+    perp = toward - (toward @ axis) * axis
+    perp = perp / np.linalg.norm(perp)
+    angle = np.deg2rad(degrees)
+    return np.cos(angle) * axis + np.sin(angle) * perp
+
+
+def _axial_angle(a, b):
+    """Angle in degrees between axes, ignoring their sign."""
+    return np.degrees(np.arccos(np.clip(np.abs(np.sum(a * b, axis=-1)), 0.0, 1.0)))
+
+
+def _n_peaks(pam):
+    return np.count_nonzero(np.linalg.norm(pam.peak_dirs, axis=-1) > 0, axis=-1)
+
+
+@_legacy_sh_basis
+@pytest.mark.parametrize(
+    "shells, tol", [((), 0.1), (((1000.0, 30), (2500.0, 64)), 0.5)]
+)
+def test_force_peaks_leave_the_sphere_grid(shells, tol):
+    """Peaks follow fibers that lie between library axes, each fiber on its own."""
+    gtab = _shell_gtab(*shells)
+    sims = _stick_library(
+        gtab,
+        [((_V0,), (1.0,)), ((_V35,), (1.0,)), ((_V0, _V70), (0.7, 0.3))],
+    )
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=3)
+
+    one = _tilt(_VERTICES[_V0], _VERTICES[_V70], 3.0)
+    data = np.tile(_stick_signal(gtab, [one], [0.8]), (3, 3, 3, 1))
+    fit = model.fit(data)
+    for pam in (force_peaks(fit), force_peaks(fit.fit_array[0, 0, 0])):
+        assert _axial_angle(pam.peak_dirs[..., 0, :], one).max() < tol
+        npt.assert_array_equal(_n_peaks(pam), 1)
+        npt.assert_array_equal(pam.peak_indices[..., 0], _V0)
+        npt.assert_array_equal(pam.peak_indices[..., 1:], -1)
+
+    # Two fibers tilted by different amounts in different directions.
+    major = _tilt(_VERTICES[_V0], _VERTICES[_V35], 4.0)
+    minor = _tilt(_VERTICES[_V70], _VERTICES[_V35], -5.0)
+    data = np.tile(_stick_signal(gtab, [major, minor], [0.56, 0.24]), (3, 3, 3, 1))
+    pam = force_peaks(model.fit(data))
+    assert _axial_angle(pam.peak_dirs[..., 0, :], major).max() < tol
+    assert _axial_angle(pam.peak_dirs[..., 1, :], minor).max() < tol
+    # Values are the fractions of the fibers the peaks belong to, largest first.
+    expected = np.broadcast_to([0.7, 0.3], pam.peak_values[..., :2].shape)
+    npt.assert_allclose(pam.peak_values[..., :2], expected, rtol=1e-6)
+    npt.assert_array_equal(pam.peak_values[..., 2:], 0.0)
+
+
+@_legacy_sh_basis
+def test_force_peaks_stay_within_max_angle():
+    """A peak stops 25 degrees from the library axis, on the way to the fiber."""
+    gtab = _shell_gtab()
+    sims = _stick_library(gtab, [((_V0,), (1.0,)), ((_V70,), (1.0,))])
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=2)
+    fiber = _tilt(_VERTICES[_V0], _VERTICES[_V70], 30.0)
+    data = np.tile(_stick_signal(gtab, [fiber], [0.8]), (2, 2, 2, 1))
+    peak = force_peaks(model.fit(data)).peak_dirs[..., 0, :]
+    npt.assert_allclose(_axial_angle(peak, _VERTICES[_V0]), 25.0, atol=1e-3)
+    npt.assert_allclose(_axial_angle(peak, fiber), 5.0, atol=1e-3)
+
+
+@_legacy_sh_basis
+def test_force_peaks_drop_undetermined_fibers():
+    """A fiber the data cannot orient is not reported."""
+    gtab = _shell_gtab()
+    sims = _stick_library(gtab, [((_V0, _V70), (0.99, 0.01))])
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=1)
+    rng = np.random.default_rng(0)
+    clean = _stick_signal(gtab, _VERTICES[[_V0, _V70]], [0.792, 0.008])
+    data = clean + 5.0 * rng.normal(size=(4, 4, 4, clean.size))
+
+    pam = force_peaks(model.fit(data))
+    npt.assert_array_equal(_n_peaks(pam), 1)
+    assert _axial_angle(pam.peak_dirs[..., 0, :], _VERTICES[_V0]).max() < 5.0
+    npt.assert_allclose(pam.peak_values[..., 0], 0.99, rtol=1e-6)
+    npt.assert_array_equal(pam.peak_indices[..., 1:], -1)
+
+
+@_legacy_sh_basis
+def test_force_peaks_fill_white_matter_from_posterior_odf():
+    """A white-matter voxel whose entry has no fiber takes its ODF peaks."""
+    gtab = _shell_gtab()
+    sims = _stick_library(gtab, [((_V0,), (1.0,)), ((_V0,), (0.6,)), ((_V0,), (0.3,))])
+    # Entries 1 and 2: fibers not labelled, in white matter (fraction 0.6)
+    # and outside it (0.4).
+    sims["labels"][1:] = 0
+    sims["wm_fraction"][1:] = [0.6, 0.4]
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=3)
+    fiber = _tilt(_VERTICES[_V0], _VERTICES[_V70], 3.0)
+    data = np.tile(_stick_signal(gtab, [fiber], [0.8]), (3, 3, 3, 1))
+    data[1, 1, 1] = _stick_signal(gtab, [fiber], [0.48])
+    data[0, 0, 0] = _stick_signal(gtab, [fiber], [0.24])
+    fit = model.fit(data)
+    assert not fit.fit_array[1, 1, 1]._params["fiber_keep"].any()
+
+    pam = force_peaks(fit)
+    assert _n_peaks(pam)[1, 1, 1] == 1
+    assert _n_peaks(pam)[0, 0, 0] == 0
+    # The ODF peak took part in the spatial stage: it left the grid with its
+    # neighbors instead of staying on the vertex.
+    assert _axial_angle(pam.peak_dirs[1, 1, 1, 0], fiber) < 1.0
+    npt.assert_allclose(pam.peak_values[1, 1, 1, 0], 1.0)
+    assert _n_peaks(force_peaks(fit, wm_threshold=0.3))[0, 0, 0] == 1
+
+
+@_legacy_sh_basis
+def test_force_peaks_coherence():
+    """Continuity averages out noise along a bundle, not across two bundles."""
+    gtab = _shell_gtab((2000.0, 30))
+    sims = _stick_library(
+        gtab, [((_V0,), (1.0,)), ((_V35,), (1.0,)), ((_V70,), (1.0,))]
+    )
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=3)
+    rng = np.random.default_rng(1)
+
+    fiber = _tilt(_VERTICES[_V0], _VERTICES[_V70], 3.0)
+    clean = _stick_signal(gtab, [fiber], [0.8])
+    data = clean + 8.0 * rng.normal(size=(6, 6, 6, clean.size))
+    fit = model.fit(data)
+    coherent = force_peaks(fit).peak_dirs[..., 0, :]
+    alone = np.array(
+        [force_peaks(voxel).peak_dirs[0] for voxel in fit.fit_array.ravel()]
+    ).reshape(coherent.shape)
+    error = [_axial_angle(dirs, fiber).mean() for dirs in (coherent, alone)]
+    assert error[0] < 0.7 * error[1]
+
+    # Two bundles 35 degrees apart meeting at a plane keep their own axes.
+    axes = _VERTICES[[_V0, _V35]]
+    clean = np.empty((8, 4, 4, clean.size))
+    clean[:4] = _stick_signal(gtab, axes[:1], [0.8])
+    clean[4:] = _stick_signal(gtab, axes[1:], [0.8])
+    data = clean + 5.0 * rng.normal(size=clean.shape)
+    coherent = force_peaks(model.fit(data)).peak_dirs[..., 0, :]
+    at_interface = np.concatenate(
+        [
+            _axial_angle(coherent[3], axes[0]).ravel(),
+            _axial_angle(coherent[4], axes[1]).ravel(),
+        ]
+    )
+    assert at_interface.mean() < 3.0
+
+
+@_legacy_sh_basis
+def test_force_peaks_need_a_usable_shell():
+    """Without a shell that resolves anisotropy the library axes are kept."""
+    gtab = _make_gtab([1000])  # six gradients along three axes only
+    sims = _stick_library(gtab, [((_V0,), (1.0,)), ((_V70,), (1.0,))])
+    model = FORCEModel(gtab, simulations=sims, n_neighbors=2)
+    data = np.tile(sims["signals"][0], (2, 2, 2, 1))
+    pam = force_peaks(model.fit(data))
+    npt.assert_array_equal(_n_peaks(pam), 1)
+    npt.assert_array_equal(pam.peak_indices[..., 0], _V0)
+    assert _axial_angle(pam.peak_dirs[..., 0, :], _VERTICES[_V0]).max() < 1e-3
+
+
+def test_fiber_kernels_predict_moved_fibers():
+    """Kernels taken from an entry's signal give its signal for any fiber axes."""
+    gtab = _shell_gtab()
+    ops = _alignment_operators(gtab, default_sphere)
+    # Three mutually (almost) orthogonal fibers: their second-degree parts
+    # cancel in the signal, so that part of each kernel must come from what
+    # single-fiber entries of the library look like.
+    second = int(np.argmin(np.abs(_VERTICES @ _VERTICES[_V0])))
+    third = int(np.argmin(np.abs(_VERTICES @ _VERTICES[[_V0, second]].T).sum(axis=1)))
+    triple = [_V0, second, third]
+    assert (
+        _axial_angle(_VERTICES[triple][[0, 0, 1]], _VERTICES[triple][[1, 2, 2]]).min()
+        > 85.0
+    )
+    fractions = np.array([0.4, 0.35, 0.25])
+    sims = _stick_library(gtab, [((_V35,), (1.0,)), (triple, fractions)])
+    table = _kernel_prior_table(sims, default_sphere, ops)
+
+    vertex = np.array([triple])
+    valid = np.ones((1, 3), dtype=bool)
+    prior = 0.8 * fractions[None, :, None, None] * table["kappa"][[0]][:, None]
+    kernels = {
+        "blind": _fiber_kernels(
+            sims["signals"][1:], vertex, valid, default_sphere, ops
+        ),
+        "informed": _fiber_kernels(
+            sims["signals"][1:], vertex, valid, default_sphere, ops, prior=prior
+        ),
+    }
+
+    def predicted(poly, axes):
+        return _kernel_signal(
+            np.ascontiguousarray(axes[None], dtype=np.float64),
+            valid.astype(np.uint8),
+            np.ascontiguousarray(poly),
+            ops["shell"],
+            ops["gdirs"],
+        )[0]
+
+    moved = _VERTICES[triple].copy()
+    moved[1] = _tilt(moved[1], moved[0], 15.0)
+    change = _stick_signal(gtab, moved, 0.8 * fractions) - sims["signals"][1]
+    error = {}
+    for name, (poly, _) in kernels.items():
+        model_change = predicted(poly, moved) - predicted(poly, _VERTICES[triple])
+        error[name] = np.linalg.norm(model_change - change) / np.linalg.norm(change)
+    assert error["informed"] < 0.05
+    assert error["blind"] > 3 * error["informed"]
+
+
+def test_alignment_system_matches_finite_differences():
+    """The descent direction is the slope of the cost along the tangent frame."""
+    gtab = _shell_gtab()
+    ops = _alignment_operators(gtab, default_sphere)
+    sims = _stick_library(gtab, [((_V0, _V35, _V70), (0.5, 0.3, 0.2))])
+    vertex = np.array([[_V0, _V35, _V70]])
+    valid = np.ones((1, 3), dtype=bool)
+    poly, _ = _fiber_kernels(sims["signals"], vertex, valid, default_sphere, ops)
+    poly = np.ascontiguousarray(poly)
+    valid8 = valid.astype(np.uint8)
+    rng = np.random.default_rng(3)
+    signal = (sims["signals"] + 3.0 * rng.normal(size=sims["signals"].shape)).astype(
+        np.float32
+    )
+    rest = sims["signals"] - _kernel_signal(
+        np.ascontiguousarray(_VERTICES[vertex]),
+        valid8,
+        poly,
+        ops["shell"],
+        ops["gdirs"],
+    )
+    dirs = _VERTICES[vertex] + 0.05 * rng.normal(size=(1, 3, 3))
+    dirs /= np.linalg.norm(dirs, axis=-1, keepdims=True)
+
+    def system(axes):
+        return _alignment_system(
+            signal,
+            rest,
+            np.ascontiguousarray(axes),
+            valid8,
+            poly,
+            ops["shell"],
+            ops["gdirs"],
+        )
+
+    hess, grad, _, frames = system(dirs)
+    npt.assert_allclose(hess, np.swapaxes(hess, 1, 2), atol=1e-12)
+    assert np.linalg.eigvalsh(hess[0]).min() > -1e-9
+    step = 1e-4
+    slope = np.zeros(6)
+    for k in range(3):
+        for c in range(2):
+            costs = []
+            for sign in (1.0, -1.0):
+                moved = dirs.copy()
+                moved[0, k] += sign * step * frames[0, k, c]
+                moved[0, k] /= np.linalg.norm(moved[0, k])
+                costs.append(system(moved)[2][0])
+            slope[2 * k + c] = (costs[0] - costs[1]) / (2 * step)
+    npt.assert_allclose(grad[0], -0.5 * slope, rtol=2e-3, atol=1e-7)
