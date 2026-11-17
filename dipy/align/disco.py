@@ -461,7 +461,8 @@ def synb0_syn(
         sigmas=[4.0, 2.0, 1.0],
         factors=[8, 4, 2],
     )
-    dwi_reg_affine = t1_reg_affine @ b0_to_t1_affine
+    # Template world -> T1 world -> DWI world.
+    dwi_reg_affine = b0_to_t1_affine @ t1_reg_affine
 
     dwi_to_mni_map = AffineMap(
         dwi_reg_affine,
