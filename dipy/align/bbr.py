@@ -7,17 +7,14 @@ References
 """
 
 import numpy as np
-from scipy.ndimage import (
-    binary_dilation,
-    binary_erosion,
-    gaussian_filter,
-    map_coordinates,
-)
-from scipy.optimize import minimize
+from scipy.ndimage import binary_dilation, binary_erosion, gaussian_filter
 
 from dipy.align._public import affine_registration
 from dipy.align.imaffine import AffineMap
 from dipy.align.reslice import reslice
+from dipy.align.transforms import RigidScalingTransform3D, RigidTransform3D
+from dipy.core.interpolation import interpolate_scalar_3d
+from dipy.core.optimize import Optimizer
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.utils.logging import logger
 
@@ -123,38 +120,13 @@ def _boundary_points(wm, wm_affine, *, n_points, rng):
     return xyz, normals
 
 
-def _rigid_matrix(params, center):
-    """Rigid transform rotating about `center`, then translating.
-
-    Parameters
-    ----------
-    params : ndarray (6,)
-        Rotations about x, y, z in degrees, then translations in mm. With
-        these units a unit step moves a point of the brain by about 1 mm.
-    center : ndarray (3,)
-        Center of rotation in world coordinates.
-
-    Returns
-    -------
-    matrix : ndarray (4, 4)
-        The rigid transform.
-    """
-    rx, ry, rz = np.deg2rad(params[:3])
-    cx, sx = np.cos(rx), np.sin(rx)
-    cy, sy = np.cos(ry), np.sin(ry)
-    cz, sz = np.cos(rz), np.sin(rz)
-    rot_x = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
-    rot_y = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
-    rot_z = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
-    rot = rot_z @ rot_y @ rot_x
-    matrix = np.eye(4)
-    matrix[:3, :3] = rot
-    matrix[:3, 3] = center - rot @ center + params[3:]
-    return matrix
-
-
 class _BBRCost:
-    """Boundary-based cost of a rigid transform."""
+    """Boundary-based cost of a rigid transform, with optional scaling.
+
+    The parameters are the rotations about x, y, z in degrees, the
+    translations in mm, and the scalings in percent, all about `center`:
+    with these units a unit step moves a point of the brain by about 1 mm.
+    """
 
     def __init__(
         self,
@@ -174,7 +146,9 @@ class _BBRCost:
         self.wm_pts = points - sample_distance[0] * normals
         self.gm_pts = points + sample_distance[1] * normals
         self.start = starting_affine
-        self.center = center
+        self.to_center = np.eye(4)
+        self.to_center[:3, 3] = center
+        self.from_center = np.linalg.inv(self.to_center)
         self.slope = slope
         self.sign = sign
         self.threshold = threshold
@@ -182,21 +156,20 @@ class _BBRCost:
         self.n_valid = 0
 
     def affine(self, params):
-        matrix = _rigid_matrix(params[:6], self.center)
+        theta = np.concatenate([np.deg2rad(params[:3]), params[3:6]])
         if len(params) > 6:
-            # Scaling along the axes of the static image, about the center.
-            zoom = np.eye(4)
-            zoom[:3, :3] = np.diag(1.0 + np.asarray(params[6:9]) / 100.0)
-            zoom[:3, 3] = self.center - zoom[:3, :3] @ self.center
-            matrix = matrix @ zoom
-        return self.start @ matrix
+            transform = RigidScalingTransform3D()
+            theta = np.concatenate([theta, 1.0 + np.asarray(params[6:9]) / 100.0])
+        else:
+            transform = RigidTransform3D()
+        matrix = transform.param_to_matrix(theta)
+        return self.start @ self.to_center @ matrix @ self.from_center
 
     def _sample(self, pts, mat):
-        vox = pts @ mat[:3, :3].T + mat[:3, 3]
-        values = map_coordinates(self.moving, vox.T, order=1, mode="constant", cval=0.0)
-        shape = np.array(self.moving.shape) - 1
-        inside = np.all((vox >= 0) & (vox <= shape), axis=1)
-        return values, inside
+        values, inside = interpolate_scalar_3d(
+            self.moving, pts @ mat[:3, :3].T + mat[:3, 3]
+        )
+        return np.asarray(values), np.asarray(inside, dtype=bool)
 
     def __call__(self, params):
         mat = self.world2moving @ self.affine(params)
@@ -364,13 +337,13 @@ def bbr_registration(
                 f"Only {cost.n_valid} boundary points fall in the moving image: "
                 "the starting transform or the field of view is unusable."
             )
-        res = minimize(
+        opt = Optimizer(
             cost,
             x0,
             method="Powell",
             options={"xtol": 1e-3, "ftol": 1e-5, "maxiter": 50},
         )
-        params = res.x if res.fun <= start_cost else x0
+        params = opt.xopt if opt.fopt <= start_cost else x0
         final_cost = cost(params)
         return params, final_cost, cost.n_valid, cost
 

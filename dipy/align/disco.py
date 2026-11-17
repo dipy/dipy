@@ -487,21 +487,20 @@ def synb0_syn(
         data=T1_affine_to_template,
         affine=mni_t1_affine,
     )
+    t1_affine_map = AffineMap(
+        t1_reg_affine,
+        domain_grid_shape=mni_t1.shape,
+        domain_grid2world=mni_t1_affine,
+        codomain_grid_shape=T1_for_reg.shape,
+        codomain_grid2world=T1_affine,
+    )
     if T1_mask is not None:
         T1_mask_f = np.ascontiguousarray(np.asarray(T1_mask, dtype=np.float32))
-        t1_affine_map = AffineMap(
-            t1_reg_affine,
-            domain_grid_shape=mni_t1.shape,
-            domain_grid2world=mni_t1_affine,
-            codomain_grid_shape=T1_for_reg.shape,
-            codomain_grid2world=T1_affine,
-        )
         T1_mask_in_template = (
             t1_affine_map.transform(T1_mask_f, interpolation="nearest") > 0.5
         )
         masked_T1_reg_to_template = T1_affine_to_template * T1_mask_in_template
     else:
-        T1_mask_f = None
         masked_T1_reg_to_template = T1_affine_to_template
 
     # ── Step 2: Rigid b0 → T1, compose with T1 → MNI ────────────────────
@@ -533,15 +532,8 @@ def synb0_syn(
             brain_mask = np.asarray(T1_mask) > 0
         else:
             # Brain mask of the template, pulled back to the T1.
-            template_to_t1 = AffineMap(
-                t1_reg_affine,
-                domain_grid_shape=mni_t1.shape,
-                domain_grid2world=mni_t1_affine,
-                codomain_grid_shape=T1_for_reg.shape,
-                codomain_grid2world=T1_affine,
-            )
             brain_mask = (
-                template_to_t1.transform_inverse(
+                t1_affine_map.transform_inverse(
                     mni_mask.astype(np.float32), interpolation="nearest"
                 )
                 > 0.5
