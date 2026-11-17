@@ -1401,7 +1401,7 @@ def groupwise_slr(
 
         if d_improve < tol:
             if verbose:
-                logger.info("Registration converged {d_improve} < {tol}")
+                logger.info(f"Registration converged {d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)
