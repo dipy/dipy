@@ -24,8 +24,12 @@ from dipy.utils.logging import logger
 _CONTRAST_SIGN = {"gm_brighter": 1.0, "wm_brighter": -1.0}
 
 
-def _wm_probability_hmrf(static, static_affine, static_mask):
+def _wm_probability_hmrf(static, static_affine, static_mask, *, zoom=1.0):
     """White-matter probability of a T1 image from a 3-class HMRF.
+
+    The image is cropped to the brain mask and resampled to `zoom` mm before
+    the segmentation: the HMRF time grows with the number of voxels, and the
+    boundary is located below the voxel size anyway.
 
     Parameters
     ----------
@@ -35,42 +39,50 @@ def _wm_probability_hmrf(static, static_affine, static_mask):
         Voxel-to-world matrix of `static`.
     static_mask : ndarray (X, Y, Z)
         Brain mask on the grid of `static`.
+    zoom : float, optional
+        Isotropic voxel size, in mm, of the segmentation grid.
 
     Returns
     -------
-    wm : ndarray (X, Y, Z)
-        White-matter partial-volume map on the grid of `static`.
+    wm : ndarray
+        White-matter partial-volume map on the segmentation grid.
+    wm_affine : ndarray (4, 4)
+        Voxel-to-world matrix of the segmentation grid.
+
+    Raises
+    ------
+    ValueError
+        If `static_mask` is empty.
     """
-    masked = np.asarray(static, dtype=np.float64) * (np.asarray(static_mask) > 0)
+    mask = np.asarray(static_mask) > 0
+    if not mask.any():
+        raise ValueError("The brain mask is empty.")
+    ijk = np.argwhere(mask)
+    lo = np.maximum(ijk.min(axis=0) - 2, 0)
+    hi = np.minimum(ijk.max(axis=0) + 3, mask.shape)
+    box = tuple(slice(a, b) for a, b in zip(lo, hi))
+    crop = np.asarray(static, dtype=np.float64)[box] * mask[box]
+    crop_affine = static_affine.copy()
+    crop_affine[:3, 3] = static_affine[:3, :3] @ lo + static_affine[:3, 3]
+
     zooms = np.sqrt(np.sum(static_affine[:3, :3] ** 2, axis=0))
-    if np.any(zooms > 1.0 + 1e-3):
-        new_zooms = tuple(np.minimum(zooms, 1.0))
-        image, image_affine = reslice(masked, static_affine, zooms, new_zooms=new_zooms)
+    if np.allclose(zooms, zoom, atol=1e-3):
+        image, image_affine = crop, crop_affine
     else:
-        image, image_affine = masked, static_affine
+        image, image_affine = reslice(crop, crop_affine, zooms, new_zooms=(zoom,) * 3)
     _, _, pve = TissueClassifierHMRF(verbose=False).classify(image, 3, 0.1)
-    wm = np.ascontiguousarray(pve[..., 2], dtype=np.float64)
-    if image.shape != masked.shape:
-        to_static = AffineMap(
-            np.eye(4),
-            domain_grid_shape=masked.shape,
-            domain_grid2world=static_affine,
-            codomain_grid_shape=wm.shape,
-            codomain_grid2world=image_affine,
-        )
-        wm = to_static.transform(wm)
-    return wm
+    return np.ascontiguousarray(pve[..., 2], dtype=np.float64), image_affine
 
 
-def _boundary_points(wm, static_affine, n_points, rng):
+def _boundary_points(wm, wm_affine, *, n_points, rng):
     """Points and outward normals of the white-matter boundary.
 
     Parameters
     ----------
     wm : ndarray (X, Y, Z)
-        White-matter probability on the static grid.
-    static_affine : ndarray (4, 4)
-        Voxel-to-world matrix of the static grid.
+        White-matter probability.
+    wm_affine : ndarray (4, 4)
+        Voxel-to-world matrix of `wm`.
     n_points : int
         Maximal number of points to return.
     rng : numpy.random.Generator
@@ -92,7 +104,7 @@ def _boundary_points(wm, static_affine, n_points, rng):
 
     grad_vox = np.stack(np.gradient(p), axis=-1)[edge]
     # Gradient with respect to world coordinates, in units per mm.
-    lin = static_affine[:3, :3]
+    lin = wm_affine[:3, :3]
     grad = grad_vox @ np.linalg.inv(lin)
     norm = np.linalg.norm(grad, axis=1)
     keep = norm > 1e-3
@@ -100,7 +112,7 @@ def _boundary_points(wm, static_affine, n_points, rng):
     if len(ijk) == 0:
         raise ValueError("The white-matter mask has no boundary.")
 
-    xyz = ijk @ lin.T + static_affine[:3, 3]
+    xyz = ijk @ lin.T + wm_affine[:3, 3]
     value = p[edge][keep]
     xyz = xyz - ((value - 0.5) / norm**2)[:, None] * grad
     normals = -grad / norm[:, None]
@@ -305,10 +317,12 @@ def bbr_registration(
     if wm_mask is None:
         if static_mask is None:
             raise ValueError("Either wm_mask or static_mask is required.")
-        wm_mask = _wm_probability_hmrf(static, static_affine, static_mask)
-    wm_mask = np.asarray(wm_mask, dtype=np.float64)
-    if wm_mask.shape != static.shape:
-        raise ValueError("wm_mask must be on the grid of static.")
+        wm_mask, wm_affine = _wm_probability_hmrf(static, static_affine, static_mask)
+    else:
+        wm_mask = np.asarray(wm_mask, dtype=np.float64)
+        if wm_mask.shape != static.shape:
+            raise ValueError("wm_mask must be on the grid of static.")
+        wm_affine = static_affine
 
     if starting_affine is None:
         # The EPI has the smaller field of view, so it is the static image.
@@ -324,7 +338,7 @@ def bbr_registration(
     starting_affine = np.asarray(starting_affine, dtype=np.float64)
 
     rng = np.random.default_rng(random_seed)
-    points, normals = _boundary_points(wm_mask, static_affine, n_points, rng)
+    points, normals = _boundary_points(wm_mask, wm_affine, n_points=n_points, rng=rng)
     center = points.mean(axis=0)
     threshold = 0.05 * np.percentile(moving, 99)
     sign = _CONTRAST_SIGN[boundary_contrast]

@@ -102,6 +102,46 @@ def _select_3d_volume(image, image_name, b0_index):
     return image[..., idx]
 
 
+def _limit_resolution(image, affine, *, mask=None, zoom=1.0):
+    """Resample an image, and its mask, that is finer than `zoom` mm.
+
+    Parameters
+    ----------
+    image : ndarray (X, Y, Z)
+        Image to resample.
+    affine : ndarray (4, 4)
+        Voxel-to-world matrix of `image`.
+    mask : ndarray (X, Y, Z), optional
+        Binary mask on the grid of `image`.
+    zoom : float, optional
+        Smallest voxel size, in mm, to keep. Coarser axes are not changed.
+
+    Returns
+    -------
+    image : ndarray
+        Resampled image, or `image` itself when no axis is finer than `zoom`.
+    mask : ndarray or None
+        Resampled boolean mask, or `mask` itself.
+    affine : ndarray (4, 4)
+        Voxel-to-world matrix of the returned image.
+    """
+    zooms = np.sqrt(np.sum(affine[:3, :3] ** 2, axis=0))
+    if np.all(zooms >= zoom - 1e-3):
+        return image, mask, affine
+    new_zooms = tuple(np.maximum(zooms, zoom))
+    resampled, new_affine = reslice(image, affine, zooms, new_zooms=new_zooms)
+    if mask is not None:
+        mask, _ = reslice(
+            np.asarray(mask, dtype=np.float32),
+            affine,
+            zooms,
+            new_zooms=new_zooms,
+            order=0,
+        )
+        mask = mask > 0.5
+    return resampled, mask, new_affine
+
+
 def _warp_image(mapping, image):
     """Apply a deformation mapping to a 3D or 4D image.
 
@@ -282,7 +322,8 @@ def synb0_syn(
         field is then applied to all volumes.
     T1 : ndarray (X, Y, Z) or (X, Y, Z, N)
         The T1-weighted structural image. If 4D, `b0_index` is used to
-        select the volume for registration.
+        select the volume for registration. Axes finer than 1 mm are
+        resampled to 1 mm.
     dwi_affine : ndarray (4, 4)
         Affine transformation matrix for the DWI image.
     T1_affine : ndarray (4, 4)
@@ -365,6 +406,11 @@ def synb0_syn(
         dwi_mask = _select_3d_volume(dwi_mask, image_name="dwi_mask", b0_index=b0_index)
     if T1_mask is not None:
         T1_mask = _select_3d_volume(T1_mask, image_name="T1_mask", b0_index=b0_index)
+    # Registration and Synb0 do not use sub-millimetre detail, and a 0.5 mm
+    # T1 has 8 times more voxels than at 1 mm.
+    T1_for_reg, T1_mask, T1_affine = _limit_resolution(
+        T1_for_reg, T1_affine, mask=T1_mask
+    )
 
     if debug_dir is not None:
         debug_dir = Path(debug_dir)
