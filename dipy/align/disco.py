@@ -14,6 +14,7 @@ import numpy as np
 from scipy.ndimage import binary_dilation, gaussian_filter
 
 from dipy.align import affine_registration
+from dipy.align.bbr import bbr_registration
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
@@ -261,6 +262,7 @@ def synb0_syn(
     return_field=False,
     apply_deepn4=False,
     apply_skull_strip=False,
+    b0_to_t1_method="bbr",
     debug_dir=None,
     **kwargs,
 ):
@@ -310,6 +312,15 @@ def synb0_syn(
         If True, apply MindGrab skull stripping to both the T1 and DWI b0
         images before registration. The resulting masks are used as
         ``T1_mask`` and ``dwi_mask`` respectively.
+    b0_to_t1_method : {'bbr', 'bbr_scaling', 'mi'}, optional
+        How the b0 is aligned to the T1. 'mi' is a rigid registration that
+        maximizes mutual information. 'bbr' refines it with a rigid
+        boundary-based registration :footcite:p:`Greve2009`, which is more
+        robust to the distortion of the b0. 'bbr_scaling' also estimates a
+        scaling along each axis: use it when the T1 and the DWI do not share
+        the same geometry (for instance when only the T1 was corrected for
+        gradient nonlinearity), otherwise the difference in size ends up in
+        the estimated field.
     debug_dir : str or Path, optional
         Directory to save intermediate debug NIfTI volumes.
     **kwargs :
@@ -327,10 +338,19 @@ def synb0_syn(
         displacements in mm along the phase-encoding voxel axis, positive
         towards increasing voxel index; otherwise shape is (X, Y, Z, 3), in
         world coordinates.
+
+    References
+    ----------
+    .. footbibliography::
     """
     dwi = np.asarray(dwi)
     T1 = np.asarray(T1)
 
+    if b0_to_t1_method not in ("bbr", "bbr_scaling", "mi"):
+        raise ValueError(
+            "b0_to_t1_method must be 'bbr', 'bbr_scaling' or 'mi', got "
+            f"{b0_to_t1_method!r}."
+        )
     if dwi.ndim not in (3, 4):
         raise ValueError(f"dwi must be a 3D or 4D array. Got shape {dwi.shape}.")
     if pe_axis is not None:
@@ -461,6 +481,34 @@ def synb0_syn(
         sigmas=[4.0, 2.0, 1.0],
         factors=[8, 4, 2],
     )
+    if b0_to_t1_method in ("bbr", "bbr_scaling"):
+        logger.info("Refining the b0 to T1 alignment with BBR...")
+        if T1_mask is not None:
+            brain_mask = np.asarray(T1_mask) > 0
+        else:
+            # Brain mask of the template, pulled back to the T1.
+            template_to_t1 = AffineMap(
+                t1_reg_affine,
+                domain_grid_shape=mni_t1.shape,
+                domain_grid2world=mni_t1_affine,
+                codomain_grid_shape=T1_for_reg.shape,
+                codomain_grid2world=T1_affine,
+            )
+            brain_mask = (
+                template_to_t1.transform_inverse(
+                    mni_mask.astype(np.float32), interpolation="nearest"
+                )
+                > 0.5
+            )
+        _, b0_to_t1_affine = bbr_registration(
+            dwi_for_field,
+            T1_for_reg,
+            dwi_affine,
+            T1_affine,
+            static_mask=brain_mask,
+            starting_affine=b0_to_t1_affine,
+            scaling=b0_to_t1_method == "bbr_scaling",
+        )
     # Template world -> T1 world -> DWI world.
     dwi_reg_affine = b0_to_t1_affine @ t1_reg_affine
 

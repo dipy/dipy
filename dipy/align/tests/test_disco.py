@@ -201,6 +201,17 @@ def test_synb0_syn_4d_input():
     assert np.all(np.isfinite(field))
 
 
+def test_synb0_syn_bad_b0_to_t1_method():
+    with pytest.raises(ValueError, match="b0_to_t1_method must be"):
+        synb0_syn(
+            dwi=np.zeros((5, 5, 5)),
+            T1=np.zeros((5, 5, 5)),
+            dwi_affine=np.eye(4),
+            T1_affine=np.eye(4),
+            b0_to_t1_method="other",
+        )
+
+
 def test_synb0_syn_bad_pe_axis():
     with pytest.raises(ValueError, match="pe_axis must be"):
         synb0_syn(

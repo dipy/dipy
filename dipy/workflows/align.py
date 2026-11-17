@@ -1247,6 +1247,7 @@ class Synb0SynFlow(Workflow):
         t1_mask_file="",
         apply_skull_strip=False,
         apply_deepn4=False,
+        b0_to_t1_method="bbr",
         out_dir="",
         out_corrected="corrected.nii.gz",
         out_field="field.nii.gz",
@@ -1284,6 +1285,12 @@ class Synb0SynFlow(Workflow):
             If True, apply DeepN4 bias field correction to the T1 image
             before the first affine registration. DeepN4 requires PyTorch
             or TensorFlow.
+        b0_to_t1_method : string, optional
+            How the b0 is aligned to the T1: 'mi' for a rigid registration
+            maximizing mutual information, 'bbr' to refine it with a rigid
+            boundary-based registration :footcite:p:`Greve2009`, or
+            'bbr_scaling' to also estimate a scaling along each axis, for a
+            T1 and a DWI that do not share the same geometry.
         out_dir : string or Path, optional
             Directory to save the corrected image and field map.
         out_corrected : string, optional
@@ -1326,6 +1333,7 @@ class Synb0SynFlow(Workflow):
                 return_field=True,
                 apply_skull_strip=apply_skull_strip,
                 apply_deepn4=apply_deepn4,
+                b0_to_t1_method=b0_to_t1_method,
             )
 
             logger.info(f"Saving corrected DWI to {ocorrected}")
