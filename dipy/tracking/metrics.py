@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.interpolate import splev, splprep
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 
 
 def winding(xyz):
@@ -204,8 +204,23 @@ def magn(xyz, *, n=1):
     return mag.reshape(len(mag), 1)
 
 
+@deprecate_with_version(
+    "frenet_serret is deprecated because the torsion calculation is incorrect: "
+    "it computes -dot(B, N), but since B = cross(T, N) the binormal is "
+    "orthogonal to the normal, so dot(B, N) is always zero. "
+    "Use mean_curvature() for curvature-related functionality.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def frenet_serret(xyz):
     r"""Frenet-Serret Space Curve Invariants
+
+    .. deprecated:: 1.13.0
+        ``frenet_serret`` is deprecated because the torsion calculation is
+        incorrect: it computes ``-dot(B, N)``, but since ``B = cross(T, N)``
+        the binormal is orthogonal to the normal, so ``dot(B, N)`` is always
+        zero. Use :func:`mean_curvature` for curvature-related functionality.
+        Will be removed in DIPY 2.0.0.
 
     Calculates the 3 vector and 2 scalar invariants of a space curve
     defined by vectors r = (x,y,z).  If z is omitted (i.e. the array xyz has
@@ -251,6 +266,7 @@ def frenet_serret(xyz):
     Create a helix and calculate its tangent, normal, binormal, curvature
     and torsion
 
+    >>> import warnings
     >>> from dipy.tracking import metrics as tm
     >>> import numpy as np
     >>> theta = 2*np.pi*np.linspace(0,2,100)
@@ -258,7 +274,9 @@ def frenet_serret(xyz):
     >>> y=np.sin(theta)
     >>> z=theta/(2*np.pi)
     >>> xyz=np.vstack((x,y,z)).T
-    >>> T,N,B,k,t=tm.frenet_serret(xyz)
+    >>> with warnings.catch_warnings():
+    ...     warnings.simplefilter("ignore", category=DeprecationWarning)
+    ...     T,N,B,k,t=tm.frenet_serret(xyz)
     """
 
     xyz = np.asarray(xyz)
