@@ -11,6 +11,7 @@ from dipy.utils import assets
 
 BLOB = bytes(range(256)) * 4096
 BLOB_SHA256 = hashlib.sha256(BLOB).hexdigest()
+UNREACHABLE_URL = "https://127.0.0.1:1/blob.bin"
 
 
 def test_asset_home_is_a_dot_folder_in_home():
@@ -118,3 +119,31 @@ def test_download_verified_refuses_a_redirect_to_plain_http(served_blob, tmp_pat
         assets.download_verified(f"{served_blob}/redirect", target, sha256=BLOB_SHA256)
 
     assert not target.exists()
+
+
+def test_cached_download_keeps_an_outdated_file_when_the_download_fails(tmp_path):
+    target = tmp_path / "blob.bin"
+    target.write_bytes(b"outdated")
+
+    path = assets.cached_download(UNREACHABLE_URL, target, sha256=BLOB_SHA256)
+
+    assert path == target
+    assert target.read_bytes() == b"outdated"
+
+
+def test_cached_download_fails_when_nothing_is_cached(tmp_path):
+    target = tmp_path / "blob.bin"
+
+    with pytest.raises(OSError):
+        assets.cached_download(UNREACHABLE_URL, target, sha256=BLOB_SHA256)
+
+    assert not target.exists()
+
+
+def test_cached_download_replaces_an_outdated_file(served_blob, tmp_path):
+    target = tmp_path / "blob.bin"
+    target.write_bytes(b"outdated")
+
+    assets.cached_download(f"{served_blob}/blob.bin", target, sha256=BLOB_SHA256)
+
+    assert target.read_bytes() == BLOB

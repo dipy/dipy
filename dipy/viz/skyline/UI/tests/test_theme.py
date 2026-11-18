@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 
 from dipy.utils.optpkg import optional_package
@@ -8,6 +10,7 @@ if not has_fury:
 else:
     from PIL import Image
 
+    from dipy.utils.assets import ASSET_SHA256
     from dipy.viz.skyline.UI import theme
 
 
@@ -125,10 +128,10 @@ def test_fonts_are_downloaded_and_non_empty():
     assert theme.FONT_AWESOME.stat().st_size > 0
 
 
-def test_logos_are_downloaded_and_resized():
+def test_logo_is_kept_as_downloaded_and_small_logo_is_resized():
     assert theme.LOGO.is_file()
     assert theme.LOGO_SMALL.is_file()
-    with Image.open(theme.LOGO) as logo:
-        assert logo.size == (48, 48)
+    digest = hashlib.sha256(theme.LOGO.read_bytes()).hexdigest()
+    assert digest == ASSET_SHA256["dipy-skyline/images/dipy-logo.png"]
     with Image.open(theme.LOGO_SMALL) as logo_small:
         assert logo_small.size == (32, 32)

@@ -3107,9 +3107,17 @@ class _ReportServer(http.server.ThreadingHTTPServer):
 
     On Windows, ``SO_REUSEADDR``, which ``HTTPServer`` sets, lets another
     process bind the same port and receive the requests, token included.
+    Dropping it is not enough there, since a process that sets it can still
+    take the port, so ``SO_EXCLUSIVEADDRUSE`` is set before binding.
     """
 
     allow_reuse_address = False
+
+    def server_bind(self):
+        """Bind the socket, exclusively on Windows."""
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def _serve_html_report(*, report_path):
@@ -3129,24 +3137,23 @@ def _serve_html_report(*, report_path):
     report_dir = str(root)
     report_name = str(report_path.relative_to(root))
 
-    host = "127.0.0.1"
-    port = 8000
-    while True:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind((host, port))
-                break
-            except OSError:
-                port += 1
-
     handler = partial(
         _ReportHandler, directory=report_dir, token=secrets.token_urlsafe(32)
     )
+    host = "127.0.0.1"
+    port = 8000
+    while True:
+        try:
+            httpd = _ReportServer((host, port), handler)
+            break
+        except OSError:
+            port += 1
+
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
     webbrowser.open(url)
-    with _ReportServer((host, port), handler) as httpd:
+    with httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

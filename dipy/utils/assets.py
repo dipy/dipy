@@ -156,13 +156,55 @@ def download_verified(url, path, *, sha256):
                 raise
 
 
+def cached_download(url, path, *, sha256):
+    """Return a cached file, downloading it when it is missing or outdated.
+
+    When the download fails and a file that does not match ``sha256`` is
+    already cached, for instance offline after the pinned version changed,
+    the cached file is returned with a warning in the log.
+
+    Parameters
+    ----------
+    url : str
+        Address to download. A redirect to anything but ``https`` is refused.
+    path : Path
+        Cache file; its folder is created when needed.
+    sha256 : str
+        Expected hexadecimal SHA-256 digest of the content.
+
+    Returns
+    -------
+    Path
+        ``path``.
+
+    Raises
+    ------
+    OSError
+        If the file is not cached and the download fails or does not match
+        ``sha256`` (``urllib.error.URLError`` is one), or it cannot be written.
+    """
+    if path.is_file() and _file_sha256(path) == sha256:
+        return path
+
+    logger.info(f"Downloading {url}...")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        download_verified(url, path, sha256=sha256)
+    except OSError as error:
+        if not path.is_file():
+            raise
+        logger.warning(f"Could not update {path} ({error}); using the cached file.")
+    return path
+
+
 def fetch_asset(app, relative_path):
     """Return the cached asset of an application, downloading it when needed.
 
     The asset is downloaded from a fixed revision of the data repository and
     must match the SHA-256 digest listed in ``ASSET_SHA256``. A cached file
     that does not match, for instance after an interrupted download, is
-    downloaded again.
+    downloaded again; when that fails, the cached file is used with a warning
+    in the log.
 
     Parameters
     ----------
@@ -205,13 +247,8 @@ def fetch_asset(app, relative_path):
     if sha256 is None:
         raise ValueError(f"{app}/{relative_path} is not a known asset")
 
-    path = asset_home(app) / "assets" / relative_path
-    if path.is_file() and _file_sha256(path) == sha256:
-        return path
-
-    logger.info(f"Downloading {app} asset {relative_path}...")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    download_verified(
-        f"{DIPY_DATA_MIRROR}/{app}/assets/{relative_path}", path, sha256=sha256
+    return cached_download(
+        f"{DIPY_DATA_MIRROR}/{app}/assets/{relative_path}",
+        asset_home(app) / "assets" / relative_path,
+        sha256=sha256,
     )
-    return path

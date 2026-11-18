@@ -30,22 +30,14 @@ LOGO = fetch_asset("dipy-skyline", "images/dipy-logo.png")
 LOGO_SMALL = IMAGES / "dipy-logo-small.png"
 
 if has_fury:
-    with Image.open(LOGO) as img:
-        logo_img = img.convert("RGBA")
-        logo_img.load()
-        logo_img = logo_img.copy()
-
-    if logo_img.size != (48, 48):
-        logo_img = logo_img.resize((48, 48), Image.Resampling.LANCZOS)
-        logo_img.save(LOGO, format="PNG", optimize=True)
-
     logo_small_ok = False
     if LOGO_SMALL.exists():
         with Image.open(LOGO_SMALL) as img_small_existing:
             logo_small_ok = img_small_existing.size == (32, 32)
 
     if not logo_small_ok:
-        img_small = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+        with Image.open(LOGO) as img:
+            img_small = img.convert("RGBA").resize((32, 32), Image.Resampling.LANCZOS)
         img_small.save(LOGO_SMALL, format="PNG", optimize=True)
 
 

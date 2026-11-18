@@ -723,12 +723,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 window.removeEventListener('blur', onBlur);
                 if (!left) {{
                     qcDialog(
-                        'Skyline did not open. Run dipy_auto with ' +
-                        '--register_skyline on a pipeline or on this report to ' +
-                        'register it as an application, or run ' +
-                        '"dipy_skyline --setup" in a terminal of the Python ' +
-                        'environment where DIPY is installed, then use this ' +
-                        'button again. You can also run the command below yourself.',
+                        'If nothing opened, your browser may still be asking ' +
+                        'for permission, or Skyline is not registered on this ' +
+                        'computer. In that case run dipy_auto with ' +
+                        '--register_skyline on a pipeline or on this report, ' +
+                        'or run "dipy_skyline --setup" in a terminal of the ' +
+                        'Python environment where DIPY is installed, then use ' +
+                        'this button again. You can also run the command below ' +
+                        'yourself.',
                         command
                     );
                 }}

@@ -379,6 +379,20 @@ def _post(url, **fields):
     return urlopen(Request(url, data=urlencode(fields).encode()))
 
 
+def test_report_server_port_cannot_be_taken_by_another_socket():
+    with TemporaryDirectory() as out_dir:
+        httpd, _ = _serve(out_dir=out_dir, token="secret")
+        try:
+            port = httpd.server_address[1]
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as other:
+                other.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                with npt.assert_raises(OSError):
+                    other.bind(("127.0.0.1", port))
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
 def test_report_server_refuses_foreign_path():
     with TemporaryDirectory() as out_dir:
         httpd, base = _serve(out_dir=out_dir, token="secret")
