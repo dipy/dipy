@@ -16,7 +16,6 @@ import os
 from pathlib import Path
 import re
 import shlex
-import subprocess
 import urllib.parse
 
 from dipy.utils.logging import logger
@@ -724,9 +723,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 window.removeEventListener('blur', onBlur);
                 if (!left) {{
                     qcDialog(
-                        'Skyline did not open. dipy_auto registers it as an ' +
-                        'application when it finishes a pipeline or serves a ' +
-                        'report: run it on a pipeline or on this report, or run ' +
+                        'Skyline did not open. Run dipy_auto with ' +
+                        '--register_skyline on a pipeline or on this report to ' +
+                        'register it as an application, or run ' +
                         '"dipy_skyline --setup" in a terminal of the Python ' +
                         'environment where DIPY is installed, then use this ' +
                         'button again. You can also run the command below yourself.',
@@ -883,10 +882,18 @@ def skyline_command(*, path):
     str
         ``dipy_skyline`` followed by the escaped path, quoted for the shell
         of the current platform so that it can be pasted as is.
+
+    Notes
+    -----
+    On Windows the path is double-quoted, which both ``cmd.exe`` and PowerShell
+    read literally except for ``%``, ``$``, the backtick and the curly double
+    quotes that PowerShell accepts. Those are replaced by the glob wildcard
+    ``?``, which Skyline expands.
     """
     argument = skyline_argument(path=path)
     if os.name == "nt":
-        return f"dipy_skyline {subprocess.list2cmdline([argument])}"
+        argument = re.sub("[%$`\u201c\u201d\u201e]", "?", argument)
+        return f'dipy_skyline "{argument}"'
     return f"dipy_skyline {shlex.quote(argument)}"
 
 
@@ -945,13 +952,17 @@ def skyline_files(*, root):
     Returns
     -------
     dict
-        Mapping of :func:`skyline_key` to file path.
+        Mapping of :func:`skyline_key` to file path. A symbolic link that leads
+        out of ``root`` is left out.
     """
     root = Path(root)
+    real_root = root.resolve()
     return {
         path.relative_to(root).as_posix(): path
         for path in root.rglob("*")
-        if path.name.endswith(SKYLINE_FORMATS) and path.is_file()
+        if path.name.endswith(SKYLINE_FORMATS)
+        and path.is_file()
+        and path.resolve().is_relative_to(real_root)
     }
 
 

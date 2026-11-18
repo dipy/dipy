@@ -41,12 +41,12 @@ Pass the diffusion image and its gradient table; the file types are recognised
 from their extensions::
 
     dipy_auto dwi.nii.gz dwi.bval dwi.bvec --pipeline_type preprocessing \
-        --out_dir results
+        --out_dir results --register_skyline
 
 Add the companion images the pipeline needs::
 
     dipy_auto dwi.nii.gz dwi.bval dwi.bvec --t1_file t1.nii.gz \
-        --mask_file brain_mask.nii.gz --out_dir results
+        --mask_file brain_mask.nii.gz --out_dir results --register_skyline
 
 In ``full``, the T1 image is registered rigidly to the mean b0, giving
 ``t1w_dwispace.nii.gz`` and its transform ``t1w_to_dwi_affine.txt``; without
@@ -82,7 +82,11 @@ Each run writes, into ``--out_dir``:
 
 Reopen a report, with its images served so the QC buttons work::
 
-    dipy_auto results/20260929_120000_pipeline_report.html
+    dipy_auto results/20260929_120000_pipeline_report.html --register_skyline
+
+``--register_skyline`` also registers Skyline as a desktop application, so that
+the *Open in Skyline* buttons of a report work when it is opened by
+double-click; leave it out on clusters and headless machines.
 
 --------------------
 Writing a pipeline
@@ -150,7 +154,8 @@ registers the T1 image only when one is given::
 
 Run it with::
 
-    dipy_auto my_dti.toml dwi.nii.gz dwi.bval dwi.bvec --out_dir results
+    dipy_auto my_dti.toml dwi.nii.gz dwi.bval dwi.bvec --out_dir results \
+        --register_skyline
 
 The files on the command line fill the ``[io]`` table, so one configuration
 serves many subjects. Before any stage runs, ``dipy_auto`` stops on an input

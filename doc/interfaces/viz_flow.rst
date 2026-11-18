@@ -71,14 +71,16 @@ The icon is downloaded to the ``.dipy-skyline`` folder of your home directory
 with the other Skyline assets, and the log of the application is written to
 ``.dipy-skyline/skyline_app.log``.
 
-``dipy_auto`` registers Skyline by itself, without asking anything, when it
-finishes a pipeline or serves a report. It keeps an existing registration of
-any environment as long as its interpreter still exists, and replaces a missing
-or broken one with a registration for its own environment. It logs what it
-registered; the missing visualization packages are only reported, and
-``dipy_skyline --setup`` installs them.
+``dipy_auto --register_skyline`` registers Skyline without asking anything when
+it runs a pipeline or serves a report. It keeps an existing registration of any
+environment as long as its interpreter still exists and finds DIPY, and
+replaces a missing or broken one with a registration for its own environment.
+Without the flag, ``dipy_auto`` never changes the registration; the missing
+visualization packages are only reported, and ``dipy_skyline --setup`` installs
+them.
 
 Only one environment can own the registration, and the last ``--setup`` wins.
+A ``--setup`` that fails leaves the previous registration in place.
 To use the Skyline of another environment, run ``dipy_skyline --setup`` there.
 To remove the registration from any environment, run ::
 

@@ -1,6 +1,7 @@
 from functools import partial
 import glob
 import html
+import http.client
 import importlib
 import inspect
 import json
@@ -9,7 +10,7 @@ import os
 from pathlib import Path
 import re
 import shlex
-import socketserver
+import socket
 from tempfile import TemporaryDirectory
 from threading import Thread
 from urllib.error import HTTPError
@@ -33,6 +34,7 @@ from dipy.workflows import qc, report, skyline_app
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.combined_workflow import (
     _ReportHandler as ReportHandler,
+    _ReportServer as ReportServer,
     execute_semantic_pipeline,
 )
 
@@ -368,7 +370,7 @@ def test_skyline_command_loads_exactly_the_file(tmp_path):
 def _serve(*, out_dir, token, launcher=None):
     """Start a report server on a free port; return it and its base URL."""
     handler = partial(ReportHandler, directory=out_dir, token=token, launcher=launcher)
-    httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    httpd = ReportServer(("127.0.0.1", 0), handler)
     Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd, f"http://127.0.0.1:{httpd.server_address[1]}"
 
@@ -488,6 +490,107 @@ def test_report_server_requires_its_token():
 
         with open(page, encoding="utf-8") as f:
             assert "dipy-qc-token" not in f.read()
+
+
+def _request(base, *, method, path, headers=None, body=None):
+    """Send one request with chosen headers; return the status and the body."""
+    connection = http.client.HTTPConnection(base.removeprefix("http://"), timeout=10)
+    try:
+        connection.request(method, path, body=body, headers=headers or {})
+        response = connection.getresponse()
+        return response.status, response.read().decode()
+    finally:
+        connection.close()
+
+
+def test_report_server_answers_only_requests_sent_to_its_own_address():
+    with TemporaryDirectory() as out_dir:
+        page = os.path.join(out_dir, "report.html")
+        with open(page, "w", encoding="utf-8") as f:
+            f.write("<html><head><title>r</title></head><body></body></html>")
+        httpd, base = _serve(out_dir=out_dir, token="secret")
+        try:
+            for method in ("GET", "HEAD", "POST"):
+                status, body = _request(
+                    base,
+                    method=method,
+                    path="/report.html" if method != "POST" else "/qc-open",
+                    headers={"Host": "evil.example"},
+                )
+                assert status == 403
+                assert "secret" not in body
+
+            status, body = _request(base, method="GET", path="/report.html")
+            assert status == 200 and "secret" in body
+
+            localhost = f"localhost:{httpd.server_address[1]}"
+            status, body = _request(
+                base, method="GET", path="/report.html", headers={"Host": localhost}
+            )
+            assert status == 200
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
+def test_report_server_port_cannot_be_shared_with_another_process():
+    with TemporaryDirectory() as out_dir:
+        httpd, _ = _serve(out_dir=out_dir, token="secret")
+        try:
+            with socket.socket() as other:
+                other.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                with pytest.raises(OSError):
+                    other.bind(("127.0.0.1", httpd.server_address[1]))
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
+def test_report_server_refuses_a_negative_content_length():
+    with TemporaryDirectory() as out_dir:
+        httpd, base = _serve(out_dir=out_dir, token="secret")
+        try:
+            status, _ = _request(
+                base,
+                method="POST",
+                path="/qc-open",
+                headers={"Content-Length": "-1"},
+            )
+            assert status == 403
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+
+def test_skyline_files_leaves_out_links_to_files_outside_the_root(tmp_path):
+    out_dir = tmp_path / "report"
+    out_dir.mkdir()
+    inside = out_dir / "fa.nii.gz"
+    outside = tmp_path / "secret.nii.gz"
+    for volume in (inside, outside):
+        save_nifti(str(volume), np.zeros((2, 2, 2), dtype=np.float32), np.eye(4))
+    try:
+        (out_dir / "linked.nii.gz").symlink_to(outside)
+    except OSError:
+        pytest.skip("symbolic links need a privilege on this system")
+
+    assert report.skyline_files(root=out_dir) == {"fa.nii.gz": inside}
+
+
+@pytest.mark.skipif(os.name != "nt", reason="the command is quoted for Windows shells")
+def test_skyline_command_keeps_windows_shell_metacharacters_inert(tmp_path):
+    folder = tmp_path / "a&b %PATH% $x ^y"
+    folder.mkdir()
+    volume = folder / "fa.nii.gz"
+    volume.write_bytes(b"")
+
+    command = report.skyline_command(path=volume)
+
+    assert command.startswith('dipy_skyline "') and command.endswith('"')
+    assert "%" not in command and "$" not in command
+    assert glob.glob(command.removeprefix('dipy_skyline "').removesuffix('"')) == [
+        str(volume)
+    ]
 
 
 PENDING = 'class="stage-badge badge-pending"'

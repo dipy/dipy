@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from urllib.parse import quote
 
 import pytest
@@ -79,11 +80,33 @@ def test_skyline_target_rejects_file_urls_with_a_remote_host():
         skyline_app.skyline_target("file://attacker.example/tmp/fa.nii.gz")
 
 
-def test_ensure_app_registered_changes_nothing_under_the_test_opt_out():
-    before = skyline_app.registered_interpreter()
+def test_restore_files_undoes_overwrites_and_creations(tmp_path):
+    kept = tmp_path / "kept.txt"
+    kept.write_bytes(b"old")
+    created = tmp_path / "created.txt"
+    snapshot = skyline_app._snapshot_files([kept, created])
 
-    assert skyline_app.ensure_app_registered() is False
-    assert skyline_app.registered_interpreter() == before
+    kept.write_bytes(b"new")
+    created.write_bytes(b"new")
+    skyline_app._restore_files(snapshot)
+
+    assert kept.read_bytes() == b"old"
+    assert not created.exists()
+
+
+def test_shortcut_guard_spares_foreign_entries(tmp_path):
+    shortcut = tmp_path / "dipy-skyline.desktop"
+    is_ours = skyline_app._linux_entry_is_ours
+    assert skyline_app._can_write_shortcut(shortcut, is_ours=is_ours)
+
+    shortcut.write_text("[Desktop Entry]\nName=Other\n", encoding="utf-8")
+    assert not is_ours(shortcut)
+    assert not skyline_app._can_write_shortcut(shortcut, is_ours=is_ours)
+
+    marker = skyline_app._LINUX_ENTRY_MARKER
+    shortcut.write_text(f"[Desktop Entry]\n{marker}\n", encoding="utf-8")
+    assert is_ours(shortcut)
+    assert skyline_app._can_write_shortcut(shortcut, is_ours=is_ours)
 
 
 def test_extensions_leave_compressed_formats_out():
@@ -118,3 +141,50 @@ def test_desktop_entry_quote_round_trips_reserved_characters():
 
     assert quoted.startswith('"') and quoted.endswith('"')
     assert skyline_app._desktop_entry_unquote(quoted[1:-1]) == argument
+
+
+def test_linux_dialog_text_never_shows_a_path_as_markup():
+    link = '<a href="https://evil.example">x</a> & y\\n'
+
+    assert skyline_app._linux_dialog_text("zenity", link) == link
+    notify = skyline_app._linux_dialog_text("notify-send", link)
+    assert "<" not in notify and "&lt;a" in notify and "&amp;" in notify
+    kdialog = skyline_app._linux_dialog_text("kdialog", link)
+    assert kdialog.startswith("<qt>") and kdialog.endswith("</qt>")
+    assert "<a " not in kdialog and "&lt;a" in kdialog and "&amp;" in kdialog
+    assert "\\\\n" in kdialog
+
+
+def test_cannot_open_message_truncates_long_arguments():
+    with pytest.raises(ValueError, match="Skyline cannot open") as err:
+        skyline_app.skyline_target("http://" + "a" * 500)
+
+    assert len(str(err.value)) < 300
+
+
+def test_confirmation_slot_is_taken_once_until_released_or_stale(tmp_path):
+    lock = tmp_path / "confirm.lock"
+    assert skyline_app._acquire_confirmation_slot(lock=lock)
+    assert not skyline_app._acquire_confirmation_slot(lock=lock)
+
+    lock.unlink()
+    assert skyline_app._acquire_confirmation_slot(lock=lock)
+
+    stale = time.time() - skyline_app._CONFIRM_LOCK_SECONDS - 1
+    os.utime(lock, (stale, stale))
+    assert skyline_app._acquire_confirmation_slot(lock=lock)
+
+
+def test_snapshot_files_leaves_dangling_links_alone(tmp_path):
+    link = tmp_path / "dangling"
+    try:
+        link.symlink_to(tmp_path / "missing")
+    except OSError:
+        pytest.skip("symbolic links need a privilege on this system")
+    absent = tmp_path / "absent"
+
+    snapshot = skyline_app._snapshot_files([link, absent])
+    skyline_app._restore_files(snapshot)
+
+    assert snapshot == {absent: None}
+    assert link.is_symlink()

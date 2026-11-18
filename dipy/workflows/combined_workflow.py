@@ -35,7 +35,6 @@ import re
 import secrets
 import shutil
 import socket
-import socketserver
 import subprocess
 import sys
 import time
@@ -2384,9 +2383,6 @@ def execute_semantic_pipeline(
         logger.warning(f"Failed to generate HTML report: {e}")
         logger.debug(traceback.format_exc())
 
-    if execution_info["report"] is not None:
-        skyline_app.ensure_app_registered()
-
     return execution_info
 
 
@@ -3000,13 +2996,33 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         Keyword arguments of :class:`http.server.SimpleHTTPRequestHandler`.
     """
 
+    timeout = 10
+
     def __init__(self, *args, token=None, launcher=None, **kwargs):
         # The base class handles the request from its constructor.
         self.token = token
         self.launcher = launcher
         super().__init__(*args, **kwargs)
 
+    def _host_is_local(self):
+        """Refuse the request, and return False, unless it was sent to this server.
+
+        A web page whose DNS name was rebound to this machine sends its own
+        name in ``Host``; answering it would let that page read the report.
+        """
+        port = self.server.server_address[1]
+        if self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}"):
+            return True
+        self.send_error(403, "This request does not come from a page of this report.")
+        return False
+
+    def do_HEAD(self):
+        if self._host_is_local():
+            super().do_HEAD()
+
     def do_GET(self):
+        if not self._host_is_local():
+            return
         if urllib.parse.urlparse(self.path).path == "/qc-open":
             self._reply(405, "Skyline is launched with a POST request.")
             return
@@ -3020,12 +3036,14 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        if not self._host_is_local():
+            return
         if urllib.parse.urlparse(self.path).path != "/qc-open":
             self._reply(404, "Not found.")
             return
 
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 65536)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 65536))
         except ValueError:
             length = 0
         fields = urllib.parse.parse_qs(
@@ -3033,13 +3051,8 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         )
         token = fields.get("token", [""])[0].encode()
         target = fields.get("path", [""])[0]
-        host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
 
-        if (
-            not self.token
-            or not hmac.compare_digest(token, self.token.encode())
-            or host not in ("127.0.0.1", "localhost")
-        ):
+        if not self.token or not hmac.compare_digest(token, self.token.encode()):
             self._reply(403, "This request does not come from a page of this report.")
         # A lookup, so that no file path is ever built from the request.
         elif (path := report.skyline_files(root=self.directory).get(target)) is None:
@@ -3089,6 +3102,16 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class _ReportServer(http.server.ThreadingHTTPServer):
+    """Threaded HTTP server that refuses to share its port.
+
+    On Windows, ``SO_REUSEADDR``, which ``HTTPServer`` sets, lets another
+    process bind the same port and receive the requests, token included.
+    """
+
+    allow_reuse_address = False
+
+
 def _serve_html_report(*, report_path):
     """Serve an HTML pipeline report via a local HTTP server and open it.
 
@@ -3122,9 +3145,8 @@ def _serve_html_report(*, report_path):
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
-    skyline_app.ensure_app_registered()
     webbrowser.open(url)
-    with socketserver.TCPServer((host, port), handler) as httpd:
+    with _ReportServer((host, port), handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -3192,6 +3214,7 @@ class AutoFlow(Workflow):
         start=None,
         dry_run=False,
         list_pipelines=False,
+        register_skyline=False,
         out_dir="",
         out_report="reports.toml",
     ):
@@ -3259,6 +3282,11 @@ class AutoFlow(Workflow):
             Show execution plan without running commands.
         list_pipelines : bool, optional
             List all available predefined pipelines and exit.
+        register_skyline : bool, optional
+            Register Skyline as a desktop application of the user, so that the
+            *Open in Skyline* buttons of the reports work, unless a working
+            registration of any environment exists. Skipped on Linux without a
+            graphical session.
         out_dir : str, optional
             Output directory. When omitted, the ``out_dir`` of the ``[io]``
             section of the configuration, or the current directory. With
@@ -3284,6 +3312,9 @@ class AutoFlow(Workflow):
             sys.exit(2)
 
         inputs = _classify_inputs(input_files=input_files, bids_mode=bids)
+
+        if register_skyline:
+            skyline_app.ensure_app_registered()
 
         if inputs["report"]:
             logger.info(

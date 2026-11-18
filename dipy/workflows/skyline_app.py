@@ -3,13 +3,20 @@
 This module opens files in Skyline from ``dipy-skyline://`` links, the
 application icon or "Open with", and registers that application with the
 operating system. A link asks for confirmation, naming the file, before
-Skyline opens it. It must stay light: it never imports numpy, nibabel, FURY or
-the report modules, so that it can run, and explain itself, before the viewer
+Skyline opens it. Links to network paths (UNC paths, ``file:`` URLs with a
+remote host) and to files of other formats are refused. The remaining exposure
+is the file readers (NIfTI, TRK, VTK, ...) parsing a local file that someone
+else placed on the disk, for instance in Downloads; the confirmation dialog,
+which names the file and defaults to cancel, guards against it.
+
+This module must stay light: it never imports numpy, nibabel, FURY or the
+report modules, so that it can run, and explain itself, before the viewer
 packages are installed.
 """
 
 import ctypes
 import glob
+import html
 import importlib
 import importlib.metadata
 import importlib.util
@@ -21,6 +28,8 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 import urllib.parse
 import urllib.request
 
@@ -46,7 +55,6 @@ SKYLINE_APP_ICON_DEFAULT = "icons/skyline.png"
 FILE_PROGID = "DIPY.Skyline.File"
 BUNDLE_ID = "org.dipy.skyline"
 MODULE_NAME = "dipy.workflows.skyline_app"
-NO_REGISTER_ENV_VAR = "DIPY_SKYLINE_NO_REGISTER"
 SKYLINE_PACKAGES = ("fury", "imgui_bundle")
 _SKYLINE_PACKAGE_NAMES = frozenset(map(canonicalize_name, SKYLINE_PACKAGES))
 
@@ -61,6 +69,13 @@ LAUNCH_BOOTSTRAP = (
     "os.path.join(d,'Library','bin'),os.environ.get('PATH','')]);"
     f"runpy.run_module('{MODULE_NAME}',run_name='__main__')"
 )
+
+# Python puts the current folder first on ``sys.path`` when it runs ``-c``, and
+# the folder of a file opened from the file manager may hold a ``runpy.py`` or
+# a ``dipy`` package that someone else planted: ``-P`` keeps it off the path.
+PYTHON_SAFE_PATH = "-P"
+_CONFIRM_LOCK = SKYLINE_HOME / "confirm.lock"
+_CONFIRM_LOCK_SECONDS = 120
 
 # Formats the Skyline viewer can load; anything else opens in the browser.
 SKYLINE_FORMATS = (
@@ -83,17 +98,23 @@ SKYLINE_FORMATS = (
 )
 
 _WINDOWS_CLASSES = r"Software\Classes"
+_WINDOWS_SCHEME_KEY = rf"{_WINDOWS_CLASSES}\{SKYLINE_URL_SCHEME}"
+_WINDOWS_PROGID_KEY = rf"{_WINDOWS_CLASSES}\{FILE_PROGID}"
 _CSIDL_PROGRAMS = 0x0002
 _CSIDL_DESKTOPDIRECTORY = 0x0010
 _SHCNE_ASSOCCHANGED = 0x08000000
+_WINDOWS_LINK_DESCRIPTION = f"{APP_NAME} viewer"
 _SHORTCUT_SCRIPT = (
     "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:DIPY_LNK);"
     "$s.TargetPath = $env:DIPY_TARGET;"
     "$s.Arguments = $env:DIPY_ARGS;"
     "$s.IconLocation = $env:DIPY_ICON;"
     "$s.WorkingDirectory = $env:USERPROFILE;"
-    f"$s.Description = '{APP_NAME} viewer';"
+    f"$s.Description = '{_WINDOWS_LINK_DESCRIPTION}';"
     "$s.Save()"
+)
+_SHORTCUT_DESCRIPTION_SCRIPT = (
+    "(New-Object -ComObject WScript.Shell).CreateShortcut($env:DIPY_LNK).Description"
 )
 
 _LSREGISTER = (
@@ -102,7 +123,7 @@ _LSREGISTER = (
 )
 
 _LINUX_DIALOGS = (
-    ("zenity", ("--error", "--title", APP_NAME, "--text")),
+    ("zenity", ("--error", "--no-markup", "--title", APP_NAME, "--text")),
     ("kdialog", ("--title", APP_NAME, "--error")),
     ("notify-send", (APP_NAME,)),
 )
@@ -122,6 +143,7 @@ _LINUX_CONFIRM_DIALOGS = (
     ("kdialog", ("--title", APP_NAME, "--yesno")),
 )
 _LINUX_ICON_NAME = "dipy-skyline"
+_LINUX_ENTRY_MARKER = f"X-DIPY-Bundle-Identifier={BUNDLE_ID}"
 
 
 def skyline_argument(*, path):
@@ -177,7 +199,8 @@ def _cannot_open(argument, reason):
     ValueError
         Error naming the argument and the reason.
     """
-    return ValueError(f"Skyline cannot open {argument!r}: {reason}")
+    shown = argument if len(argument) <= 200 else f"{argument[:200]}..."
+    return ValueError(f"Skyline cannot open {shown!r}: {reason}")
 
 
 def _is_network_path(location):
@@ -306,7 +329,7 @@ def launcher_command():
     list of str
         Command to which the file to open is appended.
     """
-    return [sys.executable, "-c", LAUNCH_BOOTSTRAP]
+    return [sys.executable, PYTHON_SAFE_PATH, "-c", LAUNCH_BOOTSTRAP]
 
 
 def _applescript_string(text):
@@ -324,6 +347,64 @@ def _applescript_string(text):
     """
     escaped = text.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
+
+
+def _linux_dialog_text(name, message):
+    """Prepare a message for the Linux dialog tool ``name``.
+
+    Parameters
+    ----------
+    name : str
+        Dialog tool: ``zenity``, ``kdialog`` or ``notify-send``.
+    message : str
+        Text to show.
+
+    Returns
+    -------
+    str
+        The message itself for ``zenity``, which is run with ``--no-markup``;
+        the message with its markup escaped for ``notify-send``; rich text
+        with the message escaped for ``kdialog``, which may read plain text as
+        markup and expands backslash sequences.
+    """
+    if name == "zenity":
+        return message
+    escaped = html.escape(message, quote=False)
+    if name == "notify-send":
+        return escaped
+    body = escaped.replace("\\", "\\\\").replace("\n", "<br>")
+    return f"<qt>{body}</qt>"
+
+
+def _acquire_confirmation_slot(*, lock=_CONFIRM_LOCK):
+    """Claim the right to show a confirmation dialog, so that links cannot flood.
+
+    Parameters
+    ----------
+    lock : Path, optional
+        Lock file; the caller removes it once the dialog is closed.
+
+    Returns
+    -------
+    bool
+        False when another confirmation started less than
+        ``_CONFIRM_LOCK_SECONDS`` ago and has not finished; True otherwise, with
+        the lock file written.
+    """
+    try:
+        age = time.time() - lock.stat().st_mtime
+    except FileNotFoundError:
+        age = None
+    if age is not None:
+        if age < _CONFIRM_LOCK_SECONDS:
+            return False
+        lock.unlink(missing_ok=True)
+    try:
+        with open(lock, "x", encoding="utf-8") as lock_file:
+            lock_file.write(str(os.getpid()))
+    except FileExistsError:
+        return False
+    return True
 
 
 def _report_error(message):
@@ -347,7 +428,8 @@ def _report_error(message):
         for name, arguments in _LINUX_DIALOGS:
             tool = shutil.which(name)
             if tool is not None:
-                subprocess.run([tool, *arguments, message], check=False)
+                text = _linux_dialog_text(name, message)
+                subprocess.run([tool, *arguments, text], check=False)
                 break
 
 
@@ -369,7 +451,11 @@ def _confirm_open(path):
     RuntimeError
         On Linux, if neither ``zenity`` nor ``kdialog`` is installed.
     """
-    message = f"A link asks {APP_NAME} to open:\n\n{path}\n\nOpen this file?"
+    resolved = path.resolve()
+    shown = str(path)
+    if os.path.normcase(resolved) != os.path.normcase(path):
+        shown += f"\n(a link to {resolved})"
+    message = f"A link asks {APP_NAME} to open:\n\n{shown}\n\nOpen this file?"
     if sys.platform == "win32":
         # MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2: No is the default; 6 is IDYES.
         return ctypes.windll.user32.MessageBoxW(None, message, APP_NAME, 0x124) == 6
@@ -384,9 +470,8 @@ def _confirm_open(path):
     for name, arguments in _LINUX_CONFIRM_DIALOGS:
         tool = shutil.which(name)
         if tool is not None:
-            return (
-                subprocess.run([tool, *arguments, message], check=False).returncode == 0
-            )
+            text = _linux_dialog_text(name, message)
+            return subprocess.run([tool, *arguments, text], check=False).returncode == 0
     raise RuntimeError(
         "Opening files from links needs zenity or kdialog to ask for "
         f"confirmation; open {path} from the file manager instead."
@@ -435,11 +520,16 @@ def main(argv):
                 return 2
 
             if urllib.parse.urlsplit(argv[0]).scheme == SKYLINE_URL_SCHEME:
+                if not _acquire_confirmation_slot():
+                    logger.info("A confirmation is already open; ignored this link.")
+                    return 0
                 try:
                     confirmed = _confirm_open(target)
                 except RuntimeError as err:
                     _report_error(str(err))
                     return 1
+                finally:
+                    _CONFIRM_LOCK.unlink(missing_ok=True)
                 if not confirmed:
                     logger.info(f"Opening {target} was cancelled.")
                     return 0
@@ -473,12 +563,13 @@ def _app_command():
     -------
     list of str
         Interpreter (``pythonw`` on Windows, to avoid a console window), then
-        ``-c`` and the bootstrap that prepares ``PATH`` before importing DIPY.
+        ``-P``, ``-c`` and the bootstrap that prepares ``PATH`` before
+        importing DIPY.
     """
     python = Path(sys.executable)
     if sys.platform == "win32" and python.with_name("pythonw.exe").exists():
         python = python.with_name("pythonw.exe")
-    return [str(python), "-c", LAUNCH_BOOTSTRAP]
+    return [str(python), PYTHON_SAFE_PATH, "-c", LAUNCH_BOOTSTRAP]
 
 
 def _extensions():
@@ -520,6 +611,62 @@ def _run_tool(name, *arguments, step):
     result = subprocess.run([tool, *arguments], check=False)
     if result.returncode != 0:
         logger.warning(f"{name} exited with code {result.returncode} while {step}.")
+
+
+def _snapshot_files(paths):
+    """Read the content of files so that ``_restore_files`` can put it back.
+
+    Parameters
+    ----------
+    paths : iterable of Path
+        Files to capture. A path with nothing on it is recorded as absent; a
+        dangling symbolic link is not recorded, so a restore leaves it alone.
+
+    Returns
+    -------
+    dict
+        Content in bytes of each path, or None for an absent one.
+    """
+    snapshot = {}
+    for path in paths:
+        if path.is_file():
+            snapshot[path] = path.read_bytes()
+        elif not path.is_symlink():
+            snapshot[path] = None
+    return snapshot
+
+
+def _restore_files(snapshot):
+    """Write back or remove files as captured by ``_snapshot_files``.
+
+    Parameters
+    ----------
+    snapshot : dict
+        Value returned by ``_snapshot_files``.
+    """
+    for path, content in snapshot.items():
+        if content is None:
+            path.unlink(missing_ok=True)
+        else:
+            path.write_bytes(content)
+
+
+def _can_write_shortcut(shortcut, *, is_ours):
+    """Tell whether a shortcut or desktop entry may be created or replaced.
+
+    Parameters
+    ----------
+    shortcut : Path
+        Location of the shortcut.
+    is_ours : callable
+        Takes ``shortcut`` and returns True when Skyline created the file.
+
+    Returns
+    -------
+    bool
+        True when nothing exists there, or the file is a Skyline one.
+    """
+    return not (shortcut.exists() or shortcut.is_symlink()) or is_ours(shortcut)
 
 
 def _windows_set_value(*, key_path, value, name="", value_type=None):
@@ -578,14 +725,185 @@ def _windows_shortcuts():
     shortcuts = []
     for csidl in (_CSIDL_PROGRAMS, _CSIDL_DESKTOPDIRECTORY):
         buffer = ctypes.create_unicode_buffer(260)
-        ctypes.windll.shell32.SHGetFolderPathW(None, csidl, None, 0, buffer)
+        result = ctypes.windll.shell32.SHGetFolderPathW(None, csidl, None, 0, buffer)
+        if result != 0:
+            logger.warning(f"Could not locate the shell folder {csidl:#x}.")
+            continue
         shortcuts.append(Path(buffer.value) / f"{APP_NAME}.lnk")
     return shortcuts
+
+
+def _run_shortcut_script(script, *, environment, **run_arguments):
+    """Run a PowerShell script that reads its inputs from environment variables.
+
+    Parameters
+    ----------
+    script : str
+        PowerShell code to run.
+    environment : dict
+        Variables added to the environment of the script.
+    **run_arguments
+        Keyword arguments of :func:`subprocess.run`.
+
+    Returns
+    -------
+    subprocess.CompletedProcess
+        Result of the script, which has run successfully.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If the script exits with an error.
+
+    Notes
+    -----
+    PowerShell is started from the system folder: a bare name would also be
+    searched in the current directory.
+    """
+    powershell = (
+        Path(os.environ["SystemRoot"])
+        / "System32"
+        / "WindowsPowerShell"
+        / "v1.0"
+        / "powershell.exe"
+    )
+    return subprocess.run(
+        [
+            str(powershell),
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ],
+        env={**os.environ, **environment},
+        check=True,
+        **run_arguments,
+    )
+
+
+def _windows_shortcut_is_ours(link):
+    """Tell whether a shortcut file was created by Skyline.
+
+    Parameters
+    ----------
+    link : Path
+        Shortcut file to inspect.
+
+    Returns
+    -------
+    bool
+        True when the description of the shortcut is the one Skyline writes;
+        False when it is absent, unreadable or another one.
+    """
+    if not link.is_file():
+        return False
+    try:
+        result = _run_shortcut_script(
+            _SHORTCUT_DESCRIPTION_SCRIPT,
+            environment={"DIPY_LNK": str(link)},
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return result.stdout.strip() == _WINDOWS_LINK_DESCRIPTION
 
 
 def _windows_notify_shell():
     """Tell the Windows shell that file associations changed."""
     ctypes.windll.shell32.SHChangeNotify(_SHCNE_ASSOCCHANGED, 0, None, None)
+
+
+def _windows_read_tree(key_path):
+    """Read a key below ``HKEY_CURRENT_USER`` with its values and subkeys.
+
+    Parameters
+    ----------
+    key_path : str
+        Path of the key below ``HKEY_CURRENT_USER``.
+
+    Returns
+    -------
+    tuple or None
+        ``(values, children)``, where ``values`` lists the ``(name, data,
+        type)`` of the key and ``children`` maps the name of each subkey to its
+        own tree; None when the key does not exist.
+    """
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path)
+    except FileNotFoundError:
+        return None
+    with key:
+        child_count, value_count, _ = winreg.QueryInfoKey(key)
+        values = [winreg.EnumValue(key, index) for index in range(value_count)]
+        names = [winreg.EnumKey(key, index) for index in range(child_count)]
+    children = {name: _windows_read_tree(rf"{key_path}\{name}") for name in names}
+    return values, children
+
+
+def _windows_write_tree(key_path, tree):
+    """Write a key tree read by ``_windows_read_tree``, creating the keys.
+
+    Parameters
+    ----------
+    key_path : str
+        Path of the key below ``HKEY_CURRENT_USER``.
+    tree : tuple
+        ``(values, children)`` as returned by ``_windows_read_tree``.
+    """
+    values, children = tree
+    with winreg.CreateKeyEx(
+        winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE
+    ) as key:
+        for name, data, value_type in values:
+            winreg.SetValueEx(key, name, 0, value_type, data)
+    for name, child in children.items():
+        _windows_write_tree(rf"{key_path}\{name}", child)
+
+
+def _windows_snapshot():
+    """Capture the registry state that ``_windows_register`` changes.
+
+    Returns
+    -------
+    tuple
+        The trees of the URL scheme and file type keys, keyed by path, and the
+        set of extensions whose "Open with" list holds Skyline.
+    """
+    trees = {
+        key_path: _windows_read_tree(key_path)
+        for key_path in (_WINDOWS_SCHEME_KEY, _WINDOWS_PROGID_KEY)
+    }
+    open_with = set()
+    for extension in _extensions():
+        key_path = rf"{_WINDOWS_CLASSES}\.{extension}\OpenWithProgids"
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                winreg.QueryValueEx(key, FILE_PROGID)
+        except FileNotFoundError:
+            continue
+        open_with.add(extension)
+    return trees, open_with
+
+
+def _windows_restore(snapshot):
+    """Put the registry back in the state captured by ``_windows_snapshot``.
+
+    Parameters
+    ----------
+    snapshot : tuple
+        Value returned by ``_windows_snapshot``.
+    """
+    trees, open_with = snapshot
+    for key_path, tree in trees.items():
+        _windows_delete_tree(key_path)
+        if tree is not None:
+            _windows_write_tree(key_path, tree)
+    for extension in set(_extensions()) - open_with:
+        _windows_remove_open_with(extension)
+    _windows_notify_shell()
 
 
 def _windows_register(*, icon):
@@ -604,24 +922,28 @@ def _windows_register(*, icon):
     command = f'{subprocess.list2cmdline(_app_command())} "%1"'
     icon_value = f'"{icon}",0'
 
-    scheme_key = rf"{_WINDOWS_CLASSES}\{SKYLINE_URL_SCHEME}"
-    _windows_set_value(key_path=scheme_key, value=f"URL:{APP_NAME}")
-    _windows_set_value(key_path=scheme_key, name="URL Protocol", value="")
-    _windows_set_value(key_path=rf"{scheme_key}\DefaultIcon", value=icon_value)
-    _windows_set_value(key_path=rf"{scheme_key}\shell\open\command", value=command)
+    _windows_set_value(key_path=_WINDOWS_SCHEME_KEY, value=f"URL:{APP_NAME}")
+    _windows_set_value(key_path=_WINDOWS_SCHEME_KEY, name="URL Protocol", value="")
+    _windows_set_value(key_path=rf"{_WINDOWS_SCHEME_KEY}\DefaultIcon", value=icon_value)
+    _windows_set_value(
+        key_path=rf"{_WINDOWS_SCHEME_KEY}\shell\open\command", value=command
+    )
 
-    progid_key = rf"{_WINDOWS_CLASSES}\{FILE_PROGID}"
-    _windows_set_value(key_path=progid_key, value=f"{APP_NAME} data")
-    _windows_set_value(key_path=rf"{progid_key}\DefaultIcon", value=icon_value)
-    application_key = rf"{progid_key}\Application"
+    _windows_set_value(key_path=_WINDOWS_PROGID_KEY, value=f"{APP_NAME} data")
+    _windows_set_value(key_path=rf"{_WINDOWS_PROGID_KEY}\DefaultIcon", value=icon_value)
+    application_key = rf"{_WINDOWS_PROGID_KEY}\Application"
     _windows_set_value(key_path=application_key, name="ApplicationName", value=APP_NAME)
     _windows_set_value(
         key_path=application_key, name="ApplicationIcon", value=icon_value
     )
     _windows_set_value(
-        key_path=rf"{progid_key}\shell\open", name="FriendlyAppName", value=APP_NAME
+        key_path=rf"{_WINDOWS_PROGID_KEY}\shell\open",
+        name="FriendlyAppName",
+        value=APP_NAME,
     )
-    _windows_set_value(key_path=rf"{progid_key}\shell\open\command", value=command)
+    _windows_set_value(
+        key_path=rf"{_WINDOWS_PROGID_KEY}\shell\open\command", value=command
+    )
 
     for extension in _extensions():
         _windows_set_value(
@@ -632,35 +954,31 @@ def _windows_register(*, icon):
         )
 
     locations = [
-        rf"HKEY_CURRENT_USER\{scheme_key}",
-        rf"HKEY_CURRENT_USER\{progid_key}",
+        rf"HKEY_CURRENT_USER\{_WINDOWS_SCHEME_KEY}",
+        rf"HKEY_CURRENT_USER\{_WINDOWS_PROGID_KEY}",
     ]
     python, *arguments = _app_command()
     for link in _windows_shortcuts():
+        if not _can_write_shortcut(link, is_ours=_windows_shortcut_is_ours):
+            logger.warning(f"{link} is not a {APP_NAME} shortcut; left it in place.")
+            continue
+        staged = link.with_name(f"{link.stem}.{os.getpid()}.new.lnk")
         environment = {
-            **os.environ,
-            "DIPY_LNK": str(link),
+            "DIPY_LNK": str(staged),
             "DIPY_TARGET": python,
             "DIPY_ARGS": subprocess.list2cmdline(arguments),
             "DIPY_ICON": f"{icon},0",
         }
         try:
             link.parent.mkdir(parents=True, exist_ok=True)
-            link.unlink(missing_ok=True)
-            subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    _SHORTCUT_SCRIPT,
-                ],
-                env=environment,
-                check=True,
-            )
+            staged.unlink(missing_ok=True)
+            _run_shortcut_script(_SHORTCUT_SCRIPT, environment=environment)
+            staged.replace(link)
         except (OSError, subprocess.CalledProcessError) as err:
+            try:
+                staged.unlink(missing_ok=True)
+            except OSError:
+                pass
             logger.warning(f"Could not create the shortcut {link}: {err}")
         else:
             locations.append(str(link))
@@ -668,21 +986,33 @@ def _windows_register(*, icon):
     return locations
 
 
+def _windows_remove_open_with(extension):
+    """Remove the Skyline entry from the "Open with" list of a file extension.
+
+    Parameters
+    ----------
+    extension : str
+        File extension, without the dot.
+    """
+    key_path = rf"{_WINDOWS_CLASSES}\.{extension}\OpenWithProgids"
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE
+        ) as key:
+            winreg.DeleteValue(key, FILE_PROGID)
+    except FileNotFoundError:
+        pass
+
+
 def _windows_unregister():
     """Remove the Windows registry keys and shortcuts of Skyline."""
-    _windows_delete_tree(rf"{_WINDOWS_CLASSES}\{SKYLINE_URL_SCHEME}")
-    _windows_delete_tree(rf"{_WINDOWS_CLASSES}\{FILE_PROGID}")
+    _windows_delete_tree(_WINDOWS_SCHEME_KEY)
+    _windows_delete_tree(_WINDOWS_PROGID_KEY)
     for extension in _extensions():
-        key_path = rf"{_WINDOWS_CLASSES}\.{extension}\OpenWithProgids"
-        try:
-            with winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE
-            ) as key:
-                winreg.DeleteValue(key, FILE_PROGID)
-        except FileNotFoundError:
-            pass
+        _windows_remove_open_with(extension)
     for link in _windows_shortcuts():
-        link.unlink(missing_ok=True)
+        if _windows_shortcut_is_ours(link):
+            link.unlink()
     _windows_notify_shell()
 
 
@@ -694,7 +1024,7 @@ def _windows_registered_interpreter():
     str or None
         First token of the registered command, or None when it is not registered.
     """
-    key_path = rf"{_WINDOWS_CLASSES}\{SKYLINE_URL_SCHEME}\shell\open\command"
+    key_path = rf"{_WINDOWS_SCHEME_KEY}\shell\open\command"
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
             command = winreg.QueryValueEx(key, "")[0]
@@ -864,6 +1194,46 @@ def _desktop_entry_unquote(text):
     return re.sub(r'\\(["`$\\])', r"\1", text)
 
 
+def _linux_entry_is_ours(path):
+    """Tell whether a desktop entry file was created by Skyline.
+
+    Parameters
+    ----------
+    path : Path
+        Desktop entry file to inspect.
+
+    Returns
+    -------
+    bool
+        True for a regular file that holds the Skyline marker line; False for
+        a symbolic link, an unreadable file or any other content.
+    """
+    if path.is_symlink():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return _LINUX_ENTRY_MARKER in text.splitlines()
+
+
+def _linux_snapshot():
+    """Capture the files that ``_linux_register`` writes.
+
+    Returns
+    -------
+    dict
+        Content of each file, or None when absent, as returned by
+        ``_snapshot_files``.
+    """
+    mime_file, desktop_file = _linux_files()
+    paths = [mime_file, desktop_file, _linux_theme_icon()]
+    shortcut = _linux_desktop_dir() / desktop_file.name
+    if _can_write_shortcut(shortcut, is_ours=_linux_entry_is_ours):
+        paths.append(shortcut)
+    return _snapshot_files(paths)
+
+
 def _linux_register(*, icon):
     """Install the Skyline MIME types, desktop entry and icon for the user.
 
@@ -929,6 +1299,7 @@ def _linux_register(*, icon):
             "Terminal=false",
             "Categories=Science;MedicalSoftware;Graphics;",
             "MimeType=" + ";".join(desktop_mime_types) + ";",
+            _LINUX_ENTRY_MARKER,
             "",
         ]
     )
@@ -952,8 +1323,12 @@ def _linux_register(*, icon):
 
     locations = [mime_file, desktop_file]
     desktop_dir = _linux_desktop_dir()
-    if desktop_dir.is_dir():
-        shortcut = desktop_dir / desktop_file.name
+    shortcut = desktop_dir / desktop_file.name
+    if not _can_write_shortcut(shortcut, is_ours=_linux_entry_is_ours):
+        logger.warning(
+            f"{shortcut} is not a {APP_NAME} desktop entry; skipped the Desktop icon."
+        )
+    elif desktop_dir.is_dir():
         shortcut.write_text(entry, encoding="utf-8")
         shortcut.chmod(0o755)
         _run_tool(
@@ -969,15 +1344,16 @@ def _linux_register(*, icon):
 
 
 def _linux_unregister():
-    """Remove the MIME package, desktop entries and icon of Skyline."""
+    """Remove the MIME package, desktop entries and icon of Skyline.
+
+    The copy on the Desktop is only removed when Skyline made it.
+    """
     mime_file, desktop_file = _linux_files()
-    for path in (
-        mime_file,
-        desktop_file,
-        _linux_desktop_dir() / desktop_file.name,
-        _linux_theme_icon(),
-    ):
+    for path in (mime_file, desktop_file, _linux_theme_icon()):
         path.unlink(missing_ok=True)
+    shortcut = _linux_desktop_dir() / desktop_file.name
+    if _linux_entry_is_ours(shortcut):
+        shortcut.unlink()
     _linux_refresh_databases()
 
 
@@ -1070,7 +1446,9 @@ def _macos_register(*, icon):
         ``osacompile`` cannot create the application.
     """
     python = _applescript_string(shlex.quote(sys.executable))
-    module = _applescript_string(f" -c {shlex.quote(LAUNCH_BOOTSTRAP)}")
+    module = _applescript_string(
+        f" {PYTHON_SAFE_PATH} -c {shlex.quote(LAUNCH_BOOTSTRAP)}"
+    )
     background = _applescript_string(" > /dev/null 2>&1 &")
     space = _applescript_string(" ")
     start = f"do shell script {python} & {module}"
@@ -1090,28 +1468,31 @@ def _macos_register(*, icon):
 
     app = _macos_app_path()
     app.parent.mkdir(parents=True, exist_ok=True)
-    if app.exists():
-        if not _macos_bundle_is_ours(app):
-            raise RuntimeError(
-                f"{app} exists and is not a {APP_NAME} application; move it away "
-                "and run dipy_skyline --setup again."
-            )
-        shutil.rmtree(app)
+    if app.exists() and not _macos_bundle_is_ours(app):
+        raise RuntimeError(
+            f"{app} exists and is not a {APP_NAME} application; move it away "
+            "and run dipy_skyline --setup again."
+        )
     script_lines = [argument for line in script for argument in ("-e", line)]
-    try:
-        subprocess.run(["osacompile", "-o", str(app), *script_lines], check=True)
-    except (OSError, subprocess.CalledProcessError) as err:
-        raise RuntimeError(f"Could not create {app} with osacompile: {err}") from err
+    with tempfile.TemporaryDirectory(
+        dir=app.parent, prefix=".dipy-skyline-"
+    ) as staging:
+        staged = Path(staging) / app.name
+        try:
+            subprocess.run(["osacompile", "-o", str(staged), *script_lines], check=True)
+        except (OSError, subprocess.CalledProcessError) as err:
+            raise RuntimeError(
+                f"Could not create {app} with osacompile: {err}"
+            ) from err
 
-    try:
-        resources = app / "Contents" / "Resources"
+        resources = staged / "Contents" / "Resources"
         # The applet ships its own icon, named by CFBundleIconFile and possibly by
         # CFBundleIconName in an asset catalog, which macOS prefers over the file.
         shutil.copy2(icon, resources / "applet.icns")
         (resources / "Assets.car").unlink(missing_ok=True)
         (resources / "dipy-python.txt").write_text(sys.executable, encoding="utf-8")
 
-        plist_path = app / "Contents" / "Info.plist"
+        plist_path = staged / "Contents" / "Info.plist"
         with open(plist_path, "rb") as plist_file:
             plist = plistlib.load(plist_file)
         plist.update(
@@ -1138,24 +1519,40 @@ def _macos_register(*, icon):
         plist.pop("CFBundleIconName", None)
         with open(plist_path, "wb") as plist_file:
             plistlib.dump(plist, plist_file)
-    except OSError:
-        shutil.rmtree(app, ignore_errors=True)
-        raise
+        _run_tool(
+            "codesign",
+            "--force",
+            "--deep",
+            "--sign",
+            "-",
+            str(staged),
+            step="signing the app",
+        )
 
-    _run_tool(
-        "codesign", "--force", "--deep", "--sign", "-", str(app), step="signing the app"
-    )
+        backup = Path(staging) / "previous.app"
+        if app.exists():
+            app.rename(backup)
+        try:
+            staged.rename(app)
+        except OSError:
+            if backup.exists():
+                backup.rename(app)
+            raise
     _run_tool(_LSREGISTER, "-f", str(app), step="registering the app")
 
     locations = [app]
     shortcut = Path.home() / "Desktop" / app.name
     if _macos_owns_desktop_link(shortcut, app):
-        shortcut.unlink()
-    if shortcut.exists() or shortcut.is_symlink():
+        locations.append(shortcut)
+    elif shortcut.exists() or shortcut.is_symlink():
         logger.warning(f"{shortcut} is not a link to {app}; skipped the Desktop link.")
     elif shortcut.parent.is_dir():
-        shortcut.symlink_to(app)
-        locations.append(shortcut)
+        try:
+            shortcut.symlink_to(app)
+        except OSError as err:
+            logger.warning(f"Could not create the Desktop link {shortcut}: {err}")
+        else:
+            locations.append(shortcut)
     return [str(location) for location in locations]
 
 
@@ -1214,7 +1611,8 @@ def registered_interpreter():
 def register_app():
     """Register Skyline as an application that runs with this interpreter.
 
-    An existing registration, of this or another environment, is replaced.
+    An existing registration, of this or another environment, is replaced only
+    when the new one is complete.
 
     Returns
     -------
@@ -1226,6 +1624,9 @@ def register_app():
     RuntimeError
         If the application icon is unavailable, or the application cannot be
         built.
+    OSError
+        If the operating system refuses a write; the previous registration is
+        left in place.
     """
     relative_path = SKYLINE_APP_ICONS.get(sys.platform, SKYLINE_APP_ICON_DEFAULT)
     try:
@@ -1242,10 +1643,21 @@ def register_app():
         logger.info(f"Switching {APP_NAME} from {previous} to {current}.")
 
     if sys.platform == "win32":
-        return _windows_register(icon=icon)
+        snapshot = _windows_snapshot()
+        try:
+            return _windows_register(icon=icon)
+        except OSError:
+            _windows_restore(snapshot)
+            raise
     if sys.platform == "darwin":
         return _macos_register(icon=icon)
-    return _linux_register(icon=icon)
+    snapshot = _linux_snapshot()
+    try:
+        return _linux_register(icon=icon)
+    except OSError:
+        _restore_files(snapshot)
+        _linux_refresh_databases()
+        raise
 
 
 def unregister_app():
@@ -1267,7 +1679,7 @@ def unregister_app():
 def try_register_app():
     """Register Skyline as an application, logging instead of raising on failure.
 
-    A partial registration is removed when the operating system refuses a write.
+    A failed registration leaves the previous one, of any environment, in place.
 
     Returns
     -------
@@ -1280,7 +1692,6 @@ def try_register_app():
         logger.error(str(err))
         return None
     except OSError as err:
-        unregister_app()
         logger.error(f"Could not register {APP_NAME}: {err}")
         return None
 
@@ -1315,23 +1726,26 @@ def _interpreter_has_dipy(interpreter):
     Returns
     -------
     bool
-        True when ``interpreter`` is the running one, has ``dipy`` installed, or
-        did not answer within 10 seconds (unknown state); False when it cannot
-        be run or has no ``dipy``.
+        True when ``interpreter`` is the running one or has ``dipy`` installed;
+        False when it cannot be run, has no ``dipy``, or does not answer within
+        10 seconds.
     """
     if interpreter == _app_command()[0]:
         return True
     try:
         result = subprocess.run(
-            [interpreter, "-c", "import importlib.metadata as m;m.version('dipy')"],
+            [
+                interpreter,
+                PYTHON_SAFE_PATH,
+                "-c",
+                "import importlib.metadata as m;m.version('dipy')",
+            ],
             capture_output=True,
             cwd=Path(interpreter).parent,
             timeout=10,
             check=False,
         )
-    except subprocess.TimeoutExpired:
-        return True
-    except OSError:
+    except (subprocess.TimeoutExpired, OSError):
         return False
     return result.returncode == 0
 
@@ -1339,19 +1753,16 @@ def _interpreter_has_dipy(interpreter):
 def ensure_app_registered():
     """Register Skyline as an application unless a working registration exists.
 
-    The opt-out ``DIPY_SKYLINE_NO_REGISTER`` (non-empty, as in the DIPY test
-    suite) is checked first. A registration made by any environment is kept
-    while its interpreter exists and finds DIPY. Nothing is registered on Linux
-    without a graphical session. Nothing is asked and nothing is installed;
-    failures are logged, never raised.
+    Called by ``dipy_auto --register_skyline``. A registration made by any
+    environment is kept while its interpreter exists and finds DIPY. Nothing is
+    registered on Linux without a graphical session. Nothing is asked and
+    nothing is installed; failures are logged, never raised.
 
     Returns
     -------
     bool
         True when a working registration exists afterwards.
     """
-    if os.environ.get(NO_REGISTER_ENV_VAR):
-        return False
     interpreter = registered_interpreter()
     if interpreter is not None and _interpreter_has_dipy(interpreter):
         return True
