@@ -53,6 +53,11 @@ the nearest integer after interpolation. The command writes the corrected DWI
 With a T2w image, use ``--anat_contrast t2``. The polarity of phase encoding
 does not need to be specified.
 
+With a T1w image, intensities above the 98th percentile inside the brain mask
+are clipped before the image is inverted, because a few very bright voxels
+(vessels, fat) otherwise reduce the tissue contrast of the inverted image.
+``--t1_clip_percentile`` changes the percentile; ``100`` disables the clipping.
+
 ----------
 References
 ----------

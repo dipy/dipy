@@ -1123,6 +1123,7 @@ class SynSDCFlow(Workflow):
         b0_index=0,
         n_outer=2,
         sigma_diff=5.0,
+        t1_clip_percentile=98.0,
         out_dir="",
         out_corrected="corrected.nii.gz",
         out_field="field.nii.gz",
@@ -1160,6 +1161,10 @@ class SynSDCFlow(Workflow):
         sigma_diff : float, optional
             Standard deviation (in voxels) of the Gaussian smoothing of the
             SyN updates. Larger values give a smoother displacement.
+        t1_clip_percentile : float, optional
+            Percentile of the T1w intensities inside the brain mask above
+            which they are clipped before the image is inverted. 100 disables
+            the clipping. Ignored for a T2w image.
         out_dir : string or Path, optional
             Output directory.
         out_corrected : string, optional
@@ -1196,6 +1201,7 @@ class SynSDCFlow(Workflow):
                 b0_index=b0_index,
                 n_outer=n_outer,
                 sigma_diff=sigma_diff,
+                t1_clip_percentile=t1_clip_percentile,
                 return_field=True,
             )
 

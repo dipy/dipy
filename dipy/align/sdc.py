@@ -40,6 +40,11 @@ from dipy.utils.logging import logger
 
 __all__ = ["PhaseEncodingSyN", "syn_sdc"]
 
+# Largest rotation (degrees) and shift (mm, at the center of the brain)
+# accepted when the rigid alignment is re-estimated on the corrected b0.
+_MAX_RIGID_ROTATION = 3.0
+_MAX_RIGID_SHIFT = 5.0
+
 
 class PhaseEncodingSyN(SymmetricDiffeomorphicRegistration):
     """Symmetric diffeomorphic registration restricted to one direction.
@@ -89,15 +94,6 @@ class PhaseEncodingSyN(SymmetricDiffeomorphicRegistration):
         return super().update(
             current_displacement, new_displacement, disp_world2grid, time_scaling
         )
-
-
-def _pe_axis_index(pe_axis):
-    if isinstance(pe_axis, str):
-        axes = {"i": 0, "j": 1, "k": 2, "x": 0, "y": 1, "z": 2}
-        pe_axis = axes.get(pe_axis.lower().rstrip("-"))
-    if pe_axis not in (0, 1, 2):
-        raise ValueError("pe_axis must be 0, 1, 2 or one of 'i', 'j', 'k'.")
-    return pe_axis
 
 
 def _scale(img, mask):
@@ -161,22 +157,49 @@ def _rigid_anat_to_epi(
     return max(candidates, key=lambda c: c[2])[3]
 
 
-def _anat_reference(anat_in_epi, mask, contrast, epi):
+def _rigid_change(affine, previous, center):
+    """Rotation (degrees) and shift (mm) between two rigid transforms.
+
+    The shift is the distance between the points that the two transforms
+    send to ``center``.
+    """
+    delta = affine @ np.linalg.inv(previous)
+    cos = np.clip((np.trace(delta[:3, :3]) - 1.0) / 2.0, -1.0, 1.0)
+    shift = np.linalg.norm(delta[:3, :3] @ center + delta[:3, 3] - center)
+    return np.degrees(np.arccos(cos)), shift
+
+
+def _anat_reference(anat_in_epi, mask, contrast, epi, *, clip_percentile):
     """Map the anatomical image to a b0-like contrast inside the brain.
 
     A T1w image is intensity-inverted, so that cerebrospinal fluid is bright
     and white matter dark as in a b0. The contrast of a T2w image already
     resembles that of a b0, and its intensities are mapped to the
     conditional mean of ``epi`` (see :func:`_intensity_map`) to match the
-    relative brightness of the tissues. Voxels outside ``mask`` are set to 0.
+    relative brightness of the tissues.
     """
     if contrast == "t1":
-        # Inverting about the maximum keeps the relation with the b0 linear
-        # over the whole brain, which the local cross-correlation needs.
-        ref = anat_in_epi[mask].max() - anat_in_epi
-    else:
-        ref = _intensity_map(anat_in_epi, epi, mask)
-    return np.where(mask, ref, 0.0)
+        # Inverting about a single value keeps the relation with the b0
+        # linear over the whole brain, which the local cross-correlation
+        # needs. A high percentile is used and not the maximum, which a few
+        # very bright voxels (vessels, fat) would set.
+        cap = np.percentile(anat_in_epi[mask], clip_percentile)
+        return cap - np.minimum(anat_in_epi, cap)
+    return _intensity_map(anat_in_epi, epi, mask)
+
+
+def _fill_outside(static, moving, mask):
+    """Give the reference the intensities of the b0 outside the brain mask.
+
+    A reference left at zero outside ``mask`` has an edge at the border of
+    the mask that the b0 does not have, and the registration moves the b0
+    towards it even when there is no distortion. The reference is first
+    fitted linearly to the b0 inside the mask, so that the two have the same
+    intensity range at the border.
+    """
+    slope, intercept = np.polyfit(static[mask], moving[mask], 1)
+    static = np.clip(slope * static + intercept, 0, None)
+    return np.where(mask, static, moving)
 
 
 def _epi_fov(epi):
@@ -211,6 +234,32 @@ def _intensity_map(anat, epi, mask, *, nbins=64):
     return np.interp(anat, centers, means)
 
 
+def _pe_mapping(disp_vox, axis_vector, affine, shape):
+    """DiffeomorphicMap of a displacement given in voxels along one axis.
+
+    ``axis_vector`` is the world-space step of one voxel along that axis
+    (the corresponding column of ``affine``).
+    """
+    forward = np.ascontiguousarray(disp_vox[..., None] * axis_vector, dtype=np.float32)
+    mapping = DiffeomorphicMap(
+        3,
+        shape,
+        disp_grid2world=affine,
+        domain_shape=shape,
+        domain_grid2world=affine,
+        codomain_shape=shape,
+        codomain_grid2world=affine,
+    )
+    mapping.forward = forward
+    spacing = np.sqrt((affine[:3, :3] ** 2).sum(0))
+    mapping.backward = np.asarray(
+        vfu.invert_vector_field_fixed_point_3d(
+            forward, mapping.disp_world2grid, spacing, 40, 1e-4
+        )
+    )
+    return mapping
+
+
 def syn_sdc(
     dwi,
     dwi_affine,
@@ -229,6 +278,7 @@ def syn_sdc(
     ss_sigma_factor=0.2,
     mask_dilation=4,
     field_smooth=1.0,
+    t1_clip_percentile=98.0,
     return_field=False,
     return_mapping=False,
 ):
@@ -237,13 +287,14 @@ def syn_sdc(
     The distorted b0 is rigidly aligned to an undistorted, skull-stripped
     anatomical image of the same subject, which is mapped to a b0-like
     contrast and resampled onto the b0 grid. Anatomy outside the acquired
-    field of view of the b0 (where it is exactly zero) is ignored. The b0 is then registered to it
-    with symmetric diffeomorphic registration (SyN) and the local
-    cross-correlation metric, with the deformation restricted to the
-    phase-encoding axis :footcite:p:`Avants2008`, :footcite:p:`Wang2017`. The
-    rigid alignment is re-estimated on the corrected b0 ``n_outer`` times, so
-    that the distortion does not bias the coregistration. The estimated
-    displacement is finally applied to every volume of ``dwi``.
+    field of view of the b0 (where it is exactly zero) is ignored. The b0 is
+    then registered to that image with symmetric diffeomorphic registration
+    (SyN) and the local cross-correlation metric, with the deformation
+    restricted to the phase-encoding axis :footcite:p:`Avants2008`,
+    :footcite:p:`Wang2017`. The rigid alignment is re-estimated on the
+    corrected b0 ``n_outer`` times, so that the distortion does not bias the
+    coregistration. The estimated displacement is finally applied to every
+    volume of ``dwi``.
 
     Parameters
     ----------
@@ -257,9 +308,9 @@ def syn_sdc(
         skull-stripped, or a brain mask should be given in ``anat_mask``.
     anat_affine : ndarray (4, 4)
         Voxel-to-world affine of ``anat``.
-    pe_axis : int or str
+    pe_axis : int
         Voxel axis of ``dwi`` along which phase encoding was performed:
-        0, 1, 2 or one of 'i', 'j', 'k' (the polarity is irrelevant).
+        0, 1 or 2 (the polarity is irrelevant).
     anat_contrast : {'t1', 't2'}, optional
         Contrast of ``anat``. A T1-weighted image is intensity-inverted inside
         the brain mask to resemble a b0. The intensities of a T2-weighted
@@ -289,6 +340,11 @@ def syn_sdc(
     field_smooth : float, optional
         Standard deviation (in mm) of the Gaussian smoothing applied to the
         final displacement. 0 disables it.
+    t1_clip_percentile : float, optional
+        Percentile of the T1w intensities inside the brain mask above which
+        they are clipped before the image is inverted. A few very bright
+        voxels (vessels, fat) otherwise reduce the tissue contrast of the
+        inverted image. 100 disables the clipping. Ignored for a T2w image.
     return_field : bool, optional
         Also return the displacement along ``pe_axis``.
     return_mapping : bool, optional
@@ -324,9 +380,12 @@ def syn_sdc(
     contrast = str(anat_contrast).lower()
     if contrast not in ("t1", "t2"):
         raise ValueError("anat_contrast must be 't1' or 't2'.")
-    pe_axis = _pe_axis_index(pe_axis)
+    if pe_axis not in (0, 1, 2):
+        raise ValueError("pe_axis must be 0, 1 or 2.")
     if n_outer < 1:
         raise ValueError("n_outer must be at least 1.")
+    if not 0 < t1_clip_percentile <= 100:
+        raise ValueError("t1_clip_percentile must be in (0, 100].")
 
     b0 = np.asarray(dwi[..., b0_index] if dwi.ndim == 4 else dwi, dtype=np.float64)
     if anat_mask is None:
@@ -338,12 +397,14 @@ def syn_sdc(
     zooms = np.sqrt((dwi_affine[:3, :3] ** 2).sum(0))
     direction = dwi_affine[:3, pe_axis]
     corrected_b0 = b0
+    # Center of the brain, in world coordinates.
+    brain_center = (anat_affine @ np.append(np.argwhere(anat_mask).mean(0), 1))[:3]
     # Anatomy outside the acquired EPI field of view has no counterpart in
     # the b0 and must not attract the registration.
     fov = _epi_fov(b0)
     rigid = None
-    mapping = None
     for outer in range(n_outer):
+        previous = rigid
         rigid = _rigid_anat_to_epi(
             corrected_b0,
             dwi_affine,
@@ -351,13 +412,30 @@ def syn_sdc(
             anat_affine,
             anat_mask,
             fov,
-            None if rigid is None else rigid.affine,
+            None if previous is None else previous.affine,
         )
+        if previous is not None:
+            # The distortion changes the first alignment by a fraction of a
+            # degree and about a millimeter. A larger change is an error.
+            angle, shift = _rigid_change(rigid.affine, previous.affine, brain_center)
+            if angle > _MAX_RIGID_ROTATION or shift > _MAX_RIGID_SHIFT:
+                logger.warning(
+                    f"The rigid alignment changed by {angle:.1f} degrees and "
+                    f"{shift:.1f} mm on the corrected b0. Keeping the previous one."
+                )
+                rigid = previous
         mask = (rigid.transform(anat_mask.astype(np.float64)) > 0.5) & fov
-        ref = _anat_reference(rigid.transform(anat), mask, contrast, corrected_b0)
+        ref = _anat_reference(
+            rigid.transform(anat),
+            mask,
+            contrast,
+            corrected_b0,
+            clip_percentile=t1_clip_percentile,
+        )
         support = binary_dilation(mask, iterations=mask_dilation)
         static = _scale(ref, mask)
         moving = _scale(np.where(support, b0, 0.0), mask)
+        static = _fill_outside(static, moving, mask)
 
         sdr = PhaseEncodingSyN(
             CCMetric(3, sigma_diff=sigma_diff, radius=radius),
@@ -396,29 +474,3 @@ def syn_sdc(
     if return_mapping:
         out += (mapping,)
     return out[0] if len(out) == 1 else out
-
-
-def _pe_mapping(disp_vox, axis_vector, affine, shape):
-    """DiffeomorphicMap of a displacement given in voxels along one axis.
-
-    ``axis_vector`` is the world-space step of one voxel along that axis
-    (the corresponding column of ``affine``).
-    """
-    forward = np.ascontiguousarray(disp_vox[..., None] * axis_vector, dtype=np.float32)
-    mapping = DiffeomorphicMap(
-        3,
-        shape,
-        disp_grid2world=affine,
-        domain_shape=shape,
-        domain_grid2world=affine,
-        codomain_shape=shape,
-        codomain_grid2world=affine,
-    )
-    mapping.forward = forward
-    spacing = np.sqrt((affine[:3, :3] ** 2).sum(0))
-    mapping.backward = np.asarray(
-        vfu.invert_vector_field_fixed_point_3d(
-            forward, mapping.disp_world2grid, spacing, 40, 1e-4
-        )
-    )
-    return mapping

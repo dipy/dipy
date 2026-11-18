@@ -1,10 +1,17 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal
+import numpy.testing as npt
 import pytest
-from scipy.ndimage import gaussian_filter, map_coordinates
+from scipy.ndimage import binary_erosion, gaussian_filter, map_coordinates
 
+from dipy.align.imaffine import AffineMap
 from dipy.align.metrics import CCMetric
-from dipy.align.sdc import PhaseEncodingSyN, syn_sdc
+import dipy.align.sdc as sdc
+from dipy.align.sdc import (
+    PhaseEncodingSyN,
+    _anat_reference,
+    _rigid_change,
+    syn_sdc,
+)
 
 # The phantoms are a third of the size of a typical DWI, so the SyN updates
 # are smoothed proportionally less than by default.
@@ -41,6 +48,7 @@ def _distort(image, grid, pe_axis, displacement):
 
 
 def _bump(grid, brain, *, amplitude=2.5):
+    """Smooth displacement, in voxels, in one region of the brain."""
     u = amplitude * np.exp(
         -(
             ((grid[0] - 22) / 9) ** 2
@@ -52,6 +60,7 @@ def _bump(grid, brain, *, amplitude=2.5):
 
 
 def _oblique_affine():
+    """Affine with a rotation of 12 degrees about the third axis."""
     theta = np.deg2rad(12)
     rot = np.array(
         [
@@ -112,10 +121,11 @@ def test_syn_sdc_recovers_displacement(contrast, oblique):
         anat_contrast=contrast,
         n_outer=1,
         sigma_diff=SIGMA,
+        t1_clip_percentile=100,
         return_field=True,
     )
-    assert_equal(corrected.shape, b0.shape)
-    assert_equal(field.shape, b0.shape)
+    npt.assert_equal(corrected.shape, b0.shape)
+    npt.assert_equal(field.shape, b0.shape)
     err = field - u
     err -= np.median(err[brain])
     err_before = np.abs(u - np.median(u[brain]))[brain].mean()
@@ -135,7 +145,7 @@ def test_syn_sdc_4d_and_mapping():
         affine,
         t2,
         affine,
-        pe_axis="j",
+        pe_axis=1,
         anat_contrast="T2",
         b0_index=1,
         n_outer=1,
@@ -143,11 +153,11 @@ def test_syn_sdc_4d_and_mapping():
         return_field=True,
         return_mapping=True,
     )
-    assert_equal(corrected.shape, dwi.shape)
-    assert_equal(corrected.dtype, dwi.dtype)
+    npt.assert_equal(corrected.shape, dwi.shape)
+    npt.assert_equal(corrected.dtype, dwi.dtype)
     # every volume gets the same correction
-    assert_array_almost_equal(corrected[..., 0], 0.5 * corrected[..., 1], decimal=2)
-    assert_array_almost_equal(
+    npt.assert_array_almost_equal(corrected[..., 0], 0.5 * corrected[..., 1], decimal=2)
+    npt.assert_array_almost_equal(
         mapping.transform(dwi[..., 2]), corrected[..., 2], decimal=3
     )
     # the backward field undoes the forward one
@@ -174,22 +184,23 @@ def test_syn_sdc_rounds_integer_output(four_dim):
         sigma_diff=SIGMA,
         return_mapping=True,
     )
-    assert_equal(corrected.dtype, dwi.dtype)
+    npt.assert_equal(corrected.dtype, dwi.dtype)
     volumes = range(dwi.shape[-1]) if four_dim else (None,)
     for i in volumes:
         source = dwi if i is None else dwi[..., i]
         result = corrected if i is None else corrected[..., i]
         interpolated = mapping.transform(source)
         assert np.any(np.rint(interpolated) != np.trunc(interpolated))
-        assert_equal(result, np.rint(interpolated).astype(dwi.dtype))
+        npt.assert_equal(result, np.rint(interpolated).astype(dwi.dtype))
 
 
 def test_syn_sdc_invalid_inputs():
     vol = np.zeros((10, 10, 10))
     vol[3:7, 3:7, 3:7] = 1
     aff = np.eye(4)
-    with pytest.raises(ValueError, match="pe_axis"):
-        syn_sdc(vol, aff, vol, aff, pe_axis=3)
+    for pe_axis in (3, "j"):
+        with pytest.raises(ValueError, match="pe_axis"):
+            syn_sdc(vol, aff, vol, aff, pe_axis=pe_axis)
     with pytest.raises(ValueError, match="anat_contrast"):
         syn_sdc(vol, aff, vol, aff, pe_axis=0, anat_contrast="flair")
     with pytest.raises(ValueError, match="dwi must be 3D or 4D"):
@@ -202,6 +213,9 @@ def test_syn_sdc_invalid_inputs():
         syn_sdc(vol, aff, np.zeros_like(vol), aff, pe_axis=0)
     with pytest.raises(ValueError, match="n_outer"):
         syn_sdc(vol, aff, vol, aff, pe_axis=0, n_outer=0)
+    for percentile in (0, 101):
+        with pytest.raises(ValueError, match="t1_clip_percentile"):
+            syn_sdc(vol, aff, vol, aff, pe_axis=0, t1_clip_percentile=percentile)
 
 
 def test_syn_sdc_truncated_fov():
@@ -220,6 +234,7 @@ def test_syn_sdc_truncated_fov():
         pe_axis=1,
         n_outer=1,
         sigma_diff=SIGMA,
+        t1_clip_percentile=100,
         return_field=True,
     )
     acquired = brain & (grid[2] >= 14)
@@ -228,3 +243,98 @@ def test_syn_sdc_truncated_fov():
     err_before = np.abs(u - np.median(u[acquired]))[acquired].mean()
     assert np.abs(err[acquired]).mean() < 0.75 * err_before
     assert np.abs(field[brain]).max() < 2 * u.max()
+
+
+def test_anat_reference_clips_bright_outliers():
+    _, brain, t1, t2 = _phantom()
+    expected = _anat_reference(t1, brain, "t1", t2, clip_percentile=98)
+    # A few voxels much brighter than the tissue, as vessels or fat.
+    bright = t1.copy()
+    bright[np.unravel_index(np.flatnonzero(brain)[::500], t1.shape)] = 10 * t1.max()
+    ref = _anat_reference(bright, brain, "t1", t2, clip_percentile=98)
+    assert np.abs(ref - expected)[brain].mean() < 1.0
+    # Without the clipping the outliers set the offset of the reference.
+    unclipped = _anat_reference(bright, brain, "t1", t2, clip_percentile=100)
+    assert np.abs(unclipped - expected)[brain].mean() > 100.0
+
+
+def test_rigid_change():
+    theta = np.deg2rad(10)
+    rotation = np.eye(4)
+    rotation[:2, :2] = [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
+    previous = np.eye(4)
+    previous[:3, 3] = [5.0, -3.0, 2.0]
+    center = np.array([40.0, -20.0, 10.0])
+    angle, shift = _rigid_change(previous, previous, center)
+    npt.assert_array_almost_equal([angle, shift], [0, 0])
+    # A rotation about the center turns the brain without moving it.
+    about_center = np.eye(4)
+    about_center[:3, :3] = rotation[:3, :3]
+    about_center[:3, 3] = center - rotation[:3, :3] @ center
+    angle, shift = _rigid_change(about_center @ previous, previous, center)
+    npt.assert_array_almost_equal([angle, shift], [10, 0])
+    translation = np.eye(4)
+    translation[:3, 3] = [3.0, 0.0, 4.0]
+    angle, shift = _rigid_change(translation @ previous, previous, center)
+    npt.assert_array_almost_equal([angle, shift], [0, 5])
+
+
+def test_syn_sdc_keeps_rigid_after_large_change(monkeypatch):
+    grid, brain, t1, t2 = _phantom()
+    affine = np.diag([2.0, 2.0, 2.5, 1.0])
+    b0 = _distort(t2, grid, 1, _bump(grid, brain))
+    estimate = sdc._rigid_anat_to_epi
+    calls = []
+
+    def rotated(epi, epi_affine, anat, anat_affine, anat_mask, fov, start):
+        calls.append(start)
+        if start is None:
+            return estimate(epi, epi_affine, anat, anat_affine, anat_mask, fov, start)
+        # The second estimate is rotated by 30 degrees.
+        theta = np.deg2rad(30)
+        rotation = np.eye(4)
+        rotation[:2, :2] = [
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)],
+        ]
+        return AffineMap(
+            rotation @ start,
+            domain_grid_shape=epi.shape,
+            domain_grid2world=epi_affine,
+            codomain_grid_shape=anat.shape,
+            codomain_grid2world=anat_affine,
+        )
+
+    # The reference made from a T1w image does not depend on the b0, so the
+    # second pass repeats the first when the alignment is kept.
+    kwargs = {"pe_axis": 1, "sigma_diff": SIGMA, "return_field": True}
+    _, expected = syn_sdc(b0, affine, t1, affine, n_outer=1, **kwargs)
+    monkeypatch.setattr(sdc, "_rigid_anat_to_epi", rotated)
+    _, field = syn_sdc(b0, affine, t1, affine, n_outer=2, **kwargs)
+    npt.assert_equal(len(calls), 2)
+    npt.assert_array_almost_equal(field, expected, decimal=4)
+
+
+@pytest.mark.parametrize("contrast", ["t1", "t2"])
+def test_syn_sdc_keeps_undistorted_with_tight_mask(contrast):
+    grid, brain, t1, t2 = _phantom()
+    affine = np.diag([2.0, 2.0, 2.5, 1.0])
+    # A brain mask smaller than the brain puts an edge in the reference
+    # where the b0 has none. The b0 is not distorted, so it must not move.
+    tight = binary_erosion(brain, iterations=2)
+    anat = t1 if contrast == "t1" else t2
+    _, field = syn_sdc(
+        t2,
+        affine,
+        anat * tight,
+        affine,
+        pe_axis=1,
+        anat_contrast=contrast,
+        anat_mask=tight,
+        n_outer=1,
+        sigma_diff=SIGMA,
+        t1_clip_percentile=100,
+        return_field=True,
+    )
+    assert np.abs(field[brain]).mean() < 0.3
+    assert np.abs(field[brain]).max() < 1.0
