@@ -4,7 +4,6 @@ import numpy.testing as npt
 from numpy.testing import assert_array_equal, assert_equal
 import pytest
 
-import dipy.align.disco as disco
 from dipy.align.disco import (
     _pe_direction,
     _refine_b0_to_t1,
@@ -15,7 +14,15 @@ from dipy.align.disco import (
     _warp_image,
     synb0_syn,
 )
+from dipy.align.tests.test_bbr import (
+    MOVING_AFFINE,
+    STATIC_AFFINE,
+    TRUTH,
+    _error_mm,
+    _setup,
+)
 from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
 
 
 def test_validate_b0_index_valid():
@@ -121,22 +128,19 @@ def test_restrict_field_to_pe():
     npt.assert_allclose(restricted[..., 1:], 0)
 
 
-def test_refine_b0_to_t1_falls_back(monkeypatch):
+def test_refine_b0_to_t1_falls_back():
     start = np.eye(4)
     start[:3, 3] = [1.0, 2.0, 3.0]
     vol = np.zeros((8, 8, 8))
-
-    def fail(*args, **kwargs):
-        raise ValueError("Only 3 boundary points fall in the moving image.")
-
-    monkeypatch.setattr(disco, "bbr_registration", fail)
+    # An empty brain mask makes the boundary-based registration fail.
     affine = _refine_b0_to_t1(vol, vol, np.eye(4), np.eye(4), vol > 0, start)
     npt.assert_array_equal(affine, start)
 
-    refined = np.diag([1.0, 1.0, 1.0, 1.0])
-    monkeypatch.setattr(disco, "bbr_registration", lambda *a, **k: (vol, refined))
-    affine = _refine_b0_to_t1(vol, vol, np.eye(4), np.eye(4), vol > 0, start)
-    npt.assert_array_equal(affine, refined)
+
+def test_refine_b0_to_t1_refines():
+    epi, t1, wm = _setup()
+    affine = _refine_b0_to_t1(epi, t1, MOVING_AFFINE, STATIC_AFFINE, t1 > 0, np.eye(4))
+    assert _error_mm(affine, TRUTH, wm=wm, static_affine=STATIC_AFFINE) < 0.75
 
 
 def test_save_debug_volume_none_dir():
@@ -200,7 +204,7 @@ def test_synb0_syn_b0_index_type_error():
         )
 
 
-def test_synb0_syn_4d_input():
+def test_synb0_syn_4d_input(tmp_path):
     """Run full pipeline on a real 4D DWI and T1 of the same subject."""
     # Random volumes do not register to the MNI template, so the synthesized
     # b0 can miss the DWI grid entirely and SyN then gets an empty image.
@@ -215,10 +219,21 @@ def test_synb0_syn_4d_input():
         dwi_affine=dwi_img.affine,
         T1_affine=t1_img.affine,
         return_field=True,
+        debug_dir=tmp_path,
     )
     assert_equal(corrected.shape, dwi.shape)
     assert_equal(field.shape, dwi[..., 0].shape)
     assert np.all(np.isfinite(field))
+    npt.assert_(np.any(field != 0))
+
+    # The correction brings the b0 closer to the synthesized undistorted b0.
+    synthetic = load_nifti_data(tmp_path / "07_binf_in_dwi.nii.gz")
+    inside = synthetic > 0
+
+    def correlation(image):
+        return np.corrcoef(image[inside], synthetic[inside])[0, 1]
+
+    assert correlation(corrected[..., 0]) > correlation(dwi[..., 0])
 
 
 def test_synb0_syn_bad_b0_to_t1_method():

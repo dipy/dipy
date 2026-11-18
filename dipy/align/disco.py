@@ -353,6 +353,7 @@ def synb0_syn(
     apply_skull_strip=False,
     b0_to_t1_method="bbr",
     debug_dir=None,
+    verbose=True,
     **kwargs,
 ):
     """
@@ -413,6 +414,8 @@ def synb0_syn(
         the estimated field.
     debug_dir : str or Path, optional
         Directory to save intermediate debug NIfTI volumes.
+    verbose : bool, optional
+        Whether the MindGrab, DeepN4 and Synb0 models log their progress.
     **kwargs :
         Additional keyword arguments to pass to Synb0.predict.
 
@@ -483,7 +486,7 @@ def synb0_syn(
     # ── Optional: MindGrab skull stripping on T1 and DWI ─────────────────
     if apply_skull_strip:
         logger.info("Applying MindGrab skull stripping to T1 and DWI b0...")
-        mindgrab_model = MindGrab(verbose=True)
+        mindgrab_model = MindGrab(verbose=verbose)
         T1_mask = mindgrab_model.predict(T1_for_reg, T1_affine).astype(bool)
         dwi_mask = mindgrab_model.predict(dwi_for_field, dwi_affine).astype(bool)
         _save_debug_volume(
@@ -505,7 +508,7 @@ def synb0_syn(
     # ── Optional: DeepN4 bias field correction on T1 ────────────────────
     if apply_deepn4:
         logger.info("Applying DeepN4 bias field correction to T1...")
-        deepn4_model = DeepN4(verbose=True)
+        deepn4_model = DeepN4(verbose=verbose)
         T1_for_reg = deepn4_model.predict(T1_for_reg, T1_affine)
         _save_debug_volume(
             debug_dir=debug_dir,
@@ -656,7 +659,7 @@ def synb0_syn(
     mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
 
     # ── Step 4: Synb0 synthesis ──────────────────────────────────────────
-    synb0 = Synb0(verbose=True)
+    synb0 = Synb0(verbose=verbose)
     logger.info("Synthesizing undistorted b0 with Synb0 model...")
     binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
     binf = binf * mni_mask_resized
@@ -729,10 +732,10 @@ def synb0_syn(
         mapping.forward, field = _restrict_field_to_pe(
             mapping.get_forward_field(), pe_direction, field_smooth_vox
         )
-    elif return_field:
-        field = mapping.get_forward_field()
-        for c in range(3):
-            field[..., c] = gaussian_filter(field[..., c], sigma=field_smooth_vox)
+    else:
+        field = gaussian_filter(
+            mapping.get_forward_field(), sigma=(*field_smooth_vox, 0)
+        )
         mapping.forward = field
 
     # ── Step 8: Apply correction to DWI ──────────────────────────────────

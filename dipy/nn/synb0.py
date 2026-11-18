@@ -331,6 +331,7 @@ class Synb0:
 
         self.model = None
         self.weights = None
+        self._default_states = {}
 
     def fetch_default_weights(self, idx):
         r"""
@@ -344,9 +345,11 @@ class Synb0:
         idx : int
             The idx of the default weights. It can be from 0~4.
         """
-        fetch_model_weights_path = get_fnames(name="synb0_default_torch_weights")
-        logger.info(f"fetched {fetch_model_weights_path[idx]}")
-        self.load_model_weights(fetch_model_weights_path[idx])
+        if idx not in self._default_states:
+            weights_path = get_fnames(name="synb0_default_torch_weights")[idx]
+            logger.info(f"fetched {weights_path}")
+            self._default_states[idx] = load_state_dict(weights_path)
+        self._set_weights(self._default_states[idx])
 
     def load_model_weights(self, weights_path):
         r"""
@@ -359,6 +362,22 @@ class Synb0:
         """
         try:
             state = load_state_dict(weights_path)
+        except ValueError as e:
+            raise ValueError(
+                "Expected input for the provided model weights "
+                "do not match the declared model"
+            ) from e
+        self._set_weights(state)
+
+    def _set_weights(self, state):
+        """Use a state dict of the network for the predictions.
+
+        Parameters
+        ----------
+        state : dict
+            PyTorch state dict of the network, as NumPy arrays.
+        """
+        try:
             weights = pack_unet3d_weights(state)
         except ValueError as e:
             raise ValueError(
@@ -425,6 +444,8 @@ class Synb0:
         average : bool, optional
             Whether the function follows the Synb0-Disco pipeline and
             averages the prediction of 5 different models.
+            The default weights are then used, and the loaded weights are
+            kept for the next predictions with ``average=False``.
             If False, it uses the loaded weights for prediction, or the
             first default weights if none were loaded.
 
@@ -433,6 +454,13 @@ class Synb0:
         pred_output : np.ndarray (...) or (batch, ...)
             Reconstructed b-inf image(s)
         """
+        # Integer inputs would truncate the normalized values written back.
+        b0 = np.asarray(b0)
+        T1 = np.asarray(T1)
+        if not np.issubdtype(b0.dtype, np.floating):
+            b0 = b0.astype(np.float32)
+        if not np.issubdtype(T1.dtype, np.floating):
+            T1 = T1.astype(np.float32)
         # Check if shape is as intended
         if (
             b0.shape[1:] != _SYNB0_INPUT_SHAPE and b0.shape != _SYNB0_INPUT_SHAPE
@@ -459,6 +487,11 @@ class Synb0:
 
         # Normalize the data
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
+        if np.any(p99 <= 0):
+            raise ValueError(
+                "The b0 image has no positive signal: its 99th percentile is "
+                "not above 0."
+            )
         for i in range(shape[0]):
             T1[i] = normalize(T1[i], min_v=0, max_v=150, new_min=-1, new_max=1)
             b0[i] = normalize(b0[i], min_v=0, max_v=p99[i], new_min=-1, new_max=1)
@@ -478,6 +511,7 @@ class Synb0:
 
         if not average and self.model is None and self.weights is None:
             self.fetch_default_weights(0)
+        loaded = (self.model, self.weights)
 
         for model_idx in range(N_FOLDS if average else 1):
             if average:
@@ -494,6 +528,8 @@ class Synb0:
             if average:
                 mean_pred += unpadded
 
+        if average:
+            self.model, self.weights = loaded
         prediction = mean_pred / N_FOLDS if average else unpadded
 
         if dim == 3:

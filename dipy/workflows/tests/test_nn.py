@@ -6,7 +6,7 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.nn.evac import EVACPlus
 from dipy.utils.optpkg import optional_package
-from dipy.workflows.nn import BiasFieldCorrectionFlow, EVACPlusFlow
+from dipy.workflows.nn import BiasFieldCorrectionFlow, EVACPlusFlow, Synb0SynFlow
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
@@ -118,3 +118,21 @@ def test_correct_biasfield_flow_with_bias_output(tmp_path):
     corrected_name = bias_flow.last_generated_outputs["out_corrected"]
     assert (tmp_path / corrected_name).exists()
     assert (tmp_path / bias_field_name).exists()
+
+
+def test_synb0_syn_flow(tmp_path):
+    fraw, _, _ = get_fnames(name="stanford_hardi")
+    dwi, dwi_affine = load_nifti(fraw)
+    dwi_path = tmp_path / "dwi.nii.gz"
+    save_nifti(dwi_path, dwi[..., :2].astype(np.float32), dwi_affine)
+
+    flow = Synb0SynFlow()
+    flow.run(dwi_path, get_fnames(name="stanford_t1"), out_dir=tmp_path)
+
+    corrected, affine = load_nifti(flow.last_generated_outputs["out_corrected"])
+    field = load_nifti_data(flow.last_generated_outputs["out_field"])
+    npt.assert_equal(corrected.shape, (*dwi.shape[:3], 2))
+    npt.assert_array_equal(affine, dwi_affine)
+    npt.assert_equal(field.shape, dwi.shape[:3])
+    npt.assert_(np.all(np.isfinite(field)))
+    npt.assert_(np.any(field != 0))

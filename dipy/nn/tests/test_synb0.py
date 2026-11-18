@@ -115,6 +115,24 @@ def test_predict():
         Synb0(device="cpu").predict(b0[0], t1[0], average=False), single[0]
     )
 
+    # Averaging keeps the weights that were loaded.
+    synb0_model = Synb0(device="cpu")
+    synb0_model.load_model_weights(get_fnames(name="synb0_default_torch_weights")[2])
+    synb0_model.predict(b0[0], t1[0])
+    npt.assert_array_equal(synb0_model.predict(b0[0], t1[0], average=False), single[2])
+
+
+def test_predict_integer_input():
+    b0, t1, _ = load_test_data()
+    b0, t1 = np.round(b0[0]), np.round(t1[0])
+    synb0_model = Synb0(device="cpu")
+    synb0_model.fetch_default_weights(0)
+    expected = synb0_model.predict(b0, t1, average=False)
+    result = synb0_model.predict(
+        b0.astype(np.int16), t1.astype(np.int16), average=False
+    )
+    npt.assert_allclose(result, expected, rtol=0, atol=1e-4)
+
 
 def test_wrong_inputs():
     npt.assert_raises(ValueError, Synb0, device="webgpu")
@@ -127,3 +145,5 @@ def test_wrong_inputs():
         synb0_model.predict(b0[:-1], b0[:-1], average=False)
     with pytest.raises(ValueError, match="Expected shape"):
         synb0_model.predict(b0, np.zeros((80, 96, 80)), average=False)
+    with pytest.raises(ValueError, match="no positive signal"):
+        synb0_model.predict(b0, b0, average=False)
