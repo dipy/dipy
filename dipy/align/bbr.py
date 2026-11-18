@@ -59,6 +59,10 @@ def _wm_probability_hmrf(static, static_affine, static_mask, *, zoom=1.0):
     hi = np.minimum(ijk.max(axis=0) + 3, mask.shape)
     box = tuple(slice(a, b) for a, b in zip(lo, hi))
     crop = np.asarray(static, dtype=np.float64)[box] * mask[box]
+    # The classifier spreads its initial class means up to the maximum of the
+    # image: a few very bright voxels (vessels, fat) leave the top class empty
+    # and make the segmentation unstable.
+    crop = np.minimum(crop, np.percentile(crop[mask[box]], 99))
     crop_affine = static_affine.copy()
     crop_affine[:3, 3] = static_affine[:3, :3] @ lo + static_affine[:3, 3]
 

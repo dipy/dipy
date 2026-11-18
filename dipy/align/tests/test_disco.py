@@ -4,8 +4,10 @@ import numpy.testing as npt
 from numpy.testing import assert_array_equal, assert_equal
 import pytest
 
+import dipy.align.disco as disco
 from dipy.align.disco import (
     _pe_direction,
+    _refine_b0_to_t1,
     _restrict_field_to_pe,
     _save_debug_volume,
     _select_3d_volume,
@@ -117,6 +119,24 @@ def test_restrict_field_to_pe():
     restricted, pe_disp = _restrict_field_to_pe(field, np.array([1.0, 0, 0]), 0)
     npt.assert_allclose(pe_disp, field[..., 0])
     npt.assert_allclose(restricted[..., 1:], 0)
+
+
+def test_refine_b0_to_t1_falls_back(monkeypatch):
+    start = np.eye(4)
+    start[:3, 3] = [1.0, 2.0, 3.0]
+    vol = np.zeros((8, 8, 8))
+
+    def fail(*args, **kwargs):
+        raise ValueError("Only 3 boundary points fall in the moving image.")
+
+    monkeypatch.setattr(disco, "bbr_registration", fail)
+    affine = _refine_b0_to_t1(vol, vol, np.eye(4), np.eye(4), vol > 0, start)
+    npt.assert_array_equal(affine, start)
+
+    refined = np.diag([1.0, 1.0, 1.0, 1.0])
+    monkeypatch.setattr(disco, "bbr_registration", lambda *a, **k: (vol, refined))
+    affine = _refine_b0_to_t1(vol, vol, np.eye(4), np.eye(4), vol > 0, start)
+    npt.assert_array_equal(affine, refined)
 
 
 def test_save_debug_volume_none_dir():

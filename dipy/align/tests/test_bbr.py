@@ -3,7 +3,7 @@ import numpy.testing as npt
 import pytest
 from scipy.ndimage import gaussian_filter
 
-from dipy.align.bbr import bbr_registration
+from dipy.align.bbr import _wm_probability_hmrf, bbr_registration
 from dipy.align.imaffine import AffineMap
 from dipy.core.geometry import euler_matrix
 
@@ -89,6 +89,19 @@ def test_bbr_intensity_scale_and_contrast_sign():
     except ValueError:
         return
     assert _error_mm(wrong, TRUTH, wm=wm, static_affine=STATIC_AFFINE) > 1.0
+
+
+def test_wm_probability_hmrf_bright_outliers():
+    _, t1, wm = _setup()
+    mask = t1 > 0
+    # A few voxels much brighter than the white matter, as vessels or fat.
+    t1[np.unravel_index(np.flatnonzero(mask)[::2000], t1.shape)] = 400.0
+    seg, seg_affine = _wm_probability_hmrf(t1, STATIC_AFFINE, mask)
+    # The segmentation grid is the 1 mm grid of the T1, cropped to the mask.
+    lo = np.round(np.linalg.solve(STATIC_AFFINE, seg_affine)[:3, 3]).astype(int)
+    truth = wm[tuple(slice(a, a + n) for a, n in zip(lo, seg.shape))] > 0
+    dice = 2.0 * ((seg > 0.5) & truth).sum() / ((seg > 0.5).sum() + truth.sum())
+    assert dice > 0.9
 
 
 def test_bbr_scaling():

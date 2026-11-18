@@ -239,6 +239,55 @@ def _restrict_field_to_pe(field, direction, sigma):
     return pe_disp[..., None] * direction, pe_disp
 
 
+def _refine_b0_to_t1(
+    b0, t1, dwi_affine, t1_affine, brain_mask, starting_affine, *, scaling=False
+):
+    """Refine the b0 to T1 alignment with a boundary-based registration.
+
+    Parameters
+    ----------
+    b0 : ndarray (X, Y, Z)
+        The b0 volume.
+    t1 : ndarray (X, Y, Z)
+        The T1-weighted image.
+    dwi_affine : ndarray (4, 4)
+        Voxel-to-world matrix of `b0`.
+    t1_affine : ndarray (4, 4)
+        Voxel-to-world matrix of `t1`.
+    brain_mask : ndarray (X, Y, Z)
+        Brain mask on the grid of `t1`.
+    starting_affine : ndarray (4, 4)
+        Initial transform from the world coordinates of `t1` to those of
+        `b0`.
+    scaling : bool, optional
+        If True, a scaling along each axis is also estimated.
+
+    Returns
+    -------
+    affine : ndarray (4, 4)
+        The refined transform, or `starting_affine` when the boundary-based
+        registration cannot be run (for instance when the white matter
+        cannot be segmented).
+    """
+    try:
+        _, affine = bbr_registration(
+            b0,
+            t1,
+            dwi_affine,
+            t1_affine,
+            static_mask=brain_mask,
+            starting_affine=starting_affine,
+            scaling=scaling,
+        )
+    except ValueError as error:
+        logger.warning(
+            f"The boundary-based registration failed: {error} The b0 to T1 "
+            "alignment is not refined."
+        )
+        return starting_affine
+    return affine
+
+
 def _normalize_t1_for_synb0(t1):
     """Rescale a T1 image to match the intensity distribution expected by Synb0.
 
@@ -538,13 +587,13 @@ def synb0_syn(
                 )
                 > 0.5
             )
-        _, b0_to_t1_affine = bbr_registration(
+        b0_to_t1_affine = _refine_b0_to_t1(
             dwi_for_field,
             T1_for_reg,
             dwi_affine,
             T1_affine,
-            static_mask=brain_mask,
-            starting_affine=b0_to_t1_affine,
+            brain_mask,
+            b0_to_t1_affine,
             scaling=b0_to_t1_method == "bbr_scaling",
         )
     # Template world -> T1 world -> DWI world.
