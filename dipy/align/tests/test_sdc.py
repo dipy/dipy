@@ -157,6 +157,33 @@ def test_syn_sdc_4d_and_mapping():
     assert rel < 0.05
 
 
+@pytest.mark.parametrize("four_dim", [False, True])
+def test_syn_sdc_rounds_integer_output(four_dim):
+    grid, brain, _, t2 = _phantom()
+    affine = np.diag([2.0, 2.0, 2.5, 1.0])
+    b0 = np.rint(_distort(t2, grid, 1, _bump(grid, brain)) * 10).astype(np.int16)
+    dwi = np.stack([b0, b0 // 2], axis=-1) if four_dim else b0
+    corrected, mapping = syn_sdc(
+        dwi,
+        affine,
+        t2,
+        affine,
+        pe_axis=1,
+        anat_contrast="t2",
+        n_outer=1,
+        sigma_diff=SIGMA,
+        return_mapping=True,
+    )
+    assert_equal(corrected.dtype, dwi.dtype)
+    volumes = range(dwi.shape[-1]) if four_dim else (None,)
+    for i in volumes:
+        source = dwi if i is None else dwi[..., i]
+        result = corrected if i is None else corrected[..., i]
+        interpolated = mapping.transform(source)
+        assert np.any(np.rint(interpolated) != np.trunc(interpolated))
+        assert_equal(result, np.rint(interpolated).astype(dwi.dtype))
+
+
 def test_syn_sdc_invalid_inputs():
     vol = np.zeros((10, 10, 10))
     vol[3:7, 3:7, 3:7] = 1

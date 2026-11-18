@@ -298,7 +298,8 @@ def syn_sdc(
     Returns
     -------
     corrected : ndarray
-        Distortion-corrected ``dwi``, with the same shape.
+        Distortion-corrected ``dwi``, with the same shape and dtype. Interpolated
+        values are rounded to the nearest integer for integer-valued inputs.
     field : ndarray (X, Y, Z)
         Displacement, in voxels, along ``pe_axis``: the corrected image at
         voxel ``x`` is the input sampled at ``x + field[x]`` along
@@ -379,13 +380,15 @@ def syn_sdc(
         field = gaussian_filter(field, field_smooth / zooms)
     mapping = _pe_mapping(field, direction, dwi_affine, b0.shape)
 
-    if dwi.ndim == 4:
-        corrected = np.stack(
-            [mapping.transform(dwi[..., i]) for i in range(dwi.shape[-1])], axis=-1
-        )
-    else:
-        corrected = mapping.transform(dwi)
-    corrected = corrected.astype(dwi.dtype, copy=False)
+    integer_output = np.issubdtype(dwi.dtype, np.integer)
+    volumes = dwi.reshape(b0.shape + (-1,))
+    corrected = np.empty(volumes.shape, dtype=dwi.dtype)
+    for i in range(volumes.shape[-1]):
+        volume = mapping.transform(volumes[..., i])
+        if integer_output:
+            np.rint(volume, out=volume)
+        corrected[..., i] = volume
+    corrected = corrected.reshape(dwi.shape)
 
     out = (corrected,)
     if return_field:

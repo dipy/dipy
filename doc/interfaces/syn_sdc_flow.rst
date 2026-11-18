@@ -45,7 +45,8 @@ axis, voxel axis 1)::
     dipy_correct_syn_sdc data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/t1.nii.gz --anat_mask_file brain_mask.nii.gz --pe_axis 1 --anat_contrast t1 --out_dir "sdc_output"
 
 The distortion is estimated from the volume given by ``--b0_index`` (0 by
-default) and applied to every volume. The command writes the corrected DWI
+default) and applied to every volume. Integer-valued inputs are rounded to
+the nearest integer after interpolation. The command writes the corrected DWI
 (``corrected.nii.gz``) and the displacement along the PE axis, in voxels
 (``field.nii.gz``), to the output directory.
 
