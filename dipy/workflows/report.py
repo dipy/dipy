@@ -769,6 +769,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 # =============================================================================
 
 
+_STAGE_PAGE = re.compile(r"\d{2,}_[A-Za-z0-9_-]+\.html")
+_PIPELINE_PAGE = re.compile(r"(\d{8}_\d{6}_)?pipeline_report\.html")
+
+
 def stage_basename(*, index, stage_name):
     """File name stem of a stage page, e.g. ``03_brain_mask``.
 
@@ -949,6 +953,42 @@ def skyline_key(*, path, page_dir):
         return path.as_posix()
 
 
+def is_report_page(*, root, page):
+    """Tell whether a file is a page that a pipeline report writes.
+
+    Parameters
+    ----------
+    root : str or Path
+        Directory the report is served from.
+    page : str or Path
+        File to check.
+
+    Returns
+    -------
+    bool
+        True for the ``pipeline_report.html`` of a run, with or without its
+        timestamp prefix, and for ``index.html`` and the stage pages
+        ``NN_stage.html`` in a ``reports`` folder, all at any depth under
+        ``root``, as the runs of a BIDS batch have; False for any other file,
+        such as an HTML file somebody placed in the folder.
+
+    Notes
+    -----
+    The names are not a proof of origin: whoever can write to the folder, or
+    to a ``reports`` folder, can make a page that passes this check.
+    """
+    try:
+        relative = Path(page).resolve().relative_to(Path(root).resolve())
+    except ValueError:
+        return False
+    name = relative.name
+    if _PIPELINE_PAGE.fullmatch(name) is not None:
+        return True
+    if len(relative.parts) < 2 or relative.parts[-2] != "reports":
+        return False
+    return name == "index.html" or _STAGE_PAGE.fullmatch(name) is not None
+
+
 def skyline_files(*, root):
     """Files under ``root`` that the report server may open in Skyline.
 
@@ -1012,7 +1052,10 @@ def _output_items(*, outputs, page_dir):
             )
         else:
             href = html.escape(_href(path=path, page_dir=page_dir), quote=True)
-            button = f'<a class="qc-open" href="{href}" target="_blank">Open</a>'
+            button = (
+                f'<a class="qc-open" href="{href}" target="_blank" '
+                'rel="noopener">Open</a>'
+            )
         items += (
             f'<div class="output-item"><strong>{html.escape(key)}</strong>'
             f"<code>{html.escape(path)}</code>{button}</div>"

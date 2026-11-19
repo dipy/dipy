@@ -2969,10 +2969,18 @@ _MAX_REQUEST_BYTES = 1 << 20
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
-    HTML pages are served with a ``<meta name="dipy-qc-token">`` tag holding
-    the server token, which their buttons send back with the files to open in
-    a ``POST /qc-open`` request. A launch requires that token, so that no
-    other web page can trigger one. The request names the files by their
+    The pages of a pipeline report, and the page the server was started for,
+    are served with a ``<meta name="dipy-qc-token">`` tag holding the server
+    token, which their buttons send back with the files to open in a
+    ``POST /qc-open`` request. A launch requires that token and an ``Origin``
+    that is this server, so that no other web page can trigger one. Every
+    other response is sent with ``Content-Security-Policy: sandbox
+    allow-scripts`` and ``X-Content-Type-Options: nosniff``, so that an HTML
+    or SVG file planted in the served folder runs without the origin of the
+    report and cannot read the token from its pages; the pages with the token
+    cannot be framed. Whoever can write to the folder, or to its ``reports``
+    folders, can still make a page that gets the token.
+    The request names the files by their
     :func:`~dipy.workflows.report.skyline_key`, and only files Skyline can
     display under the served directory are known. The response body is the
     message the page shows when the launch fails. Anything else is served
@@ -2990,29 +2998,89 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         When None, the serving interpreter is used and a launch is refused with
         a 404 when its viewer packages are missing. A custom launcher may run
         another environment, so it is not checked.
+    entry : str or Path, optional
+        Page the server was started for, which is served with the token like
+        the pages of a pipeline report. Without it, only those pages are.
     **kwargs
         Keyword arguments of :class:`http.server.SimpleHTTPRequestHandler`.
     """
 
     timeout = 10
 
-    def __init__(self, *args, token=None, launcher=None, **kwargs):
+    def __init__(self, *args, token=None, launcher=None, entry=None, **kwargs):
         # The base class handles the request from its constructor.
         self.token = token
         self.launcher = launcher
+        self.entry = None if entry is None else Path(entry).resolve()
+        self._sends_token = False
         super().__init__(*args, **kwargs)
+
+    def _carries_token(self, page):
+        """Tell whether a page is served with the token.
+
+        Parameters
+        ----------
+        page : str
+            File of an HTML page under the served directory.
+
+        Returns
+        -------
+        bool
+            True for the page the server was started for and for the pages a
+            pipeline report writes under ``reports/``. Any other HTML file, for
+            instance one planted in the folder, is served without the token.
+        """
+        if not page.endswith((".html", ".htm")):
+            return False
+        page = Path(page).resolve()
+        return page == self.entry or report.is_report_page(
+            root=self.directory, page=page
+        )
 
     def _host_is_local(self):
         """Refuse the request, and return False, unless it was sent to this server.
 
         A web page whose DNS name was rebound to this machine sends its own
         name in ``Host``; answering it would let that page read the report.
+        Any port is accepted, so that a forwarded port still works.
         """
-        port = self.server.server_address[1]
-        if self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}"):
+        try:
+            hostname = urllib.parse.urlsplit(
+                f"//{self.headers.get('Host', '')}"
+            ).hostname
+        except ValueError:
+            hostname = None
+        if hostname in ("127.0.0.1", "localhost"):
             return True
         self.send_error(403, "This request does not come from a page of this report.")
         return False
+
+    def _origin_is_local(self):
+        """Refuse the request, and return False, if a foreign page sent it.
+
+        Browsers name the page that sends a ``POST`` in ``Origin``, which has
+        to be the address the request went to; a page in a sandbox sends
+        ``null``. A request without it does not come from a page and still
+        has to carry the token.
+        """
+        origin = self.headers.get("Origin")
+        if origin is None or origin == f"http://{self.headers.get('Host')}":
+            return True
+        self.send_error(403, "This request does not come from a page of this report.")
+        return False
+
+    def end_headers(self):
+        """Finish the headers, restricting every response.
+
+        A response that carries no token is sandboxed; one that does cannot be
+        framed by another page.
+        """
+        self.send_header("X-Content-Type-Options", "nosniff")
+        if self._sends_token:
+            self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
+        else:
+            self.send_header("Content-Security-Policy", "sandbox allow-scripts")
+        super().end_headers()
 
     def do_HEAD(self):
         if self._host_is_local():
@@ -3028,13 +3096,13 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         page = self.translate_path(self.path)
         if os.path.isdir(page) and self.path.split("?", 1)[0].endswith("/"):
             page = os.path.join(page, "index.html")
-        if self.token and os.path.isfile(page) and page.endswith((".html", ".htm")):
+        if self.token and os.path.isfile(page) and self._carries_token(page):
             self._send_page(page=page)
         else:
             super().do_GET()
 
     def do_POST(self):
-        if not self._host_is_local():
+        if not (self._host_is_local() and self._origin_is_local()):
             return
         if urllib.parse.urlparse(self.path).path != "/qc-open":
             self._reply(404, "Not found.")
@@ -3095,6 +3163,7 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         )
         if not found:
             body = meta + body
+        self._sends_token = True
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -3148,7 +3217,10 @@ def _serve_html_report(*, report_path):
     report_name = str(report_path.relative_to(root))
 
     handler = partial(
-        _ReportHandler, directory=report_dir, token=secrets.token_urlsafe(32)
+        _ReportHandler,
+        directory=report_dir,
+        token=secrets.token_urlsafe(32),
+        entry=report_path,
     )
     host = "127.0.0.1"
     port = 8000
