@@ -607,7 +607,10 @@ def norm_anisotropy(evals, *, axis=-1):
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, e.g. ``tenfit.evals``. Unlike
+        :func:`mode`, :func:`deviatoric` and :func:`isotropic`, this function
+        does not take the quadratic form: a (..., 3, 3) tensor is not
+        rejected, but each row is read as a set of eigenvalues.
     axis : int, optional
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -640,9 +643,30 @@ def norm_anisotropy(evals, *, axis=-1):
     ----------
     .. footbibliography::
     """
+    _, na = _deviatoric_evals(evals, axis=axis)
+    return na
+
+
+def _deviatoric_evals(evals, *, axis=-1):
+    """Eigenvalues of the deviatoric tensor and their norm (NA).
+
+    Parameters
+    ----------
+    evals : ndarray
+        Eigenvalues of a diffusion tensor.
+    axis : int, optional
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    dev : ndarray
+        ``evals - MD``, with the 3 eigenvalues on the first axis.
+    na : ndarray
+        Norm of anisotropy, ``sqrt(sum(dev**2))``.
+    """
     evals = _roll_evals(evals, axis=axis)
     dev = evals - evals.mean(axis=0)
-    return np.sqrt((dev * dev).sum(axis=0))
+    return dev, np.sqrt((dev * dev).sum(axis=0))
 
 
 def _mode_from_evals(evals):
@@ -650,8 +674,10 @@ def _mode_from_evals(evals):
 
     The eigenvalues of the deviatoric tensor are ``mu = evals - MD``, so its
     determinant is ``prod(mu)`` and its Frobenius norm is NA. Mode is then
-    ``3 * sqrt(6) * prod(mu) / NA**3``, equal to :func:`mode` applied to the
-    quadratic form. Returns 0 where NA is exactly zero, like :func:`mode`.
+    ``3 * sqrt(6) * prod(mu / NA)``, equal to :func:`mode` applied to the
+    quadratic form. Normalizing before the product, as :func:`mode` does,
+    avoids underflow for small, nearly equal eigenvalues. Returns 0 where NA
+    is exactly zero, like :func:`mode`.
 
     Parameters
     ----------
@@ -663,13 +689,9 @@ def _mode_from_evals(evals):
     mode : ndarray
         Tensor mode, shape (...).
     """
-    evals = _roll_evals(evals)
-    dev = evals - evals.mean(axis=0)
-    na = np.sqrt((dev * dev).sum(axis=0))
-    mode = np.zeros_like(na)
-    nonzero = na != 0
-    mode[nonzero] = 3 * np.sqrt(6) * dev.prod(axis=0)[nonzero] / na[nonzero] ** 3
-    return mode
+    dev, na = _deviatoric_evals(evals)
+    # Where NA == 0, dev is 0 too, so dividing by 1 gives mode 0
+    return 3 * np.sqrt(6) * (dev / np.where(na == 0, 1, na)).prod(axis=0)
 
 
 @warning_for_keywords()

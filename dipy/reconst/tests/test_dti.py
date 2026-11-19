@@ -138,6 +138,16 @@ def test_mode_from_evals(rng=None):
     npt.assert_array_almost_equal(dti._mode_from_evals(special), [0, 0, 1, -1])
     npt.assert_equal(dti._mode_from_evals(evals[0, 0, 0]).shape, ())
 
+    # Mode is scale invariant. Small eigenvalues must not underflow to NaN,
+    # which happens if prod(evals - MD) and NA**3 are computed separately.
+    for dtype, scale in [(np.float32, 1e-20), (np.float64, 1e-110)]:
+        small = np.array([1.0, 2.0, 4.0], dtype=dtype) * dtype(scale)
+        npt.assert_almost_equal(
+            dti._mode_from_evals(small),
+            dti._mode_from_evals(np.array([1.0, 2.0, 4.0])),
+            decimal=5,
+        )
+
 
 def test_tensor_model():
     fdata, fbval, fbvec = get_fnames(name="small_25")
