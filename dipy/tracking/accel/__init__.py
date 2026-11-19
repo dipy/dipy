@@ -9,6 +9,7 @@ from dipy.tracking.accel.tracker import (
     accel_backend_available,
     gpu_streamline_generator,
     prepare_gpu_tracker_data,
+    select_accel_backend,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "accel_backend_available",
     "gpu_streamline_generator",
     "prepare_gpu_tracker_data",
+    "select_accel_backend",
 ]

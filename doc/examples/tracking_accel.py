@@ -37,7 +37,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram, save_trx_from_generator
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dti import TensorModel
-from dipy.tracking.accel import ACCEL_BACKENDS, accel_backend_available
+from dipy.tracking.accel import select_accel_backend
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import probabilistic_tracking
@@ -77,20 +77,18 @@ tensor_fit = tensor_model.fit(data, mask=white_matter)
 stopping_criterion = ThresholdStoppingCriterion(tensor_fit.fa, 0.2)
 
 ###############################################################################
-# Pick the first backend available on this machine, falling back to the
-# CPU when there is none.
-# ``backend="auto"`` does the same, but raises if no backend is
-# available.
+# ``backend="auto"`` (the default) picks the first available GPU backend, in
+# this order: Metal, CUDA, then WebGPU, and falls back to the CPU when there
+# is none or when the inputs need the CPU tracker (e.g. another stopping
+# criterion). ``select_accel_backend`` tells which GPU backend would be
+# used; pass ``backend="metal"``, ``"cuda"``, ``"webgpu"`` or ``"cpu"`` to
+# force one.
 
-backend = "cpu"
-for name in ACCEL_BACKENDS:
-    if accel_backend_available(name):
-        backend = name
-        break
+backend = select_accel_backend() or "cpu"
 print(f"Tracking with the {backend} backend")
 
 ###############################################################################
-# The tracking call is the same as on the CPU, plus the ``backend`` argument.
+# The tracking call is the same as on the CPU.
 # Passing ``sh`` is fine: the coefficients are sampled on ``sphere`` before
 # being uploaded to the device.
 
@@ -103,7 +101,7 @@ streamline_generator = probabilistic_tracking(
     random_seed=1,
     max_angle=20,
     step_size=0.5,
-    backend=backend,
+    backend="auto",
 )
 
 streamlines = Streamlines(streamline_generator)
@@ -142,7 +140,7 @@ streamline_generator = probabilistic_tracking(
     random_seed=1,
     max_angle=20,
     step_size=0.5,
-    backend=backend,
+    backend="auto",
     chunked=True,
     chunk_size=25000,
 )

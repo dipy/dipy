@@ -12,7 +12,11 @@ from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.tracking import tracker
-from dipy.tracking.accel import ACCEL_BACKENDS, accel_backend_available
+from dipy.tracking.accel import (
+    ACCEL_BACKENDS,
+    accel_backend_available,
+    select_accel_backend,
+)
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
     ThresholdStoppingCriterion,
@@ -222,6 +226,7 @@ def test_cpu_pcg_seed_order_independent():
         "max_len": 60,
         "random_seed": 5,
         "save_seeds": True,
+        "backend": "cpu",
     }
 
     def by_seed(seed_positions, **kwargs):
@@ -235,6 +240,53 @@ def test_cpu_pcg_seed_order_independent():
     npt.assert_equal(sorted(ref), sorted(other))
     for key, sl in ref.items():
         npt.assert_array_equal(sl, other[key])
+
+
+def test_select_backend():
+    stop_map = np.ones((4, 4, 4))
+    threshold = ThresholdStoppingCriterion(stop_map, 0.5)
+    binary = BinaryStoppingCriterion(stop_map)
+    inputs = {"sf": np.ones((4, 4, 4, 5)), "sh": None, "pam": None}
+    iso, aniso = np.ones(3), np.array([1.0, 1.0, 2.0])
+
+    # explicit choices are kept
+    for backend in ["cpu", *ACCEL_BACKENDS]:
+        npt.assert_equal(
+            tracker._select_backend(
+                backend, sc=binary, voxel_size=iso, rng=None, **inputs
+            ),
+            backend,
+        )
+    # auto: GPU when available and the inputs allow it, else CPU
+    expected = select_accel_backend() or "cpu"
+    npt.assert_equal(
+        tracker._select_backend(
+            "auto", sc=threshold, voxel_size=iso, rng=None, **inputs
+        ),
+        expected,
+    )
+    for sc, voxel_size, rng, kw in [
+        (binary, iso, None, inputs),
+        (threshold, aniso, None, inputs),
+        (threshold, iso, "pcg", inputs),
+        (threshold, iso, None, {"sf": None, "sh": None, "pam": None}),
+    ]:
+        npt.assert_equal(
+            tracker._select_backend(
+                "auto", sc=sc, voxel_size=voxel_size, rng=rng, **kw
+            ),
+            "cpu",
+        )
+
+
+@pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
+def test_explicit_gpu_backend_rejects_unsupported_inputs(backend):
+    pmf, stop_map, sphere, seeds = _synthetic_pmf()
+    sc = BinaryStoppingCriterion(stop_map > 0.5)
+    with pytest.raises(ValueError, match="GPU backends cannot be used"):
+        tracker.probabilistic_tracking(
+            seeds, sc, np.eye(4), sf=pmf, sphere=sphere, backend=backend
+        )
 
 
 def test_resolve_is_symmetric():

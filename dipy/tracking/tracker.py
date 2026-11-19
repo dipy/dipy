@@ -17,6 +17,7 @@ from dipy.reconst.shm import sh_to_sf
 from dipy.tracking.accel import (
     gpu_streamline_generator,
     prepare_gpu_tracker_data,
+    select_accel_backend,
 )
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
@@ -24,6 +25,7 @@ from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 
 
 def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
@@ -49,6 +51,67 @@ def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
     if sh is not None:
         return not _sh_order_from_ncoef(sh.shape[-1], full_basis)[1]
     return True
+
+
+def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size, rng):
+    """Why the GPU backends cannot run this tracking, or None if they can.
+
+    Parameters
+    ----------
+    sc : StoppingCriterion
+        Stopping criterion.
+    sf, sh : ndarray or None
+        Spherical function or SH coefficients.
+    pam : PeaksAndMetrics or None
+        Peaks, possibly with an ODF.
+    voxel_size : ndarray, shape (3,)
+        Voxel size.
+    rng : str or None
+        Requested random number generator.
+
+    Returns
+    -------
+    reason : str or None
+    """
+    if sf is None and sh is None and getattr(pam, "odf", None) is None:
+        return "they need sf, sh or a pam with odf"
+    if not isinstance(sc, ThresholdStoppingCriterion):
+        return "they need a ThresholdStoppingCriterion"
+    if not np.allclose(voxel_size, voxel_size[0]):
+        return "they need isotropic voxels"
+    if rng not in (None, "philox"):
+        return f"they only support rng='philox', not {rng!r}"
+    return None
+
+
+def _select_backend(backend, **inputs):
+    """Resolve ``backend="auto"`` to the best backend able to run the tracking.
+
+    Parameters
+    ----------
+    backend : str
+        "auto", "cpu", "metal", "cuda" or "webgpu".
+    **inputs : dict
+        Arguments of :func:`_gpu_unsupported`.
+
+    Returns
+    -------
+    backend : str
+        ``backend`` itself unless it is "auto": then the first available GPU
+        backend (Metal, CUDA, WebGPU) if the inputs allow it, else "cpu".
+    """
+    if backend != "auto":
+        return backend
+    reason = _gpu_unsupported(**inputs)
+    if reason is not None:
+        logger.info(f"Tracking on the CPU: GPU backends cannot be used ({reason}).")
+        return "cpu"
+    selected = select_accel_backend()
+    if selected is None:
+        logger.info("Tracking on the CPU: no GPU backend available.")
+        return "cpu"
+    logger.info(f"Tracking with the {selected} GPU backend.")
+    return selected
 
 
 @deprecated_params(
@@ -232,7 +295,7 @@ def probabilistic_tracking(
     return_all=True,
     save_seeds=False,
     max_cross=None,
-    backend="cpu",
+    backend="auto",
     is_symmetric=None,
     rng=None,
 ):
@@ -308,10 +371,12 @@ def probabilistic_tracking(
         ``seed_directions`` is None. None tracks the largest peak only; a
         value <= 0 tracks every peak.
     backend : str, optional
-        "cpu", "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal"
-        (Apple Silicon, requires ``dipy[metal]``), "webgpu" (requires
-        ``dipy[webgpu]``), or "auto" to pick the first available GPU
-        backend. GPU backends (see :mod:`dipy.tracking.accel`) assume:
+        "auto", "cpu", "metal" (Apple Silicon, requires ``dipy[metal]``),
+        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``) or "webgpu"
+        (requires ``dipy[webgpu]``). "auto" picks the first available GPU
+        backend in that order (Metal, CUDA, WebGPU) when the inputs allow
+        it, and the CPU otherwise. GPU backends (see
+        :mod:`dipy.tracking.accel`) assume:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a ThresholdStoppingCriterion.
@@ -327,7 +392,8 @@ def probabilistic_tracking(
         same random numbers for a given ``random_seed`` (one stream per
         streamline, independent of ``chunk_size`` and ``nbr_threads``), so
         their tractograms can be compared streamline by streamline.
-        None selects "pcg" on the CPU and "philox" on the GPU.
+        None selects "pcg" on the CPU and "philox" on the GPU; with
+        ``backend="auto"``, "pcg" keeps the tracking on the CPU.
 
     Returns
     -------
@@ -336,10 +402,17 @@ def probabilistic_tracking(
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
+    backend = _select_backend(
+        backend, sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size, rng=rng
+    )
+    if backend != "cpu":
+        reason = _gpu_unsupported(
+            sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size, rng=rng
+        )
+        if reason is not None:
+            raise ValueError(f"GPU backends cannot be used: {reason}.")
     if rng is None:
         rng = "pcg" if backend == "cpu" else "philox"
-    elif backend != "cpu" and rng != "philox":
-        raise ValueError(f"GPU backends only support rng='philox', not {rng!r}.")
     is_symmetric = _resolve_is_symmetric(is_symmetric, sh=sh, full_basis=full_basis)
 
     params = generate_tracking_parameters(
@@ -370,17 +443,10 @@ def probabilistic_tracking(
                 full_basis=full_basis,
                 legacy=legacy,
             )
-        elif pam is not None and getattr(pam, "odf", None) is not None:
+        else:
             pmf_field = pam.odf
             if getattr(pam, "sphere", None) is not None:
                 sphere = pam.sphere
-        else:
-            raise ValueError("GPU backends need sf, sh or a pam with odf.")
-        if not isinstance(sc, ThresholdStoppingCriterion):
-            raise ValueError("GPU backends need a ThresholdStoppingCriterion.")
-
-        if not np.allclose(voxel_size, voxel_size[0]):
-            raise ValueError("GPU backends need isotropic voxels.")
         if random_seed <= 0:
             random_seed = int(np.random.default_rng().integers(1, 2**63))
         tracker_data = prepare_gpu_tracker_data(

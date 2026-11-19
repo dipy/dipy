@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import functools
 import importlib
 
 from nibabel.affines import apply_affine
@@ -41,6 +42,8 @@ class _GpuBackendSpec:
     multi_device: bool
 
 
+# in priority order for backend="auto": Metal (Apple Silicon), CUDA, then
+# WebGPU, which runs on most GPUs but is a generic layer.
 ACCEL_BACKENDS = {
     "metal": _GpuBackendSpec(
         module="dipy.tracking.accel.metal",
@@ -249,17 +252,39 @@ def _get_gpu_backend_spec(backend):
         ) from None
 
 
+@functools.cache
 def accel_backend_available(backend):
     """
     Check whether a GPU tracker backend can be used on this machine.
+
+    The answer is cached for the life of the process.
 
     Parameters
     ----------
     backend : str
         One of "cuda", "metal", "webgpu".
+
+    Returns
+    -------
+    available : bool
     """
     spec = _get_gpu_backend_spec(backend)
-    return getattr(importlib.import_module(spec.module), spec.probe)()
+    return bool(getattr(importlib.import_module(spec.module), spec.probe)())
+
+
+def select_accel_backend():
+    """
+    First available GPU tracker backend, in the order of ``ACCEL_BACKENDS``.
+
+    Returns
+    -------
+    backend : str or None
+        "metal", "cuda" or "webgpu", or None if no backend is available.
+    """
+    for name in ACCEL_BACKENDS:
+        if accel_backend_available(name):
+            return name
+    return None
 
 
 def gpu_streamline_generator(
@@ -310,11 +335,8 @@ def gpu_streamline_generator(
     streamline : ndarray, shape (npts, 3)
     """
     if backend == "auto":
-        for name in ACCEL_BACKENDS:
-            if accel_backend_available(name):
-                backend = name
-                break
-        else:
+        backend = select_accel_backend()
+        if backend is None:
             raise RuntimeError(
                 "No GPU tracker backend available "
                 f"({', '.join(ACCEL_BACKENDS)}); use probabilistic_tracking()."
