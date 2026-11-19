@@ -5,8 +5,6 @@
 
 from dipy.utils.deprecator import deprecate_with_version
 
-import numpy as np
-
 cimport numpy as cnp
 
 
@@ -388,39 +386,21 @@ cdef double random_float(RNGState* rng_state) noexcept nogil:
     return next_rng(rng_state) * (1.0 / 4294967296.0)
 
 
-def philox_uniforms(seed, stream, n):
-    """Draw ``n`` uniform floats in [0, 1) from the Philox stream ``stream``.
-
-    These are the numbers drawn by the probabilistic tracker with
-    ``rng="philox"`` for the streamline of index ``stream``, on the CPU and
-    on every GPU backend of :mod:`dipy.tracking.accel`.
+def philox4x32_10_block(ctr, key):
+    """Philox4x32-10 block cipher, as used by the probabilistic trackers.
 
     Parameters
     ----------
-    seed : int
-        Random seed (Philox key), in [0, 2**64).
-    stream : int
-        Stream index, in [0, 2**64).
-    n : int
-        Number of floats to draw.
+    ctr : sequence of 4 int
+        Counter (uint32 words).
+    key : sequence of 2 int
+        Key (uint32 words).
 
     Returns
     -------
-    uniforms : ndarray, shape (n,)
+    out : list of 4 int
+        Output uint32 words.
     """
-    cdef:
-        RNGState rng
-        cnp.npy_intp i
-        double[::1] out = np.empty(n)
-    seed_philox(&rng, seed, stream)
-    for i in range(n):
-        out[i] = random_float(&rng)
-    return np.asarray(out)
-
-
-def philox4x32_10_block(ctr, key):
-    """Philox4x32-10 output words of counter ``ctr`` (4 uint32) and key
-    ``key`` (2 uint32). Testing helper."""
     cdef cnp.npy_uint32 c[4]
     cdef cnp.npy_uint32 k[2]
     cdef cnp.npy_uint32 o[4]

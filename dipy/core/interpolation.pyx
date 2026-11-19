@@ -284,27 +284,43 @@ cdef void _trilinear_interpolation_iso(double *X,
     return
 
 
+cdef inline int _trilinear_weights(double p, cnp.npy_intp n,
+                                   cnp.npy_intp* index,
+                                   double* weight) noexcept nogil:
+    """Neighbour indices and weights of ``p`` along an axis of length ``n``.
+
+    Points within half a voxel of the border use the border voxel twice.
+    Returns -1 if ``p`` is outside ``[-0.5, n - 0.5)``, 0 otherwise.
+    """
+    cdef:
+        cnp.npy_intp flr
+        double rem
+    if p < -.5 or p >= (n - .5):
+        return -1
+    flr = <cnp.npy_intp> floor(p)
+    rem = p - flr
+    index[0] = flr + (flr == -1)
+    index[1] = flr + (flr != (n - 1))
+    weight[0] = 1 - rem
+    weight[1] = rem
+    return 0
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int trilinear_interpolate3d_c(floating[:, :, :] data,
                                    double* point,
                                    double* result) noexcept nogil:
-    """Tri-linear interpolation of a 3d array"""
+    """Tri-linear interpolation of a 3d array, with the boundary handling of
+    :func:`trilinear_interpolate4d_c`. Returns -1 outside the volume."""
     cdef:
-        cnp.npy_intp flr, i, j, k
-        double rem
+        cnp.npy_intp i, j, k
         cnp.npy_intp index[3][2]
         double weight[3][2]
 
     for i in range(3):
-        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
+        if _trilinear_weights(point[i], data.shape[i], index[i], weight[i]):
             return -1
-        flr = <cnp.npy_intp> floor(point[i])
-        rem = point[i] - flr
-        index[i][0] = flr + (flr == -1)
-        index[i][1] = flr + (flr != (data.shape[i] - 1))
-        weight[i][0] = 1 - rem
-        weight[i][1] = rem
 
     result[0] = 0
     for i in range(2):
@@ -343,24 +359,15 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, ::1] data,
 
     """
     cdef:
-        cnp.npy_intp flr, N, L, i, j, k
-        double rem
+        cnp.npy_intp N, L, i, j, k
         cnp.npy_intp index[3][2]
         double weight[3][2]
         double w[8]
         const floating* c[8]
 
     for i in range(3):
-        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
+        if _trilinear_weights(point[i], data.shape[i], index[i], weight[i]):
             return -1
-
-        flr = <cnp.npy_intp> floor(point[i])
-        rem = point[i] - flr
-
-        index[i][0] = flr + (flr == -1)
-        index[i][1] = flr + (flr != (data.shape[i] - 1))
-        weight[i][0] = 1 - rem
-        weight[i][1] = rem
 
     for i in range(2):
         for j in range(2):

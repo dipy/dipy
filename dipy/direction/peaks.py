@@ -4,13 +4,14 @@ from os import path
 import tempfile
 import warnings
 
+from nibabel.affines import apply_affine
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.core.interpolation import trilinear_interpolate4d
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
+from dipy.direction.pmf import SimplePmfGen, pmf_peaks
 from dipy.reconst.dirspeed import peak_directions
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 from dipy.reconst.odf import gfa
@@ -654,28 +655,30 @@ def peaks_from_positions(
         # use the sphere data from the pmf_gen
         sphere = pmf_gen.get_sphere()
 
-    inv_affine = np.linalg.inv(affine)
-    vox_positions = np.dot(positions, inv_affine[:3, :3].T.copy())
-    vox_positions += inv_affine[:3, 3]
+    vox_positions = np.ascontiguousarray(
+        apply_affine(np.linalg.inv(affine), positions), dtype=float
+    )
 
-    peaks_arr = np.zeros((len(positions), npeaks, 3))
-
-    if vox_positions.dtype not in [np.float64, float]:
-        vox_positions = vox_positions.astype(float)
-
-    for i, s in enumerate(vox_positions):
-        if pmf_gen:
-            odf = pmf_gen.get_pmf(s)
-        else:
-            odf = trilinear_interpolate4d(odfs, s)
-        peaks, _, _ = peak_directions(
-            odf,
-            sphere,
-            relative_peak_threshold=relative_peak_threshold,
-            min_separation_angle=min_separation_angle,
-            is_symmetric=is_symmetric,
+    if pmf_gen is None:
+        odfs = np.asarray(odfs)
+        outside = (vox_positions < -0.5) | (
+            vox_positions >= np.array(odfs.shape[:3]) - 0.5
         )
-        nbr_peaks = min(npeaks, peaks.shape[0])
-        peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]
+        if outside.any():
+            raise IndexError("The point is outside the image volume.")
+        pmf_gen = SimplePmfGen(odfs, sphere)
 
+    offsets, directions = pmf_peaks(
+        vox_positions,
+        pmf_gen,
+        is_symmetric=is_symmetric,
+        max_peaks=npeaks,
+        relative_peak_threshold=relative_peak_threshold,
+        min_separation_angle=min_separation_angle,
+    )
+    counts = np.diff(offsets)
+    point = np.repeat(np.arange(len(vox_positions)), counts)
+    rank = np.arange(offsets[-1]) - offsets[point]
+    peaks_arr = np.zeros((len(positions), npeaks, 3))
+    peaks_arr[point, rank] = directions
     return peaks_arr

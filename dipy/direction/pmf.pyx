@@ -2,11 +2,13 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
+from cython.parallel import prange, threadid
 import numpy as np
 cimport numpy as cnp
 
 from dipy.core.sphere import Sphere
 from dipy.reconst import shm
+from dipy.utils.omp import determine_num_threads
 
 from dipy.core.interpolation cimport (
     _trilinear_interpolation_iso,
@@ -15,6 +17,7 @@ from dipy.core.interpolation cimport (
     trilinear_interpolate4d_c,
 )
 from libc.stdlib cimport malloc, free
+from dipy.reconst.dirspeed cimport peak_directions_c
 from scipy.linalg.cython_blas cimport dgemv
 
 cdef extern from "stdlib.h" nogil:
@@ -121,29 +124,35 @@ def _sh_order_from_ncoef(ncoef, full_basis=None):
 
     A symmetric basis (even ``l`` only) has ``(l + 1)(l + 2) / 2``
     coefficients, a full basis has ``(l + 1)**2``.
+
+    Parameters
+    ----------
+    ncoef : int
+        Number of SH coefficients.
+    full_basis : bool or None, optional
+        Basis of the coefficients. If None, the symmetric basis is tried
+        first, then the full one.
+
+    Returns
+    -------
+    sh_order_max : int
+        Maximum SH order.
+    full_basis : bool
+        True for a full basis.
     """
-    if full_basis is None:
-        sym_order = (-3.0 + np.sqrt(1.0 + 8.0 * ncoef)) / 2.0
-        if sym_order.is_integer() and int(sym_order) % 2 == 0:
-            return int(sym_order), False
-        full_order = np.sqrt(ncoef) - 1.0
-        if full_order.is_integer():
-            return int(full_order), True
-        raise ValueError(
-            f"{ncoef} coefficients do not match a symmetric or a full SH basis."
-        )
-    sh_order = shm.order_from_ncoef(ncoef, full_basis=full_basis)
-    if full_basis:
-        expected = (sh_order + 1) ** 2
-    else:
-        expected = (sh_order + 1) * (sh_order + 2) // 2
-    if expected != ncoef or (not full_basis and sh_order % 2 != 0):
-        kind = "full" if full_basis else "symmetric"
-        raise ValueError(
-            f"{ncoef} coefficients do not match a {kind} SH basis "
-            f"(order {sh_order} has {expected})."
-        )
-    return sh_order, bool(full_basis)
+    candidates = (False, True) if full_basis is None else (bool(full_basis),)
+    for full in candidates:
+        sh_order = shm.order_from_ncoef(ncoef, full_basis=full)
+        if full:
+            expected = (sh_order + 1) ** 2
+        else:
+            expected = (sh_order + 1) * (sh_order + 2) // 2
+        if expected == ncoef and (full or sh_order % 2 == 0):
+            return sh_order, full
+    kind = {None: "a symmetric or a full", True: "a full", False: "a symmetric"}
+    raise ValueError(
+        f"{ncoef} coefficients do not match {kind[full_basis]} SH basis."
+    )
 
 
 cdef class SHCoeffPmfGen(PmfGen):
@@ -565,3 +574,109 @@ cdef class SimplePeakGen(PmfGen):
                 out_indices[idx_base + j] = self.peak_indices_ptr[off_indices]
 
         return peaks_used
+
+
+def pmf_peaks(double[:, ::1] points,
+              PmfGen pmf_gen,
+              *,
+              bint is_symmetric=True,
+              int nbr_threads=0,
+              int max_peaks=-1,
+              double relative_peak_threshold=0.5,
+              double min_separation_angle=25):
+    """Peaks of the pmf at each point (voxel coordinates), in parallel.
+
+    Parameters
+    ----------
+    points : ndarray, shape (N, 3)
+        Points in voxel coordinates. Points outside the volume have no peak.
+    pmf_gen : PmfGen
+        Probability mass function generator.
+    is_symmetric : bool, optional
+        If True, v is considered equal to -v.
+    nbr_threads : int, optional
+        Number of threads. All available threads if <= 0.
+    max_peaks : int, optional
+        Maximum number of peaks per point. All peaks if <= 0.
+    relative_peak_threshold : float, optional
+        Only peaks greater than ``min + relative_peak_threshold * scale`` are
+        kept (see :func:`dipy.direction.peaks.peak_directions`).
+    min_separation_angle : float, optional
+        Minimum angle, in degrees, between two peaks.
+
+    Returns
+    -------
+    offsets : ndarray, shape (N + 1,)
+        Exclusive prefix sum of the number of peaks per point.
+    directions : ndarray, shape (offsets[-1], 3)
+        Peak directions, sorted by decreasing peak value within each point.
+    """
+    cdef:
+        cnp.npy_intp n = points.shape[0], dimt = pmf_gen.pmf.shape[0]
+        cnp.npy_intp cap = dimt if max_peaks <= 0 else min(max_peaks, dimt)
+        cnp.npy_intp i, j, k, t
+        double[:, ::1] verts = pmf_gen.vertices
+        cnp.uint16_t[:, ::1] edges = np.asarray(
+            pmf_gen.sphere.edges, dtype=np.uint16, order="C")
+        cnp.npy_intp[::1] counts, offsets
+        cnp.int32_t[:, ::1] peak_idx
+        double[:, ::1] dirs
+
+    if nbr_threads <= 0:
+        nbr_threads = determine_num_threads(None)
+
+    # per-thread scratch for peak_directions_c
+    cdef:
+        double[:, ::1] pmf = np.empty((nbr_threads, dimt))
+        double[:, ::1] values = np.empty((nbr_threads, dimt))
+        cnp.npy_intp[:, ::1] indices = np.empty((nbr_threads, dimt), dtype=np.intp)
+        double[:, :, ::1] out_dirs = np.empty((nbr_threads, dimt, 3))
+        double[:, :, ::1] uniq = np.empty((nbr_threads, dimt, 3))
+        cnp.uint16_t[:, ::1] mapping = np.empty((nbr_threads, dimt), dtype=np.uint16)
+        cnp.uint16_t[:, ::1] index = np.empty((nbr_threads, dimt), dtype=np.uint16)
+
+    counts = np.empty(n, dtype=np.intp)
+    peak_idx = np.empty((n, cap), dtype=np.int32)
+    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
+                    chunksize=64):
+        t = threadid()
+        k = _peaks_at(&points[i, 0], pmf_gen, verts, edges, is_symmetric,
+                      relative_peak_threshold, min_separation_angle, cap,
+                      pmf[t], out_dirs[t], values[t], indices[t], uniq[t],
+                      mapping[t], index[t])
+        counts[i] = k
+        for j in range(k):
+            peak_idx[i, j] = <cnp.int32_t>indices[t, j]
+
+    offsets = np.zeros(n + 1, dtype=np.intp)
+    np.cumsum(counts, out=np.asarray(offsets)[1:])
+    dirs = np.empty((offsets[n], 3))
+    for i in range(n):
+        for j in range(counts[i]):
+            dirs[offsets[i] + j, 0] = verts[peak_idx[i, j], 0]
+            dirs[offsets[i] + j, 1] = verts[peak_idx[i, j], 1]
+            dirs[offsets[i] + j, 2] = verts[peak_idx[i, j], 2]
+    return np.asarray(offsets), np.asarray(dirs)
+
+
+cdef cnp.npy_intp _peaks_at(double* point,
+                            PmfGen pmf_gen,
+                            double[:, ::1] verts,
+                            cnp.uint16_t[:, ::1] edges,
+                            bint is_symmetric,
+                            double relative_peak_threshold,
+                            double min_separation_angle,
+                            cnp.npy_intp cap,
+                            double[::1] pmf,
+                            double[:, ::1] out_dirs,
+                            double[::1] values,
+                            cnp.npy_intp[::1] indices,
+                            double[:, ::1] uniq,
+                            cnp.uint16_t[::1] mapping,
+                            cnp.uint16_t[::1] index) noexcept nogil:
+    cdef cnp.npy_intp k
+    pmf_gen.get_pmf_c(point, &pmf[0])
+    k = peak_directions_c(pmf, verts, edges, relative_peak_threshold,
+                          min_separation_angle, is_symmetric, out_dirs,
+                          values, indices, uniq, mapping, index)
+    return k if k < cap else cap
