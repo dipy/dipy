@@ -6,6 +6,7 @@ References
 .. footbibliography::
 """
 
+from nibabel.affines import apply_affine, voxel_sizes
 import numpy as np
 from scipy.ndimage import binary_dilation, binary_erosion, gaussian_filter
 
@@ -15,6 +16,7 @@ from dipy.align.reslice import reslice
 from dipy.align.transforms import RigidScalingTransform3D, RigidTransform3D
 from dipy.core.interpolation import interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
+from dipy.segment.mask import bounding_box, crop
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.utils.logging import logger
 
@@ -54,23 +56,21 @@ def _wm_probability_hmrf(static, static_affine, static_mask, *, zoom=1.0):
     mask = np.asarray(static_mask) > 0
     if not mask.any():
         raise ValueError("The brain mask is empty.")
-    ijk = np.argwhere(mask)
-    lo = np.maximum(ijk.min(axis=0) - 2, 0)
-    hi = np.minimum(ijk.max(axis=0) + 3, mask.shape)
-    box = tuple(slice(a, b) for a, b in zip(lo, hi))
-    crop = np.asarray(static, dtype=np.float64)[box] * mask[box]
+    mins, maxs = bounding_box(mask)
+    lo = np.maximum(np.asarray(mins) - 2, 0)
+    hi = np.minimum(np.asarray(maxs) + 2, mask.shape)
+    crop_mask = crop(mask, lo, hi)
+    image = crop(np.asarray(static, dtype=np.float64), lo, hi) * crop_mask
     # The classifier spreads its initial class means up to the maximum of the
     # image: a few very bright voxels (vessels, fat) leave the top class empty
     # and make the segmentation unstable.
-    crop = np.minimum(crop, np.percentile(crop[mask[box]], 99))
-    crop_affine = static_affine.copy()
-    crop_affine[:3, 3] = static_affine[:3, :3] @ lo + static_affine[:3, 3]
+    image = np.minimum(image, np.percentile(image[crop_mask], 99))
+    image_affine = static_affine.copy()
+    image_affine[:3, 3] = apply_affine(static_affine, lo)
 
-    zooms = np.sqrt(np.sum(static_affine[:3, :3] ** 2, axis=0))
-    if np.allclose(zooms, zoom, atol=1e-3):
-        image, image_affine = crop, crop_affine
-    else:
-        image, image_affine = reslice(crop, crop_affine, zooms, new_zooms=(zoom,) * 3)
+    zooms = voxel_sizes(static_affine)
+    if not np.allclose(zooms, zoom, atol=1e-3):
+        image, image_affine = reslice(image, image_affine, zooms, new_zooms=(zoom,) * 3)
     _, _, pve = TissueClassifierHMRF(verbose=False).classify(image, 3, 0.1)
     return np.ascontiguousarray(pve[..., 2], dtype=np.float64), image_affine
 
@@ -105,15 +105,14 @@ def _boundary_points(wm, wm_affine, *, n_points, rng):
 
     grad_vox = np.stack(np.gradient(p), axis=-1)[edge]
     # Gradient with respect to world coordinates, in units per mm.
-    lin = wm_affine[:3, :3]
-    grad = grad_vox @ np.linalg.inv(lin)
+    grad = grad_vox @ np.linalg.inv(wm_affine[:3, :3])
     norm = np.linalg.norm(grad, axis=1)
     keep = norm > 1e-3
     ijk, grad, norm = ijk[keep], grad[keep], norm[keep]
     if len(ijk) == 0:
         raise ValueError("The white-matter mask has no boundary.")
 
-    xyz = ijk @ lin.T + wm_affine[:3, 3]
+    xyz = apply_affine(wm_affine, ijk)
     value = p[edge][keep]
     xyz = xyz - ((value - 0.5) / norm**2)[:, None] * grad
     normals = -grad / norm[:, None]
@@ -170,9 +169,7 @@ class _BBRCost:
         return self.start @ self.to_center @ matrix @ self.from_center
 
     def _sample(self, pts, mat):
-        values, inside = interpolate_scalar_3d(
-            self.moving, pts @ mat[:3, :3].T + mat[:3, 3]
-        )
+        values, inside = interpolate_scalar_3d(self.moving, apply_affine(mat, pts))
         return np.asarray(values), np.asarray(inside, dtype=bool)
 
     def __call__(self, params):

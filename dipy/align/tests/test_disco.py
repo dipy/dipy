@@ -76,12 +76,15 @@ def test_pe_direction():
     permuted = np.eye(4)[[1, 0, 2, 3]] * 2.0
     npt.assert_allclose(_pe_direction("i", permuted)[1], [0.0, 1.0, 0.0])
     npt.assert_allclose(_pe_direction("y", permuted)[1], [1.0, 0.0, 0.0])
+    # BIDS PhaseEncodingDirection: the sign does not change the axis.
+    npt.assert_allclose(_pe_direction("j-", permuted)[1], [1.0, 0.0, 0.0])
+    npt.assert_allclose(_pe_direction("I-", permuted)[1], [0.0, 1.0, 0.0])
     # Oblique grid: the direction follows the rotation.
     c, s = np.cos(np.pi / 6), np.sin(np.pi / 6)
     oblique = np.eye(4)
     oblique[:3, :3] = np.array([[1, 0, 0], [0, c, -s], [0, s, c]]) * 2.0
     npt.assert_allclose(_pe_direction(1, oblique)[1], [0.0, c, s])
-    for bad in (3, -1, "a", True, 1.5):
+    for bad in (3, -1, "a", "j+", "-", True, 1.5):
         with pytest.raises(ValueError, match="pe_axis must be"):
             _pe_direction(bad, np.eye(4))
 

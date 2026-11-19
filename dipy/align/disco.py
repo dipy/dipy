@@ -10,6 +10,7 @@ References
 
 from pathlib import Path
 
+from nibabel.affines import voxel_sizes
 import numpy as np
 from scipy.ndimage import binary_dilation, gaussian_filter
 
@@ -52,7 +53,7 @@ def _limit_resolution(image, affine, *, mask=None, zoom=1.0):
     affine : ndarray (4, 4)
         Voxel-to-world matrix of the returned image.
     """
-    zooms = np.sqrt(np.sum(affine[:3, :3] ** 2, axis=0))
+    zooms = voxel_sizes(affine)
     if np.all(zooms >= zoom - 1e-3):
         return image, mask, affine
     new_zooms = tuple(np.maximum(zooms, zoom))
@@ -121,7 +122,8 @@ def _pe_direction(pe_axis, dwi_affine):
     ----------
     pe_axis : int or str
         Voxel axis of the DWI along which the phase is encoded: 0, 1, 2, or
-        'i', 'j', 'k' ('x', 'y', 'z' are accepted as synonyms).
+        a BIDS ``PhaseEncodingDirection`` ('i', 'j', 'k', 'i-', 'j-', 'k-');
+        'x', 'y', 'z' are accepted as synonyms. The sign is ignored.
     dwi_affine : ndarray (4, 4)
         Voxel-to-world matrix of the DWI.
 
@@ -139,9 +141,11 @@ def _pe_direction(pe_axis, dwi_affine):
         If `pe_axis` is not a valid axis.
     """
     if isinstance(pe_axis, str):
-        pe_axis = {"i": 0, "j": 1, "k": 2, "x": 0, "y": 1, "z": 2}.get(pe_axis.lower())
+        pe_axis = {"i": 0, "j": 1, "k": 2, "x": 0, "y": 1, "z": 2}.get(
+            pe_axis.lower().removesuffix("-")
+        )
     if isinstance(pe_axis, bool) or pe_axis not in (0, 1, 2):
-        raise ValueError("pe_axis must be 0, 1, 2 or 'i', 'j', 'k'.")
+        raise ValueError("pe_axis must be 0, 1, 2 or 'i', 'j', 'k' (or 'i-', ...).")
     direction = np.asarray(dwi_affine, dtype=np.float64)[:3, pe_axis]
     return int(pe_axis), direction / np.linalg.norm(direction)
 
@@ -342,10 +346,10 @@ def synb0_syn(
         A binary mask for the T1 image. If None, no masking is applied.
     pe_axis : int or str, optional
         The phase-encoding axis, as a voxel axis of `dwi` (not a world axis):
-        0, 1, 2, or 'i', 'j', 'k' as in the BIDS ``PhaseEncodingDirection``
-        ('x', 'y', 'z' are accepted as synonyms). The field is restricted to
-        the direction of that axis, which `dwi_affine` gives in world
-        coordinates. If None, the field is not restricted.
+        0, 1, 2, or a BIDS ``PhaseEncodingDirection`` such as 'j' or 'j-'
+        (the sign is ignored; 'x', 'y', 'z' are accepted as synonyms). The
+        field is restricted to the direction of that axis, which `dwi_affine`
+        gives in world coordinates. If None, the field is not restricted.
     return_field : bool, optional
         Whether to return the estimated distortion field along with the
         corrected DWI data.
@@ -590,7 +594,7 @@ def synb0_syn(
     # ── Step 3: Reslice to 2.5 mm for Synb0 ─────────────────────────────
     synb0_shape = (77, 91, 77)
     synb0_zooms = (2.5, 2.5, 2.5)
-    mni_t1_zooms = tuple(np.sqrt(np.sum(mni_t1_affine[:3, :3] ** 2, axis=0)))
+    mni_t1_zooms = tuple(voxel_sizes(mni_t1_affine))
 
     masked_T1_reg_to_template = _normalize_t1_for_synb0(masked_T1_reg_to_template)
 
@@ -653,7 +657,7 @@ def synb0_syn(
     else:
         masked_dwi_for_sdr = dwi_for_field
 
-    voxel_sizes = np.sqrt(np.sum(dwi_affine[:3, :3] ** 2, axis=0))
+    dwi_zooms = voxel_sizes(dwi_affine)
 
     binf_coverage = binary_dilation(ori_binf > 0, iterations=5).astype(np.float32)
     binf_coverage = gaussian_filter(binf_coverage, sigma=3.0)
@@ -685,7 +689,7 @@ def synb0_syn(
 
     # ── Step 7: Extract PE-restricted field and post-smooth ──────────────
     field_smooth_mm = 0.5
-    field_smooth_vox = field_smooth_mm / voxel_sizes
+    field_smooth_vox = field_smooth_mm / dwi_zooms
 
     if pe_axis is not None:
         # The field is in world coordinates, the phase encoding is along a

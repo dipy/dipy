@@ -274,7 +274,7 @@ def pack_unet3d_weights(state):
     Parameters
     ----------
     state : dict
-        State dict of ``dipy.nn.synb0.UNet3D``, parameter names mapped to
+        State dict of ``dipy.nn.torch.deepn4.UNet3D``, parameter names mapped to
         arrays.
 
     Returns
@@ -501,7 +501,7 @@ def _pointwise(src, kernel):
 def unet3d_forward_cpu(volume, weights, *, num_threads=None):
     """Run the Synb0 3D UNet on the CPU.
 
-    Same network as ``dipy.nn.synb0.UNet3D`` :footcite:p:`Schilling2019`:
+    Same network as ``dipy.nn.torch.deepn4.UNet3D`` :footcite:p:`Schilling2019`:
     three levels of two 3x3x3 convolutions and a 2x2x2 max pooling, two
     3x3x3 convolutions and a 1x1x1 convolution at the bottom, then three
     levels of a 2x2x2 transposed convolution with stride 2 and two 3x3x3
