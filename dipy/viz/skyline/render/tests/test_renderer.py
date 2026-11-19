@@ -8,6 +8,7 @@ import pytest
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.1.0")
+_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.93.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.1.0", allow_module_level=True)
 else:
@@ -16,6 +17,7 @@ else:
     from dipy.viz.skyline.render.image import Image3D
     from dipy.viz.skyline.render.renderer import (
         Visualization,
+        _keep_drawing,
         affine_voxel_sizes,
         create_window,
         format_affine_info,
@@ -229,6 +231,33 @@ def test_create_window_uses_native_snapshot_dimensions():
     finally:
         direct.close()
         skyline.close()
+
+
+@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.93.0")
+def test_keep_drawing_skips_reentrant_draws():
+    """A draw requested from inside the GUI callback must not start a 2nd frame."""
+    nested_draws = []
+
+    def gui():
+        if not nested_draws:
+            nested_draws.append(True)
+            show_manager._draw_function()
+
+    show_manager = window.ShowManager(
+        size=(64, 48),
+        title="reentrant",
+        window_type="offscreen",
+        imgui=True,
+        imgui_draw_function=gui,
+    )
+    try:
+        _keep_drawing(show_manager)
+        show_manager._draw_function()
+        assert nested_draws == [True]
+        # the guard is released afterwards: a later frame draws normally
+        show_manager._draw_function()
+    finally:
+        show_manager.close()
 
 
 def test_create_window_exits_on_an_unknown_visualizer_type(caplog):
