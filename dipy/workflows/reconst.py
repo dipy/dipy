@@ -3483,6 +3483,16 @@ class ReconstForceFlow(Workflow):
         use_exact=False,
         posterior_beta=2000.0,
         compute_odf=False,
+        max_angle=25.0,
+        max_step_angle=8.0,
+        match_dof=12,
+        max_basis_condition=20.0,
+        max_uncertainty=15.0,
+        coherence_angle=5.0,
+        robust_angle=25.0,
+        continuity_alpha=0.25,
+        continuity_power=4.0,
+        max_link_angle=45.0,
         num_simulations=500000,
         wm_threshold=0.5,
         tortuosity=False,
@@ -3557,11 +3567,41 @@ class ReconstForceFlow(Workflow):
             Softmax temperature for posterior averaging.
         compute_odf : bool, optional
             Compute posterior ODF maps.
+        max_angle : float, optional
+            Largest rotation of a fiber axis away from its library axis, in
+            degrees.
+        max_step_angle : float, optional
+            Largest rotation of a fiber axis in one Gauss-Newton iteration of
+            the alignment, in degrees.
+        match_dof : int, optional
+            Effective number of parameters absorbed by the match when the
+            residual is turned into a noise level.
+        max_basis_condition : float, optional
+            Largest condition number accepted for the spherical harmonic basis
+            of a shell; shells with a worse basis are not used to align fibers.
+        max_uncertainty : float, optional
+            Peaks whose axis the data leave uncertain by more than this (RMS,
+            in degrees) are not reported.
+        coherence_angle : float, optional
+            Expected angle, in degrees, between a fiber and its continuation in
+            the next voxel; sets the strength of the continuity term.
+        robust_angle : float, optional
+            Scale, in degrees, of the robust (Welsch) continuity penalty.
+        continuity_alpha : float, optional
+            Baseline weight of the fiber-continuity kernel
+            ``alpha + (1 - alpha) |offset . axis|^power``.
+        continuity_power : float, optional
+            Exponent of the fiber-continuity kernel.
+        max_link_angle : float, optional
+            Fibers of neighboring voxels further apart than this, in degrees,
+            are not linked.
         num_simulations : int, optional
             Number of simulated voxels for the simulation library.
         wm_threshold : float, optional
             Minimum white-matter signal fraction for a simulated voxel to be
-            assigned fiber-orientation labels when building the library.
+            assigned fiber-orientation labels when building the library. Also
+            the white-matter fraction above which voxels left without a peak
+            take the peaks of their posterior ODF.
         tortuosity : bool, optional
             Constrain the white-matter perpendicular diffusivity through the
             tortuosity model instead of sampling ``wm_d_perp_range``
@@ -3768,6 +3808,10 @@ class ReconstForceFlow(Workflow):
                 use_posterior=use_posterior,
                 posterior_beta=posterior_beta,
                 compute_odf=compute_odf,
+                max_angle=max_angle,
+                max_step_angle=max_step_angle,
+                match_dof=match_dof,
+                max_basis_condition=max_basis_condition,
                 verbose=verbose,
             )
 
@@ -3798,7 +3842,17 @@ class ReconstForceFlow(Workflow):
             from dipy.reconst.force import force_peaks
 
             logger.info("Extracting peaks...")
-            res_peaks = force_peaks(force_fit, mask=mask)
+            res_peaks = force_peaks(
+                force_fit,
+                mask=mask,
+                max_uncertainty=max_uncertainty,
+                wm_threshold=wm_threshold,
+                coherence_angle=coherence_angle,
+                robust_angle=robust_angle,
+                continuity_alpha=continuity_alpha,
+                continuity_power=continuity_power,
+                max_link_angle=max_link_angle,
+            )
 
             save_pam(opeaks, res_peaks, affine=affine)
 
