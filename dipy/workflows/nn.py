@@ -10,6 +10,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.nn.deepn4 import DeepN4
 from dipy.nn.evac import EVACPlus
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
@@ -86,6 +87,7 @@ class BiasFieldCorrectionFlow(Workflow):
     def get_short_name(cls):
         return "bias_field_correction"
 
+    @deprecated_params("use_cuda", since="1.13", until="1.15")
     def run(
         self,
         input_files,
@@ -94,7 +96,9 @@ class BiasFieldCorrectionFlow(Workflow):
         mask=None,
         method="bspline",
         threshold=0.5,
-        use_cuda=False,
+        use_cuda=None,
+        device="auto",
+        num_threads=None,
         verbose=False,
         order=3,
         n_control_points=8,
@@ -142,7 +146,22 @@ class BiasFieldCorrectionFlow(Workflow):
         threshold : float, optional
             Threshold for cleaning the final correction field in DeepN4 method.
         use_cuda : bool, optional
-            Use CUDA for DeepN4 bias field correction.
+            .. deprecated:: 1.13.0
+               Use ``device='cuda'`` instead. This parameter will be removed
+               in 1.15.0.
+
+            Use CUDA for DeepN4 bias field correction. Same as
+            ``device='cuda'``, and cannot be combined with ``device='cpu'``.
+        device : string, optional
+            Where to run DeepN4: 'auto', 'cpu' or 'cuda'. 'auto' uses CUDA if
+            PyTorch finds an NVIDIA GPU, otherwise the CPU, which needs no deep
+            learning framework. Used only for 'n4' method.
+        num_threads : int, optional
+            Number of threads to use on the CPU. If None, the value of the
+            ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
+            all available cores. If < 0, the maximal number of threads minus
+            $|num_threads + 1|$ is used (enter -1 to use as many threads as
+            possible). 0 raises an error. Used only for 'n4' method.
         verbose : bool, optional
             Print verbose output.
         order : int, optional
@@ -228,8 +247,13 @@ class BiasFieldCorrectionFlow(Workflow):
 
             corrected_data = None
             if method.lower() == "n4":
-                deepn4_model = DeepN4(verbose=verbose, use_cuda=use_cuda)
-                deepn4_model.fetch_default_weights()
+                if use_cuda and device == "cpu":
+                    raise ValueError("use_cuda=True conflicts with device='cpu'")
+                deepn4_model = DeepN4(
+                    verbose=verbose,
+                    device="cuda" if use_cuda else device,
+                    num_threads=num_threads,
+                )
                 corrected_data = deepn4_model.predict(data, affine, threshold=threshold)
             elif method.lower() in ["poly", "bspline", "auto"]:
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -320,8 +344,7 @@ class Synb0SynFlow(Workflow):
             DWI b0 images before registration.
         apply_deepn4 : bool, optional
             If True, apply DeepN4 bias field correction to the T1 image
-            before the first affine registration. DeepN4 requires PyTorch
-            or TensorFlow.
+            before the first affine registration.
         b0_to_t1_method : string, optional
             How the b0 is aligned to the T1: 'mi' for a rigid registration
             maximizing mutual information, 'bbr' to refine it with a rigid

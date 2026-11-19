@@ -130,6 +130,13 @@ DIPY 1.13.0 changes
   ``--device`` option runs it on any GPU through WebGPU when the optional
   ``wgpu`` package is installed.
 
+- ``dipy_correct_biasfield --method n4`` (``BiasFieldCorrectionFlow``) no
+  longer needs PyTorch or TensorFlow. Its new ``--device`` and
+  ``--num_threads`` options choose where DeepN4 runs. With the default
+  ``--device auto``, DeepN4 runs on CUDA when PyTorch finds an NVIDIA GPU,
+  where it previously ran on the CPU unless ``--use_cuda`` was given.
+  ``--use_cuda`` is deprecated in favor of ``--device cuda``.
+
 **Neural Networks**
 
 - ``dipy.nn.synb0`` no longer depends on a deep learning framework: ``Synb0``
@@ -139,6 +146,24 @@ DIPY 1.13.0 changes
   TensorFlow version, which stays available in ``dipy.nn.tf.synb0``.
 - ``dipy.nn.utils.load_state_dict`` also reads the files saved in the legacy
   format of PyTorch < 1.6.
+- ``dipy.nn.deepn4`` no longer depends on a deep learning framework:
+  ``DeepN4`` runs on the CPU with a compiled kernel and reads the PyTorch
+  weights without PyTorch, which is only used to run it on a GPU
+  (``device="cuda"``). The module moves from ``dipy.nn.torch.deepn4`` to
+  ``dipy.nn.deepn4``; the old location is deprecated and will be removed in
+  DIPY 1.15. The ``DIPY_NN_BACKEND`` environment variable no longer
+  switches it to the TensorFlow version, which stays available in
+  ``dipy.nn.tf.deepn4``. ``DeepN4.load_resample`` returns a NumPy array
+  instead of a PyTorch tensor.
+- ``DeepN4`` gains the ``device`` and ``num_threads`` parameters. The default
+  ``device="auto"`` runs it on CUDA when PyTorch finds an NVIDIA GPU, where
+  it previously ran on the CPU unless ``use_cuda=True`` was given.
+  ``use_cuda`` is deprecated in favor of ``device="cuda"`` and will be
+  removed in DIPY 1.15. It now also falls back on the Apple MPS GPU, and
+  raises an error with ``device="cpu"``.
+- ``DeepN4`` loads its default weights when it is created, which downloads
+  them on first use. Calling ``fetch_default_weights`` afterwards is no longer
+  needed.
 
 DIPY 1.12.0 changes
 -------------------

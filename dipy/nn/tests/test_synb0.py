@@ -6,8 +6,9 @@ from numpy.testing import assert_almost_equal
 import pytest
 
 from dipy.data import get_fnames
-from dipy.nn.synb0 import N_FOLDS, Synb0, UNet3D
-from dipy.nn.utils import normalize
+from dipy.nn.synb0 import N_FOLDS, Synb0
+from dipy.nn.torch.unet3d import UNet3D
+from dipy.nn.utils import normalize, run_unet3d
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -73,7 +74,9 @@ def test_cpu_matches_torch():
         )
         with torch.no_grad():
             expected = model.eval()(torch.from_numpy(x)).numpy()
-        npt.assert_allclose(synb0_model._predict(x), expected, rtol=0, atol=1e-4)
+        npt.assert_allclose(
+            run_unet3d(synb0_model.network, x), expected, rtol=0, atol=1e-4
+        )
 
 
 def test_predict_matches_tensorflow():

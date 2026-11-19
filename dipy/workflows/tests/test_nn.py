@@ -43,18 +43,17 @@ def test_evac_plus_flow(tmp_path):
 
 def test_correct_biasfield_flow(tmp_path):
     # Test with T1 data
-    if have_nn:
-        t1_path = get_fnames(name="stanford_t1")
+    t1_path = get_fnames(name="stanford_t1")
 
-        volume, affine = load_nifti(t1_path)
+    volume, affine = load_nifti(t1_path)
 
-        bias_flow = BiasFieldCorrectionFlow()
-        bias_flow.run(t1_path, out_dir=tmp_path, method="n4")
+    bias_flow = BiasFieldCorrectionFlow()
+    bias_flow.run(t1_path, out_dir=tmp_path, method="n4", device="cpu")
 
-        corrected_name = bias_flow.last_generated_outputs["out_corrected"]
+    corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
-        corrected_data = load_nifti_data(tmp_path / corrected_name)
-        assert corrected_data.shape == volume.shape
+    corrected_data = load_nifti_data(tmp_path / corrected_name)
+    assert corrected_data.shape == volume.shape
 
     # Test with DWI data
     fdata, fbval, fbvec = get_fnames(name="small_25")
@@ -75,6 +74,21 @@ def test_correct_biasfield_flow(tmp_path):
         "out_dir": tmp_path,
     }
     npt.assert_raises(SystemExit, bias_flow.run, **args)
+
+
+def test_correct_biasfield_flow_use_cuda_deprecated(tmp_path):
+    t1_path = get_fnames(name="stanford_t1")
+    bias_flow = BiasFieldCorrectionFlow()
+    with pytest.warns(DeprecationWarning, match="use_cuda"):
+        npt.assert_raises(
+            ValueError,
+            bias_flow.run,
+            t1_path,
+            out_dir=tmp_path,
+            method="n4",
+            use_cuda=True,
+            device="cpu",
+        )
 
 
 def test_correct_biasfield_flow_with_mask(tmp_path):

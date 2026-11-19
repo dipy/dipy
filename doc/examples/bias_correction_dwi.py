@@ -326,10 +326,10 @@ print(f"\nTiming  —  poly: {t_poly:.1f} s   bspline: {t_bspline:.1f} s")
 # are fully self-contained and require no deep-learning framework.  DIPY also
 # provides **DeepN4** (:footcite:p:`Kanakaraj2024`), a convolutional neural
 # network trained to mimic the N4 algorithm output — available through the same
-# CLI entry point (``dipy_correct_biasfield --method n4``) when TensorFlow is
-# installed.  DeepN4 is particularly well-suited to T1-weighted structural images
-# and to situations where you need N4-quality results in a fraction of the
-# inference time.
+# CLI entry point (``dipy_correct_biasfield --method n4``), without any
+# deep-learning framework.  DeepN4 is particularly well-suited to T1-weighted
+# structural images and to situations where you need N4-quality results in a
+# fraction of the inference time.
 #
 # In this section we compare the regression methods against the *classical* N4
 # implementation from SimpleITK — the de-facto standard in the field.  N4
