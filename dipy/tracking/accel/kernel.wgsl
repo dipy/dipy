@@ -31,8 +31,6 @@ struct ProbTrackingParams {
     pmf_threshold: f32,
     rng_seed_lo: u32,
     rng_seed_hi: u32,
-    sl_base_lo: u32,     // index in the tractogram of the first streamline
-    sl_base_hi: u32,     // of this dispatch
     nseed: i32,
     dimx: i32,
     dimy: i32,
@@ -133,11 +131,15 @@ fn philox4x32_10(ctr_in: vec4<u32>, key_in: vec2<u32>) -> vec4<u32> {
     return philox4x32_single_round(ctr, key);
 }
 
-// random stream of the streamline with index (sl_hi << 32) | sl_lo
-fn philox_init(seed_lo: u32, seed_hi: u32, sl_lo: u32, sl_hi: u32) -> PhiloxState {
+// random stream of the streamline starting at pos along dir: a Philox hash
+// of their float32 bits (see philox_init in kernel.cu)
+fn philox_init(seed_lo: u32, seed_hi: u32, pos: vec3<f32>, dir: vec3<f32>) -> PhiloxState {
+    let key = vec2<u32>(seed_lo, seed_hi);
+    let a = philox4x32_10(vec4<u32>(bitcast<vec3<u32>>(pos), 0u), key);
+    let b = philox4x32_10(vec4<u32>(bitcast<vec3<u32>>(dir), a.x), a.yz);
     var s: PhiloxState;
-    s.key = vec2<u32>(seed_lo, seed_hi);
-    s.counter = vec4<u32>(0u, sl_lo, sl_hi, 0u);
+    s.key = key;
+    s.counter = vec4<u32>(0u, b.x, b.y, b.z);
     s.output = vec4<u32>(0u);
     s.idx = 4u;
     return s;
@@ -447,12 +449,8 @@ fn genStreamlinesProb_k(
 
     for (var i = 0; i < ndir; i++) {
         let sl = u32(first_sl + i);
-        // 64-bit streamline index sl_base + sl
-        let sl_lo = params.sl_base_lo + sl;
-        let sl_hi = params.sl_base_hi + select(0u, 1u, sl_lo < sl);
-        let st = philox_init(params.rng_seed_lo, params.rng_seed_hi, sl_lo, sl_hi);
-
         let first_step = load_shDir0_f3(sl);
+        let st = philox_init(params.rng_seed_lo, params.rng_seed_hi, seed, first_step);
         let sline_center = sl * max_len * 2u + max_len;
         if (tidx == 0u) {
             store_sline_f3(sline_center, seed);

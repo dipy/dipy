@@ -219,7 +219,7 @@ def webgpu_streamline_generator(tracker_data):
     ]
     pool = _BufferPool(device)
 
-    def generate_streamlines(seeds, streamline_offsets, peak_dirs, sl_base):
+    def generate_streamlines(seeds, streamline_offsets, peak_dirs):
         n_seeds = len(seeds)
         n_streamlines = int(streamline_offsets[-1])
         streamline_nbytes = 4 * 3 * step * n_streamlines
@@ -232,9 +232,7 @@ def webgpu_streamline_generator(tracker_data):
                 f"at most ~{max_streamlines} streamlines are generated per chunk."
             )
 
-        params_buf = pool.write(
-            "params", kernel_params(tracker_data, n_seeds=n_seeds, sl_base=sl_base)
-        )
+        params_buf = pool.write("params", kernel_params(tracker_data, n_seeds=n_seeds))
         seeds_buf = pool.write("seeds", seeds)
         offsets_buf = pool.write("offsets", streamline_offsets)
         dirs_buf = pool.write("seed_directions", peak_dirs)

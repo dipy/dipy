@@ -53,7 +53,7 @@ def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
     return True
 
 
-def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size, rng):
+def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size):
     """Why the GPU backends cannot run this tracking, or None if they can.
 
     Parameters
@@ -66,8 +66,6 @@ def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size, rng):
         Peaks, possibly with an ODF.
     voxel_size : ndarray, shape (3,)
         Voxel size.
-    rng : str or None
-        Requested random number generator.
 
     Returns
     -------
@@ -79,8 +77,6 @@ def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size, rng):
         return "they need a ThresholdStoppingCriterion"
     if not np.allclose(voxel_size, voxel_size[0]):
         return "they need isotropic voxels"
-    if rng not in (None, "philox"):
-        return f"they only support rng='philox', not {rng!r}"
     return None
 
 
@@ -297,7 +293,6 @@ def probabilistic_tracking(
     max_cross=None,
     backend="auto",
     is_symmetric=None,
-    rng=None,
 ):
     """Probabilistic tracking algorithm.
 
@@ -347,11 +342,13 @@ def probabilistic_tracking(
     random_seed: int, optional
         Seed for the random number generator, must be >= 0. A value greater than 0
         produces the same streamline trajectory for a given seed coordinate and
-        initial direction, whatever the seed order, ``chunk_size`` or
-        ``nbr_threads``. A value of 0 may produce various streamline trajectories
-        for a given seed coordinate.
-        With ``rng="philox"``, the trajectory instead depends on the index of
-        the streamline in the tractogram (see ``rng``).
+        initial direction, whatever the seed order, ``chunk_size``,
+        ``nbr_threads`` or ``backend``: every backend draws the same random
+        numbers (Philox4x32-10, one stream per seed and direction). CPU
+        (float64) and GPU (float32) arithmetic differ slightly, so a few
+        streamlines can still diverge between a CPU and a GPU run. A value of
+        0 may produce various streamline trajectories for a given seed
+        coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -386,14 +383,6 @@ def probabilistic_tracking(
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions). If None, it is
         False for a full-basis ``sh`` and True otherwise.
-    rng : {None, "pcg", "philox"}, optional
-        Random number generator. "philox" is the generator of the GPU
-        backends: every backend, and the CPU with ``rng="philox"``, draws the
-        same random numbers for a given ``random_seed`` (one stream per
-        streamline, independent of ``chunk_size`` and ``nbr_threads``), so
-        their tractograms can be compared streamline by streamline.
-        None selects "pcg" on the CPU and "philox" on the GPU; with
-        ``backend="auto"``, "pcg" keeps the tracking on the CPU.
 
     Returns
     -------
@@ -403,16 +392,12 @@ def probabilistic_tracking(
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
     backend = _select_backend(
-        backend, sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size, rng=rng
+        backend, sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size
     )
     if backend != "cpu":
-        reason = _gpu_unsupported(
-            sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size, rng=rng
-        )
+        reason = _gpu_unsupported(sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size)
         if reason is not None:
             raise ValueError(f"GPU backends cannot be used: {reason}.")
-    if rng is None:
-        rng = "pcg" if backend == "cpu" else "philox"
     is_symmetric = _resolve_is_symmetric(is_symmetric, sh=sh, full_basis=full_basis)
 
     params = generate_tracking_parameters(
@@ -426,7 +411,6 @@ def probabilistic_tracking(
         random_seed=random_seed,
         return_all=return_all,
         is_symmetric=is_symmetric,
-        rng=rng,
     )
 
     if backend != "cpu":

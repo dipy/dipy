@@ -39,8 +39,6 @@ struct ProbTrackingParams {
     float pmf_threshold;
     uint  rng_seed_lo;
     uint  rng_seed_hi;
-    uint  sl_base_lo;     // index in the tractogram of the first streamline
-    uint  sl_base_hi;     // of this dispatch
     int   nseed;
     int   dimx;
     int   dimy;
@@ -96,11 +94,14 @@ inline uint4 philox4x32_10(uint4 ctr, uint2 key) {
     return philox4x32_single_round(ctr, key);
 }
 
-// random stream of the streamline with index sl_index in the tractogram
-inline PhiloxState philox_init(uint2 seed, ulong sl_index) {
+// random stream of the streamline starting at pos along dir: a Philox hash
+// of their float32 bits (see philox_init in kernel.cu)
+inline PhiloxState philox_init(uint2 seed, float3 pos, float3 dir) {
+    const uint4 a = philox4x32_10(uint4(as_type<uint3>(pos), 0u), seed);
+    const uint4 b = philox4x32_10(uint4(as_type<uint3>(dir), a.x), a.yz);
     PhiloxState s;
     s.key = seed;
-    s.counter = uint4(0u, uint(sl_index), uint(sl_index >> 32), 0u);
+    s.counter = uint4(0u, b.x, b.y, b.z);
     s.output = uint4(0u);
     s.idx = 4;
     return s;
@@ -412,16 +413,14 @@ kernel void genStreamlinesProb_k(
     threadgroup float* pmf_data_sh = sh_mem + tidy * N32DIMT;
 
     const uint2 rng_seed = uint2(params.rng_seed_lo, params.rng_seed_hi);
-    const ulong sl_base = (ulong(params.sl_base_hi) << 32) | ulong(params.sl_base_lo);
     const float3 seed = load_f3(seeds, slid);
     const int first_sl = slineOutOff[slid];
     const int ndir = slineOutOff[slid + 1] - first_sl;
 
     for (int i = 0; i < ndir; i++) {
         const int sl = first_sl + i;
-        PhiloxState st = philox_init(rng_seed, sl_base + ulong(sl));
-
         const float3 first_step = load_f3(shDir0, uint(sl));
+        PhiloxState st = philox_init(rng_seed, seed, first_step);
         device packed_float3* center =
             sline + (ulong(sl) * ulong(params.max_sline_len) * 2 + ulong(params.max_sline_len));
         if (tidx == 0) {

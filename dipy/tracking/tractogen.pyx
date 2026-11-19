@@ -104,7 +104,7 @@ def generate_tractogram(double[:, ::1] seed_positions,
     cdef:
         cnp.npy_intp nseed = seed_positions.shape[0]
         cnp.npy_intp step = 2 * params.max_nbr_pts
-        cnp.npy_intp start, n, s0, s1, nsl, sl_start = 0
+        cnp.npy_intp start, n, s0, s1, nsl
         cnp.npy_uint64 rng_seed
         double[:, ::1] seeds, dirs, scratch
         cnp.npy_intp[::1] offsets
@@ -155,11 +155,10 @@ def generate_tractogram(double[:, ::1] seed_positions,
             sl_seed = np.repeat(np.arange(s0, s1),
                                 np.diff(np.asarray(offsets)[s0:s1 + 1]))
             generate_tractogram_c(seeds, dirs[offsets[s0]:offsets[s1]],
-                                  sl_seed, sl_start, rng_seed, nbr_threads,
+                                  sl_seed, rng_seed, nbr_threads,
                                   sc, params, pmf_gen, scratch,
                                   sline_buf[:nsl * step],
                                   stream_idx_buf[:nsl], status_buf[:nsl])
-            sl_start += nsl
 
             idx = stream_idx_buf[:nsl]
             lengths = idx[:, 1] - idx[:, 0] + 1
@@ -299,7 +298,6 @@ cdef void generate_tractogram_c(
     double[:, ::1] seeds,
     double[:, ::1] directions,
     cnp.npy_intp[::1] sl_seed,
-    cnp.npy_intp sl_offset,
     cnp.npy_uint64 rng_seed,
     int nbr_threads,
     StoppingCriterion sc,
@@ -322,9 +320,6 @@ cdef void generate_tractogram_c(
         Seed direction of each streamline.
     sl_seed : ndarray, shape (nsl,)
         Index into ``seeds`` of each streamline.
-    sl_offset : int
-        Index of the streamline ``directions[0]`` in the whole tractogram
-        (for the rng).
     rng_seed : int
         Base random seed.
     nbr_threads : int
@@ -359,17 +354,9 @@ cdef void generate_tractogram_c(
                                               &stream_idx[i, 0],
                                               &scratch[threadid(), 0],
                                               rng_seed,
-                                              sl_offset + i,
                                               sc,
                                               params,
                                               pmf_gen)
-
-
-cdef inline cnp.npy_uint64 splitmix64(cnp.npy_uint64 x) noexcept nogil:
-    x = x + <cnp.npy_uint64>0x9E3779B97F4A7C15
-    x = (x ^ (x >> 30)) * <cnp.npy_uint64>0xBF58476D1CE4E5B9
-    x = (x ^ (x >> 27)) * <cnp.npy_uint64>0x94D049BB133111EB
-    return x ^ (x >> 31)
 
 
 cdef StreamlineStatus generate_local_streamline(double* seed,
@@ -378,7 +365,6 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
                                                 int* stream_idx,
                                                 double* stream_data,
                                                 cnp.npy_uint64 rng_seed,
-                                                cnp.npy_uint64 sl_index,
                                                 StoppingCriterion sc,
                                                 TrackerParameters params,
                                                 PmfGen pmf_gen) noexcept nogil:
@@ -400,9 +386,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         Scratch buffer (>= max(100, len(pmf)) doubles): pmf and propagator
         state.
     rng_seed : int
-        Base random seed of the tractogram.
-    sl_index : int
-        Index of the streamline in the tractogram (Philox stream only).
+        Base random seed of the tractogram. With the seed position and
+        direction, it keys the Philox stream of the streamline, as on the GPU
+        backends (see ``fast_numpy.seed_philox_streamline``).
     sc : StoppingCriterion
         Stopping criterion for the streamline.
     params : TrackerParameters
@@ -419,17 +405,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         StreamlineStatus status_forward, status_backward
         fast_numpy.RNGState rng
 
-    if params.rng_kind == fast_numpy.RNG_PHILOX:
-        # same stream as the GPU trackers (dipy.tracking.accel)
-        fast_numpy.seed_philox(&rng, rng_seed, sl_index)
-    else:
-        # keyed by seed position and direction only, so that a seed gives the
-        # same streamline whatever its index, the chunking or the threads
-        for j in range(3):
-            rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> seed)[j])
-        for j in range(3):
-            rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> direction)[j])
-        fast_numpy.seed_rng(&rng, rng_seed)
+    fast_numpy.seed_philox_streamline(&rng, rng_seed, seed, direction)
 
     # set the initial position
     fast_numpy.copy_point(seed, point)

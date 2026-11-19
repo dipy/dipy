@@ -83,8 +83,9 @@ cdef struct RNGState:
 
 cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil
 
-cdef void seed_philox(RNGState* rng_state, cnp.npy_uint64 seed,
-                      cnp.npy_uint64 stream) noexcept nogil
+cdef void seed_philox_streamline(RNGState* rng_state, cnp.npy_uint64 seed,
+                                 double* position,
+                                 double* direction) noexcept nogil
 
 cdef void philox4x32_10(cnp.npy_uint32* ctr, cnp.npy_uint32* key,
                         cnp.npy_uint32* out) noexcept nogil

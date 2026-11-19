@@ -141,7 +141,7 @@ def metal_streamline_generator(tracker_data):
     lengths_out = _GrowableBuffer(device)
     streamlines_out = _GrowableBuffer(device)
 
-    def generate_streamlines(seeds, streamline_offsets, peak_dirs, sl_base):
+    def generate_streamlines(seeds, streamline_offsets, peak_dirs):
         n_seeds = len(seeds)
         n_streamlines = int(streamline_offsets[-1])
         with _autorelease_pool():
@@ -152,9 +152,7 @@ def metal_streamline_generator(tracker_data):
             lengths_buf = lengths_out.get(4 * n_streamlines)
             streamline_buf = streamlines_out.get(4 * 3 * step * n_streamlines)
 
-            params = kernel_params(
-                tracker_data, n_seeds=n_seeds, sl_base=sl_base
-            ).tobytes()
+            params = kernel_params(tracker_data, n_seeds=n_seeds).tobytes()
             cmd_buf = command_queue.commandBuffer()
             enc = cmd_buf.computeCommandEncoder()
             enc.setComputePipelineState_(pipeline)

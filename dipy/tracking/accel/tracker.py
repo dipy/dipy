@@ -89,7 +89,7 @@ def block_rows(starts, step):
     return np.arange(starts.shape[0], dtype=np.intp) * step + starts
 
 
-def kernel_params(tracker_data, *, n_seeds, sl_base):
+def kernel_params(tracker_data, *, n_seeds):
     """Pack the ``ProbTrackingParams`` struct of kernel.wgsl / kernel.metal.
 
     Parameters
@@ -98,16 +98,14 @@ def kernel_params(tracker_data, *, n_seeds, sl_base):
         Output of :func:`prepare_gpu_tracker_data`.
     n_seeds : int
         Number of seeds of the launch.
-    sl_base : int
-        Index in the tractogram of the launch's first streamline.
 
     Returns
     -------
-    params : ndarray of uint32, shape (14,)
-        4 f32, 4 u32 and 6 i32 fields, bit-cast to uint32.
+    params : ndarray of uint32, shape (12,)
+        4 f32, 2 u32 and 6 i32 fields, bit-cast to uint32.
     """
     seed = tracker_data.random_seed
-    params = np.zeros(14, dtype=np.uint32)
+    params = np.zeros(12, dtype=np.uint32)
     params[:4] = np.array(
         [
             tracker_data.max_angle,
@@ -120,8 +118,6 @@ def kernel_params(tracker_data, *, n_seeds, sl_base):
     params[4:] = [
         seed & 0xFFFFFFFF,
         (seed >> 32) & 0xFFFFFFFF,
-        sl_base & 0xFFFFFFFF,
-        (sl_base >> 32) & 0xFFFFFFFF,
         n_seeds,
         *tracker_data.shape,
         tracker_data.max_steps,
@@ -188,12 +184,11 @@ def prepare_gpu_tracker_data(
     pmf_threshold : float, optional
         Minimum PMF value (relative to max) to consider a valid direction.
     random_seed : int, optional
-        Seed of the random number generator. All backends use the same
-        generator, Philox4x32-10 keyed by ``random_seed`` with one stream
-        per streamline (its index in the tractogram), which is also the
-        generator of :func:`dipy.tracking.tracker.probabilistic_tracking`
-        with ``rng="philox"``. Every backend therefore draws the same random
-        numbers, whatever the chunk size or number of devices.
+        Seed of the random number generator, Philox4x32-10 keyed by
+        ``random_seed``, with one stream per streamline derived from its
+        seed position and initial direction. The CPU tracker uses the same
+        generator, so every backend draws the same random numbers whatever
+        the seed order, chunk size or number of devices.
     chunk_size : int, optional
         Seeds per chunk in gpu_streamline_generator()
     n_procs : int, optional
@@ -392,12 +387,10 @@ def _streamline_generator(
     Yield streamlines batch by batch from a GPU backend function. ``seeds``
     are in voxel space; output is mapped through ``affine``.
 
-    ``generate_streamlines(seeds, streamline_offsets, dirs, sl_base)`` must
-    return ``(streamline_buffer, streamline_rows, streamline_lengths)``,
-    where ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the
-    initial directions of seed ``i`` and ``sl_base`` is the index, in the
-    tractogram, of the batch's first streamline (it selects the random
-    streams). It is only called with at least one streamline. Streamline
+    ``generate_streamlines(seeds, streamline_offsets, dirs)`` must return
+    ``(streamline_buffer, streamline_rows, streamline_lengths)``, where
+    ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the
+    initial directions of seed ``i``. It is only called with at least one streamline. Streamline
     ``j`` has ``abs(streamline_lengths[j])`` points, the sign telling whether
     both ends reached the stopping map (positive) or not, starting at row
     ``streamline_rows[j]`` of ``streamline_buffer``, which only needs to
@@ -415,7 +408,6 @@ def _streamline_generator(
     if nbr_threads <= 0:
         nbr_threads = determine_num_threads(None)
 
-    sl_base = 0
     try:
         for start in range(0, seeds.shape[0], chunk_size):
             chunk = np.ascontiguousarray(seeds[start : start + chunk_size], dtype=float)
@@ -441,9 +433,7 @@ def _streamline_generator(
                     np.asarray(
                         dirs[offsets[s0] : offsets[s1]], dtype=np.float32, order="C"
                     ),
-                    sl_base,
                 )
-                sl_base += n_streamlines
                 sl_seed = np.repeat(np.arange(s0, s1), np.diff(offsets[s0 : s1 + 1]))
                 lengths = np.asarray(lengths[:n_streamlines], dtype=np.intp)
                 valid = (lengths > 0) | return_all

@@ -11,7 +11,6 @@ from dipy.tracking.propspeed cimport (
 )
 from dipy.tracking.utils import min_radius_curvature_from_angle
 
-from dipy.utils.fast_numpy cimport RNG_PCG32, RNG_PHILOX
 
 import numpy as np
 cimport numpy as cnp
@@ -37,7 +36,6 @@ def generate_tracking_parameters(
     double angle_threshold=60,
     double min_total_weight=0.5,
     bint is_symmetric=True,
-    rng="pcg",
 ):
 
     cdef TrackerParameters params
@@ -53,8 +51,7 @@ def generate_tracking_parameters(
                                    max_angle=max_angle,
                                    random_seed=random_seed,
                                    return_all=return_all,
-                                   is_symmetric=is_symmetric,
-                                   rng=rng)
+                                   is_symmetric=is_symmetric)
         params.set_tracker_c(deterministic_propagator)
         return params
     elif algo_name in ["probabilistic", "prob"]:
@@ -66,8 +63,7 @@ def generate_tracking_parameters(
                                    max_angle=max_angle,
                                    random_seed=random_seed,
                                    return_all=return_all,
-                                   is_symmetric=is_symmetric,
-                                   rng=rng)
+                                   is_symmetric=is_symmetric)
         params.set_tracker_c(probabilistic_propagator)
         return params
     elif algo_name == "ptt":
@@ -83,8 +79,7 @@ def generate_tracking_parameters(
                                    probe_count=probe_count,
                                    data_support_exponent=data_support_exponent,
                                    random_seed=random_seed,
-                                   return_all=return_all,
-                                   rng=rng)
+                                   return_all=return_all)
         params.set_tracker_c(parallel_transport_propagator)
         return params
     elif algo_name == "eudx":
@@ -97,8 +92,7 @@ def generate_tracking_parameters(
                                    angle_threshold=angle_threshold,
                                    min_total_weight=min_total_weight,
                                    random_seed=random_seed,
-                                   return_all=return_all,
-                                   rng=rng)
+                                   return_all=return_all)
         params.set_tracker_c(eudx_propagator)
         return params
     else:
@@ -112,18 +106,8 @@ cdef class TrackerParameters:
                  probe_radius=None, probe_quality=None, probe_count=None,
                  data_support_exponent=None, random_seed=None,
                  peak_values_threshold=None, angle_threshold=None,
-                 min_total_weight=None, is_symmetric=True, rng="pcg"):
+                 min_total_weight=None, is_symmetric=True):
         cdef cnp.npy_intp i
-
-        # random number generator of the tracker. "philox" is the generator
-        # of the GPU trackers (dipy.tracking.accel), keyed by random_seed and
-        # the streamline index, so that the CPU and GPU draw the same numbers.
-        if rng == "pcg":
-            self.rng_kind = RNG_PCG32
-        elif rng == "philox":
-            self.rng_kind = RNG_PHILOX
-        else:
-            raise ValueError(f"rng must be 'pcg' or 'philox', not {rng!r}")
 
         self.max_nbr_pts = int(max_len/step_size)
         self.min_nbr_pts = int(min_len/step_size)

@@ -157,7 +157,7 @@ def _synthetic_pmf(shape=(16, 16, 8)):
 
 @pytest.mark.parametrize("return_all", [True, False])
 @pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
-def test_accel_matches_cpu_philox(backend, return_all):
+def test_accel_matches_cpu(backend, return_all):
     if not accel_backend_available(backend):
         pytest.skip(f"{backend} GPU tracker backend not available")
     pmf, stop_map, sphere, seeds = _synthetic_pmf()
@@ -169,7 +169,6 @@ def test_accel_matches_cpu_philox(backend, return_all):
         "max_angle": 30,
         "max_len": 60,
         "random_seed": 3,
-        "rng": "philox",
         "return_all": return_all,
         "save_seeds": True,
     }
@@ -215,7 +214,10 @@ def test_accel_pam_odf_sphere(backend):
     npt.assert_(len(streamlines) > 0)
 
 
-def test_cpu_pcg_seed_order_independent():
+@pytest.mark.parametrize("backend", ["cpu", *ACCEL_BACKENDS])
+def test_seed_order_independent(backend):
+    if backend != "cpu" and not accel_backend_available(backend):
+        pytest.skip(f"{backend} GPU tracker backend not available")
     pmf, stop_map, sphere, seeds = _synthetic_pmf()
     sc = ThresholdStoppingCriterion(stop_map, 0.5)
     params = {
@@ -226,7 +228,7 @@ def test_cpu_pcg_seed_order_independent():
         "max_len": 60,
         "random_seed": 5,
         "save_seeds": True,
-        "backend": "cpu",
+        "backend": backend,
     }
 
     def by_seed(seed_positions, **kwargs):
@@ -252,29 +254,22 @@ def test_select_backend():
     # explicit choices are kept
     for backend in ["cpu", *ACCEL_BACKENDS]:
         npt.assert_equal(
-            tracker._select_backend(
-                backend, sc=binary, voxel_size=iso, rng=None, **inputs
-            ),
+            tracker._select_backend(backend, sc=binary, voxel_size=iso, **inputs),
             backend,
         )
     # auto: GPU when available and the inputs allow it, else CPU
     expected = select_accel_backend() or "cpu"
     npt.assert_equal(
-        tracker._select_backend(
-            "auto", sc=threshold, voxel_size=iso, rng=None, **inputs
-        ),
+        tracker._select_backend("auto", sc=threshold, voxel_size=iso, **inputs),
         expected,
     )
-    for sc, voxel_size, rng, kw in [
-        (binary, iso, None, inputs),
-        (threshold, aniso, None, inputs),
-        (threshold, iso, "pcg", inputs),
-        (threshold, iso, None, {"sf": None, "sh": None, "pam": None}),
+    for sc, voxel_size, kw in [
+        (binary, iso, inputs),
+        (threshold, aniso, inputs),
+        (threshold, iso, {"sf": None, "sh": None, "pam": None}),
     ]:
         npt.assert_equal(
-            tracker._select_backend(
-                "auto", sc=sc, voxel_size=voxel_size, rng=rng, **kw
-            ),
+            tracker._select_backend("auto", sc=sc, voxel_size=voxel_size, **kw),
             "cpu",
         )
 

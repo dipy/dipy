@@ -73,8 +73,10 @@ enum {OUTSIDEIMAGE, INVALIDPOINT, TRACKPOINT, ENDPOINT};
 // ── Philox4x32-10 RNG ────────────────────────────────────────────────
 // Reference: Salmon et al., "Parallel Random Numbers: As Easy as 1, 2, 3"
 //            (SC '11).  DOI 10.1145/2063384.2063405
-// Same generator in every backend: key = random seed, counter =
-// (block, streamline index lo, streamline index hi, 0).
+// Same generator in every backend, and on the CPU
+// (dipy.utils.fast_numpy.seed_philox_streamline): key = random seed,
+// counter = (block, stream), the 96-bit stream being a Philox hash of the
+// float32 bits of the seed position and initial direction.
 
 #define PHILOX_M4x32_0 0xD2511F53u
 #define PHILOX_M4x32_1 0xCD9E8D57u
@@ -106,12 +108,21 @@ __device__ uint4 philox4x32_10(uint4 ctr, uint2 key) {
         return philox4x32_round(ctr, key);
 }
 
-// random stream of the streamline with index sl_index in the tractogram
+// random stream of the streamline starting at seed along dir
 __device__ PhiloxState philox_init(const unsigned long long seed,
-                                   const unsigned long long sl_index) {
+                                   const REAL3 pos, const REAL3 dir) {
+        const uint2 key = make_uint2((unsigned int) seed, (unsigned int) (seed >> 32));
+        const uint4 a = philox4x32_10(make_uint4(__float_as_uint((float) pos.x),
+                                                 __float_as_uint((float) pos.y),
+                                                 __float_as_uint((float) pos.z), 0u),
+                                      key);
+        const uint4 b = philox4x32_10(make_uint4(__float_as_uint((float) dir.x),
+                                                 __float_as_uint((float) dir.y),
+                                                 __float_as_uint((float) dir.z), a.x),
+                                      make_uint2(a.y, a.z));
         PhiloxState s;
-        s.key = make_uint2((unsigned int) seed, (unsigned int) (seed >> 32));
-        s.ctr = make_uint4(0u, (unsigned int) sl_index, (unsigned int) (sl_index >> 32), 0u);
+        s.key = key;
+        s.ctr = make_uint4(0u, b.x, b.y, b.z);
         s.out = make_uint4(0u, 0u, 0u, 0u);
         s.idx = 4;
         return s;
@@ -416,7 +427,6 @@ __device__ int tracker_d(PhiloxState *st,
 // ── kernel: generate streamlines from precomputed seed directions ────
 //
 // rng_seed    : random seed (Philox key)
-// sl_base     : index in the tractogram of the first streamline of this launch
 // slineOutOff : (nseed+1,) exclusive prefix sum of the number of
 //               directions per seed
 // shDir0      : (sum(ndir),) initial direction of each streamline
@@ -429,7 +439,6 @@ __device__ int tracker_d(PhiloxState *st,
 template<int BDIM_X, int BDIM_Y>
 __global__ void genStreamlinesProb_k(const int nseed,
                                      const unsigned long long rng_seed,
-                                     const unsigned long long sl_base,
                                      const REAL3 *__restrict__ seeds,
                                      const REAL *__restrict__ dataf,
                                      const REAL *__restrict__ metric_map,
@@ -453,11 +462,10 @@ __global__ void genStreamlinesProb_k(const int nseed,
 
         for(int i = 0; i < ndir; i++) {
                 const int sl = firstSl + i;
-                // one random stream per streamline, keyed by its index in the
-                // tractogram: independent of chunks, devices and launch shape
-                PhiloxState st = philox_init(rng_seed, sl_base + (unsigned long long) sl);
-
+                // one random stream per streamline, keyed by its seed and
+                // initial direction: identical on every backend
                 const REAL3 first_step = shDir0[sl];
+                PhiloxState st = philox_init(rng_seed, seed, first_step);
                 REAL3 *__restrict__ center = sline + ((size_t) sl * MAX_SLINE_LEN * 2 + MAX_SLINE_LEN);
                 if (tidx == 0) {
                         center[0] = seed;

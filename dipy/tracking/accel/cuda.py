@@ -120,7 +120,6 @@ def _launch(
     stream,
     device_data,
     rng_seed,
-    sl_base,
     seeds,
     streamline_offsets,
     peak_dirs,
@@ -152,7 +151,6 @@ def _launch(
         kernel,
         np.int32(n_seeds),
         np.uint64(rng_seed),
-        np.uint64(sl_base),
         seeds_d,
         pmf_d,
         stop_map_d,
@@ -236,7 +234,7 @@ def cuda_streamline_generator(tracker_data, *, n_gpus=1):
             )
         )
 
-    def generate_streamlines(seeds, streamline_offsets, peak_dirs, sl_base):
+    def generate_streamlines(seeds, streamline_offsets, peak_dirs):
         n_seeds = len(seeds)
         n_streamlines = int(streamline_offsets[-1])
         streamline_buffer = np.empty((n_streamlines * step, 3), dtype=KERNEL_DTYPE)
@@ -262,7 +260,6 @@ def cuda_streamline_generator(tracker_data, *, n_gpus=1):
                 stream,
                 device_data,
                 rng_seed,
-                sl_base + sl_start,
                 seeds[seed_start:seed_stop],
                 offsets,
                 peak_dirs[sl_start:sl_stop],

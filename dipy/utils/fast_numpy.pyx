@@ -272,33 +272,63 @@ cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil:
     next_rng(rng_state)
 
 
-cdef void seed_philox(RNGState* rng_state, cnp.npy_uint64 seed,
-                      cnp.npy_uint64 stream) noexcept nogil:
-    """
-    Seed the RNG state with the Philox4x32-10 generator (thread-safe).
+cdef inline cnp.npy_uint32 _float_bits(double x) noexcept nogil:
+    cdef float f = <float>x
+    return (<cnp.npy_uint32*>&f)[0]
 
-    This is the generator of the GPU trackers (:mod:`dipy.tracking.accel`):
-    the key is ``seed`` and the counter is ``(block, stream lo, stream hi,
-    0)``, so each ``stream`` (e.g. a streamline index) is an independent
-    sequence that every backend reproduces exactly.
+
+cdef void seed_philox_streamline(RNGState* rng_state, cnp.npy_uint64 seed,
+                                 double* position,
+                                 double* direction) noexcept nogil:
+    """
+    Seed the Philox4x32-10 stream of a streamline (thread-safe).
+
+    This is the generator of every tracker, on the CPU and on the GPU
+    backends of :mod:`dipy.tracking.accel`. The key is ``seed``; the stream
+    is a Philox hash of the float32 bits of the seed position (voxel
+    coordinates) and initial direction, so a streamline draws the same
+    numbers on every backend, whatever its index, the chunking or the
+    number of threads. The kernels implement the same function.
 
     Parameters
     ----------
     rng_state : RNGState*
         The RNG state.
     seed : int
-        The seed value (Philox key).
-    stream : int
-        The stream (sub-sequence) index.
+        The random seed (Philox key).
+    position : double*
+        Seed position (3 values).
+    direction : double*
+        Initial direction (3 values).
 
     """
+    cdef:
+        cnp.npy_uint32 ctr[4]
+        cnp.npy_uint32 key[2]
+        cnp.npy_uint32 a[4]
+        cnp.npy_uint32 b[4]
+        int i
+
+    key[0] = <cnp.npy_uint32>seed
+    key[1] = <cnp.npy_uint32>(seed >> 32)
+    for i in range(3):
+        ctr[i] = _float_bits(position[i])
+    ctr[3] = 0
+    philox4x32_10(ctr, key, a)
+    for i in range(3):
+        ctr[i] = _float_bits(direction[i])
+    ctr[3] = a[0]
+    key[0] = a[1]
+    key[1] = a[2]
+    philox4x32_10(ctr, key, b)
+
     rng_state.kind = RNG_PHILOX
     rng_state.key[0] = <cnp.npy_uint32>seed
     rng_state.key[1] = <cnp.npy_uint32>(seed >> 32)
     rng_state.ctr[0] = 0
-    rng_state.ctr[1] = <cnp.npy_uint32>stream
-    rng_state.ctr[2] = <cnp.npy_uint32>(stream >> 32)
-    rng_state.ctr[3] = 0
+    rng_state.ctr[1] = b[0]
+    rng_state.ctr[2] = b[1]
+    rng_state.ctr[3] = b[2]
     rng_state.idx = 4  # the first block is generated on the first draw
 
 
@@ -335,7 +365,7 @@ cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil:
     Generate the next random number (thread-safe).
 
     Uses PCG32, or Philox4x32-10 if the state was seeded with
-    ``seed_philox``.
+    ``seed_philox_streamline``.
 
     Parameters
     ----------
