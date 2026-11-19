@@ -59,6 +59,27 @@ DIPY 1.13.0 changes
   them positionally from Python keeps working and warns until 2.0.0. The command
   line is unchanged.
 
+- The ``out_`` prefix is now reserved for output paths in every workflow: a
+  parameter that is not a path must not use it. Consequently, ``out_extension``
+  of ``ConcatenateTractogramFlow.run`` (``dipy_concatenate_tractograms
+  --out_extension``) is renamed to ``extension``. The old name keeps working
+  until 1.15.0: called from Python it raises ``ArgsDeprecationWarning``, and on
+  the command line it logs a deprecation warning to the console naming the new
+  option::
+
+      dipy_concatenate_tractograms t1.trk t2.trk --out_extension trk
+
+  becomes::
+
+      dipy_concatenate_tractograms t1.trk t2.trk --extension trk
+
+  ``ConcatenateTractogramFlow.last_generated_outputs`` no longer reports an
+  ``out_extension`` entry holding a path that is never written, and its
+  overwrite check now looks at the tractogram it really writes,
+  ``<out_tractogram>.<extension>``. Previously the check guarded the
+  extension-less name, so an existing output was overwritten without
+  ``--force``.
+
 **Reconstruction**
 
 - Models whose options moved after ``*args`` in 1.12.0 now report the old positional

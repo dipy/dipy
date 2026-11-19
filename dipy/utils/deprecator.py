@@ -647,6 +647,10 @@ def deprecated_params(
 
             return function(*args, **kwargs)
 
+        wrapper.__deprecated_params__ = tuple(
+            getattr(function, "__deprecated_params__", ())
+        ) + tuple(zip(old_name, new_name))
+
         return wrapper
 
     return deprecator
