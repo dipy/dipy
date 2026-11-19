@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os
+from pathlib import Path
 import sys
 
 from dipy.data import SPHERE_FILES, get_sphere
@@ -26,33 +26,32 @@ from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
-def _save_tracking_result(tracking_result, reference, out_tract, save_seeds):
+def _save_tracking_result(
+    tracking_result, reference, out_tract, *, save_seeds, chunked
+):
     """
     Save tracking results to a file. Shared by local and PFT tracking workflows.
     This function should disappear when their tracking APIs are unified.
 
     Parameters
     ----------
-    tracking_result : generator or list
-        The tracking result, which should be one of:
-        (1) a generator if the output file is a TRX file;
-        (2) a list of tuples of (streamline, seed) if save_seeds is True;
-        (3) a list of streamlines otherwise.
-
-    reference : str or os.PathLike
+    tracking_result : generator
+        Streamlines, ``(streamline, seed)`` pairs if ``save_seeds`` is True,
+        or chunks if ``chunked`` is True (TRX output only).
+    reference : str or Path
         The reference image path for the tractogram.
-
-    out_tract : str or os.PathLike
+    out_tract : str or Path
         The output tractogram file path.
-
     save_seeds : bool
         Whether to save the seeds associated with their streamlines in the output file.
+    chunked : bool
+        Whether ``tracking_result`` yields chunks.
     """
-
-    if str(out_tract).endswith(".trx"):
-        if isinstance(reference, os.PathLike):
-            reference = str(reference)
-        save_trx_from_generator(tracking_result, reference, filename=out_tract)
+    if Path(out_tract).suffix == ".trx":
+        trx_file = save_trx_from_generator(
+            tracking_result, reference, filename=out_tract, chunked=chunked
+        )
+        trx_file.close()
     else:
         if save_seeds:
             streamlines, seeds = zip(*tracking_result)
@@ -207,13 +206,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 seed_mask, affine, density=[seed_density, seed_density, seed_density]
             )
 
-            chunked = str(out_tract).endswith(".trx")
+            chunked = Path(out_tract).suffix == ".trx"
             if max_angle is None:
                 max_angle = 10.0 if tracking_method in ["ptt"] else 30.0
                 logger.info(f"max_angle not set by user, defaulting to {max_angle}")
 
             logger.info("Starting to track")
             if tracking_method in ["closestpeaks", "cp"]:
+                chunked = False
                 tracking_result = closestpeak_tracking(
                     seeds,
                     stopping_criterion,
@@ -312,7 +312,13 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     f"'eudx', 'deterministic', 'probabilistic', 'closestpeaks', 'ptt'"
                 )
                 sys.exit(1)
-            _save_tracking_result(tracking_result, seeding_path, out_tract, save_seeds)
+            _save_tracking_result(
+                tracking_result,
+                seeding_path,
+                out_tract,
+                save_seeds=save_seeds,
+                chunked=chunked,
+            )
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -477,4 +483,10 @@ class PFTrackingPAMFlow(Workflow):
                 chunk_size=chunk_size,
             )
 
-            _save_tracking_result(tracking_result, seeding_path, out_tract, save_seeds)
+            _save_tracking_result(
+                tracking_result,
+                seeding_path,
+                out_tract,
+                save_seeds=save_seeds,
+                chunked=False,
+            )

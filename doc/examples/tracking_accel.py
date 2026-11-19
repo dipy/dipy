@@ -151,9 +151,11 @@ trx = save_trx_from_generator(
     streamline_generator,
     hardi_img,
     filename="tractogram_accel_chunked.trx",
+    chunked=True,
     nb_streamlines_estimate=len(seeds),
 )
 print(f"Saved {trx.header['NB_STREAMLINES']} streamlines")
+trx.close()
 
 ###############################################################################
 # The ``dipy_track`` command line tool uses the same chunked writer whenever
