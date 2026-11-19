@@ -629,10 +629,12 @@ def norm_anisotropy(evals, *, axis=-1):
 
     .. math::
 
-        NA = \lVert \widetilde{D} \rVert
+        NA = \lVert \widetilde{A} \rVert
             = \sqrt{(\lambda_1-MD)^2 + (\lambda_2-MD)^2 + (\lambda_3-MD)^2}
 
-    Where :math:`\widetilde{D}` is the deviatoric part of the tensor quadratic form.
+    Where :math:`\widetilde{A}` is the deviatoric part of the tensor quadratic
+    form (see :func:`deviatoric`). NA is computed from the eigenvalues, using the
+    right-hand side, so the 3x3 tensor is never built.
 
     References
     ----------

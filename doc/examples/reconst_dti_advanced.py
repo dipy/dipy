@@ -166,9 +166,9 @@ show_manager.start()
 # Several basic operations on the tensor matrix are used to build more
 # specialized metrics, such as the determinant and the norm. Note that the
 # module functions differ in their input: ``determinant``, ``norm``,
-# ``isotropic``, ``deviatoric``, ``norm_anisotropy`` and ``mode`` take the
-# quadratic form :math:`\mathbf{D}` of the tensor (``tenfit.quadratic_form``),
-# while ``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the
+# ``isotropic``, ``deviatoric`` and ``mode`` take the quadratic form
+# :math:`\mathbf{D}` of the tensor (``tenfit.quadratic_form``), while ``trace``,
+# ``fractional_anisotropy``, ``mean_diffusivity``, ``norm_anisotropy`` and the
 # so-called Westin measures (see above) take its eigenvalues (``tenfit.evals``).
 # The ``TensorFit`` properties pass the right input for you.
 #
