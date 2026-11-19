@@ -155,11 +155,20 @@ class _BufferPool:
 
 
 def _bind_group(device, pipeline, group, entries):
+    """Bind group of ``{binding: buffer or (buffer, nbytes)}``.
+
+    Pooled buffers can be larger than the current batch: binding them with
+    an explicit size keeps ``arrayLength`` in the kernels exact.
+    """
+    resources = []
+    for i, entry in entries.items():
+        buf, size = entry if isinstance(entry, tuple) else (entry, None)
+        resource = {"buffer": buf}
+        if size is not None:
+            resource["size"] = int(size)
+        resources.append({"binding": i, "resource": resource})
     return device.create_bind_group(
-        layout=pipeline.get_bind_group_layout(group),
-        entries=[
-            {"binding": i, "resource": {"buffer": buf}} for i, buf in entries.items()
-        ],
+        layout=pipeline.get_bind_group_layout(group), entries=resources
     )
 
 
@@ -291,7 +300,10 @@ def webgpu_streamline_generator(tracker_data):
         cpass.set_bind_group(
             2,
             _bind_group(
-                device, compact_pipeline, 2, {0: out_offsets_buf, 1: packed_buf}
+                device,
+                compact_pipeline,
+                2,
+                {0: (out_offsets_buf, rows.nbytes), 1: packed_buf},
             ),
         )
         cpass.dispatch_workgroups(
