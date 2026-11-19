@@ -9,6 +9,10 @@ SKYLINE_HOME = asset_home(ASSET_APP)
 APP_LOG_FILE = SKYLINE_HOME / "skyline_app.log"
 MODULE_NAME = "dipy.desktop.launch"
 SKYLINE_PACKAGES = ("fury", "imgui_bundle")
+# Files per launch, report request, API call and IPC message, and per
+# ``dipy-skyline://`` link; the confirmation dialog names every file of a link.
+MAX_FILES = 64
+MAX_LINK_FILES = 64
 # Launched from a menu, a link or a report, nothing activated the environment:
 # its folders are missing from PATH, and an editable install cannot find the
 # ``ninja`` it needs to import DIPY. The code holds no double quote or percent

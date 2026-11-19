@@ -135,29 +135,84 @@ def report_error(message):
                 break
 
 
-def confirm_open(path):
-    """Ask the user to confirm that a link may open a file.
+def display_text(text):
+    """Make text safe to show in a dialog.
 
     Parameters
     ----------
-    path : Path
-        File that the link asks Skyline to open.
+    text : str
+        Text that may come from a link, such as a file name.
+
+    Returns
+    -------
+    str
+        ``text`` with every character that is not printable, apart from the
+        space, replaced by its ``\\uXXXX`` escape (``\\UXXXXXXXX`` beyond the
+        Basic Multilingual Plane). Control, format, separator and unassigned
+        characters can neither fake dialog lines nor reorder or hide the text.
+    """
+    escaped = []
+    for char in text:
+        if char == " " or char.isprintable():
+            escaped.append(char)
+        elif ord(char) <= 0xFFFF:
+            escaped.append(f"\\u{ord(char):04x}")
+        else:
+            escaped.append(f"\\U{ord(char):08x}")
+    return "".join(escaped)
+
+
+def confirm_message(paths, resolved):
+    """Build the text that asks to confirm the files a link opens.
+
+    Parameters
+    ----------
+    paths : sequence of Path
+        Files that the link asks Skyline to open, at most ``MAX_LINK_FILES``.
+    resolved : sequence of Path
+        Where each of ``paths`` leads once symbolic links are followed, in the
+        same order.
+
+    Returns
+    -------
+    str
+        Question naming every path, and the target of each path that is a
+        link to another file.
+    """
+    entries = []
+    for path, target in zip(paths, resolved):
+        entry = display_text(str(path))
+        if os.path.normcase(target) != os.path.normcase(path):
+            entry += f"\n(a link to {display_text(str(target))})"
+        entries.append(entry)
+    count = len(paths)
+    subject = "this file" if count == 1 else f"these {count} files"
+    listing = "\n".join(entries)
+    return f"A link asks {APP_NAME} to open:\n\n{listing}\n\nOpen {subject}?"
+
+
+def confirm_open(paths, resolved):
+    """Ask the user to confirm that a link may open files.
+
+    Parameters
+    ----------
+    paths : sequence of Path
+        Files that the link asks Skyline to open.
+    resolved : sequence of Path
+        Where each of ``paths`` leads once symbolic links are followed, in the
+        same order. These are the files opened if the user agrees.
 
     Returns
     -------
     bool
-        True when the user agrees to open the file.
+        True when the user agrees to open the files.
 
     Raises
     ------
     RuntimeError
         On Linux, if neither ``zenity`` nor ``kdialog`` is installed.
     """
-    resolved = path.resolve()
-    shown = str(path)
-    if os.path.normcase(resolved) != os.path.normcase(path):
-        shown += f"\n(a link to {resolved})"
-    message = f"A link asks {APP_NAME} to open:\n\n{shown}\n\nOpen this file?"
+    message = confirm_message(paths, resolved)
     if sys.platform == "win32":
         # MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2: No is the default; 6 is IDYES.
         return ctypes.windll.user32.MessageBoxW(None, message, APP_NAME, 0x124) == 6
@@ -176,5 +231,5 @@ def confirm_open(path):
             return subprocess.run([tool, *arguments, text], check=False).returncode == 0
     raise RuntimeError(
         "Opening files from links needs zenity or kdialog to ask for "
-        f"confirmation; open {path} from the file manager instead."
+        "confirmation; open the files from the file manager instead."
     )

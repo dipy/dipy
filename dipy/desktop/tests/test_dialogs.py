@@ -4,6 +4,8 @@ import time
 from dipy.desktop.dialogs import (
     CONFIRM_LOCK_SECONDS,
     acquire_confirmation_slot,
+    confirm_message,
+    display_text,
     linux_dialog_text,
 )
 
@@ -31,3 +33,32 @@ def test_confirmation_slot_is_taken_once_until_released_or_stale(tmp_path):
     stale = time.time() - CONFIRM_LOCK_SECONDS - 1
     os.utime(lock, (stale, stale))
     assert acquire_confirmation_slot(lock=lock)
+
+
+def test_confirm_message_names_every_file(tmp_path):
+    volume = tmp_path / "fa.nii.gz"
+    tractogram = tmp_path / "bundle.trk"
+    for path in (volume, tractogram):
+        path.write_bytes(b"")
+
+    message = confirm_message([volume, tractogram], [volume, tractogram])
+
+    assert str(volume) in message and str(tractogram) in message
+    assert "Open these 2 files?" in message
+    assert "Open this file?" in confirm_message([volume], [volume])
+
+
+def test_confirm_message_shows_where_a_link_leads(tmp_path):
+    link = tmp_path / "shortcut.nii.gz"
+    target = tmp_path / "elsewhere" / "fa.nii.gz"
+
+    message = confirm_message([link], [target])
+
+    assert f"(a link to {target})" in message
+
+
+def test_display_text_escapes_what_could_fake_or_hide_dialog_text():
+    assert display_text("a\nb\u202ec") == "a\\u000ab\\u202ec"
+    assert display_text("a\u00a0b\u3000c") == "a\\u00a0b\\u3000c"
+    assert display_text("a\U000e0001b") == "a\\U000e0001b"
+    assert display_text("fa \u00e9.nii.gz") == "fa \u00e9.nii.gz"

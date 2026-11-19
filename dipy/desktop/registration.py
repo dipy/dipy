@@ -60,7 +60,7 @@ _LINUX_ICON_NAME = "dipy-skyline"
 _LINUX_ENTRY_MARKER = f"X-DIPY-Bundle-Identifier={BUNDLE_ID}"
 
 # Bump whenever the registered command, ``Exec`` line or applet script changes.
-REGISTRATION_VERSION = 1
+REGISTRATION_VERSION = 2
 
 
 def _app_command():
@@ -425,6 +425,11 @@ def _windows_register(*, icon):
     -------
     list of str
         Registry keys and shortcut files created.
+
+    Notes
+    -----
+    The command ends with ``"%1"``: Explorer starts one launcher for each
+    selected file, so selecting several files opens one window for each.
     """
     command = f'{subprocess.list2cmdline(_app_command())} "%1"'
     icon_value = f'"{icon}",0'
@@ -806,7 +811,7 @@ def _linux_register(*, icon):
             "Type=Application",
             f"Name={APP_NAME}",
             "Comment=Diffusion MRI and tractography viewer",
-            f"Exec={' '.join(quoted_arguments)} %u",
+            f"Exec={' '.join(quoted_arguments)} %U",
             f"Icon={_LINUX_ICON_NAME}",
             "Terminal=false",
             "Categories=Science;MedicalSoftware;Graphics;",
@@ -973,9 +978,14 @@ def _macos_register(*, icon):
         f"    {start} & {space} & quoted form of theURL & {background}",
         "end open location",
         "on open theFiles",
+        '    set fileArguments to ""',
         "    repeat with f in theFiles",
-        (f"        {start} & {space} & quoted form of POSIX path of f & {background}"),
+        (
+            "        set fileArguments to fileArguments & "
+            f"{space} & quoted form of POSIX path of f"
+        ),
         "    end repeat",
+        f"    {start} & fileArguments & {background}",
         "end open",
     ]
 

@@ -1,6 +1,9 @@
 """Requirements and interpreter of the Skyline desktop application."""
 
 import importlib.metadata
+import os
+from pathlib import Path
+import subprocess
 import sys
 
 from packaging.requirements import Requirement
@@ -8,11 +11,17 @@ from packaging.utils import canonicalize_name
 
 from dipy.desktop.constants import (
     LAUNCH_BOOTSTRAP,
+    MAX_FILES,
     PYTHON_SAFE_PATH,
     SKYLINE_PACKAGES,
 )
 
 _SKYLINE_PACKAGE_NAMES = frozenset(map(canonicalize_name, SKYLINE_PACKAGES))
+_DETACHED_PROCESS = (
+    {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    if os.name == "nt"
+    else {"start_new_session": True}
+)
 
 
 def missing_viz_requirements():
@@ -66,6 +75,33 @@ def launcher_command():
     Returns
     -------
     list of str
-        Command to which the file to open is appended.
+        Command to which the files to open are appended.
     """
     return [sys.executable, PYTHON_SAFE_PATH, "-c", LAUNCH_BOOTSTRAP]
+
+
+def open_in_skyline(paths, *, launcher=None):
+    """Open files in a new Skyline process, without waiting for it.
+
+    Parameters
+    ----------
+    paths : sequence of str or Path
+        Files to display, from 1 to ``MAX_FILES``.
+    launcher : list of str, optional
+        Command to which the absolute paths are appended. By default,
+        ``launcher_command()``.
+
+    Raises
+    ------
+    ValueError
+        If the number of paths is outside 1 to ``MAX_FILES``.
+    OSError
+        If the process cannot be started.
+    """
+    if not 1 <= len(paths) <= MAX_FILES:
+        raise ValueError(f"paths must name 1 to {MAX_FILES} files, got {len(paths)}")
+    launcher = launcher_command() if launcher is None else launcher
+    subprocess.Popen(
+        [*launcher, *(str(Path(path).absolute()) for path in paths)],
+        **_DETACHED_PROCESS,
+    )

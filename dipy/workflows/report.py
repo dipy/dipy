@@ -737,16 +737,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 }}
             }}, 2000);
         }}
-        function qcOpen(path, command, url) {{
+        function qcOpen(paths, command, url) {{
             // The server adds this tag to the pages it serves, never to files.
             var token = document.querySelector('meta[name="dipy-qc-token"]');
             if (!token) {{
                 qcLaunchApp(url, command);
                 return;
             }}
+            var body = new URLSearchParams();
+            body.append('token', token.content);
+            paths.forEach(function (p) {{ body.append('path', p); }});
             fetch('/qc-open', {{
                 method: 'POST',
-                body: new URLSearchParams({{path: path, token: token.content}})
+                body: body
             }})
                 .then(function (r) {{
                     if (!r.ok) {{
@@ -872,32 +875,34 @@ def _format_value(*, value, unit):
     return html.escape(f"{text} {unit}".strip())
 
 
-def skyline_command(*, path):
-    """Shell command that opens ``path`` in Skyline.
+def skyline_command(*, paths):
+    """Shell command that opens ``paths`` in Skyline.
 
     Parameters
     ----------
-    path : str
-        File to display.
+    paths : sequence of str or Path
+        Files to display.
 
     Returns
     -------
     str
-        ``dipy_skyline`` followed by the escaped path, quoted for the shell
+        ``dipy_skyline`` followed by the escaped paths, quoted for the shell
         of the current platform so that it can be pasted as is.
 
     Notes
     -----
-    On Windows the path is double-quoted, which both ``cmd.exe`` and PowerShell
-    read literally except for ``%``, ``$``, the backtick and the curly double
-    quotes that PowerShell accepts. Those are replaced by the glob wildcard
-    ``?``, which Skyline expands.
+    On Windows each path is double-quoted, which both ``cmd.exe`` and
+    PowerShell read literally except for ``%``, ``$``, the backtick and the
+    curly double quotes that PowerShell accepts. Those are replaced by the
+    glob wildcard ``?``, which Skyline expands.
     """
-    argument = skyline_argument(path=path)
+    arguments = [skyline_argument(path=path) for path in paths]
     if os.name == "nt":
-        argument = re.sub("[%$`\u201c\u201d\u201e]", "?", argument)
-        return f'dipy_skyline "{argument}"'
-    return f"dipy_skyline {shlex.quote(argument)}"
+        arguments = [re.sub("[%$`\u201c\u201d\u201e]", "?", a) for a in arguments]
+        quoted = [f'"{argument}"' for argument in arguments]
+    else:
+        quoted = [shlex.quote(argument) for argument in arguments]
+    return " ".join(["dipy_skyline", *quoted])
 
 
 def served_root(*, page_dir):
@@ -994,11 +999,11 @@ def _output_items(*, outputs, page_dir):
         if key == "out_dir" or not Path(path).exists():
             button = ""
         elif path.endswith(SKYLINE_FORMATS):
-            target = skyline_key(path=path, page_dir=page_dir)
-            command = skyline_command(path=Path(path).absolute())
-            url = skyline_url(path=path)
+            targets = [skyline_key(path=path, page_dir=page_dir)]
+            command = skyline_command(paths=[Path(path).absolute()])
+            url = skyline_url(paths=[path])
             arguments = html.escape(
-                f"{json.dumps(target)}, {json.dumps(command)}, {json.dumps(url)}",
+                f"{json.dumps(targets)}, {json.dumps(command)}, {json.dumps(url)}",
                 quote=True,
             )
             button = (

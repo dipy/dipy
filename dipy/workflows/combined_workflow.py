@@ -35,7 +35,6 @@ import re
 import secrets
 import shutil
 import socket
-import subprocess
 import sys
 import time
 import traceback
@@ -46,7 +45,8 @@ import webbrowser
 import numpy as np
 
 from dipy.data import fetch_30_bundle_atlas_hcp842
-from dipy.desktop.environment import launcher_command, missing_viz_requirements
+from dipy.desktop.constants import MAX_FILES
+from dipy.desktop.environment import missing_viz_requirements, open_in_skyline
 from dipy.desktop.registration import ensure_app_registered
 from dipy.io.bids import (
     BIDS_ENTITY_ORDER,
@@ -2963,20 +2963,16 @@ def _validate_mask_file(*, mask_file):
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
-_DETACHED_PROCESS = (
-    {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
-    if os.name == "nt"
-    else {"start_new_session": True}
-)
+_MAX_REQUEST_BYTES = 1 << 20
 
 
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
     HTML pages are served with a ``<meta name="dipy-qc-token">`` tag holding
-    the server token, which their buttons send back with the file to open in
+    the server token, which their buttons send back with the files to open in
     a ``POST /qc-open`` request. A launch requires that token, so that no
-    other web page can trigger one. The request names the file by its
+    other web page can trigger one. The request names the files by their
     :func:`~dipy.workflows.report.skyline_key`, and only files Skyline can
     display under the served directory are known. The response body is the
     message the page shows when the launch fails. Anything else is served
@@ -2990,7 +2986,7 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         Secret a launch request must carry. Without it, every launch request
         is refused.
     launcher : list of str, optional
-        Command prefix that opens a file in Skyline; the file path is appended.
+        Command prefix that opens files in Skyline; the file paths are appended.
         When None, the serving interpreter is used and a launch is refused with
         a 404 when its viewer packages are missing. A custom launcher may run
         another environment, so it is not checked.
@@ -3045,20 +3041,32 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         try:
-            length = max(0, min(int(self.headers.get("Content-Length") or 0), 65536))
+            length = max(
+                0, min(int(self.headers.get("Content-Length") or 0), _MAX_REQUEST_BYTES)
+            )
         except ValueError:
             length = 0
         fields = urllib.parse.parse_qs(
             self.rfile.read(length).decode("utf-8", errors="replace")
         )
         token = fields.get("token", [""])[0].encode()
-        target = fields.get("path", [""])[0]
+        targets = list(dict.fromkeys(fields.get("path", [])))
 
         if not self.token or not hmac.compare_digest(token, self.token.encode()):
             self._reply(403, "This request does not come from a page of this report.")
+            return
+        if not targets:
+            self._reply(400, "No file to open.")
+            return
+        if len(targets) > MAX_FILES:
+            self._reply(400, f"At most {MAX_FILES} files can be opened at once.")
+            return
+
         # A lookup, so that no file path is ever built from the request.
-        elif (path := report.skyline_files(root=self.directory).get(target)) is None:
-            self._reply(403, f"'{target}' is not a file served by this report.")
+        served = report.skyline_files(root=self.directory)
+        unknown = next((target for target in targets if target not in served), None)
+        if unknown is not None:
+            self._reply(403, f"'{unknown}' is not a file served by this report.")
         elif self.launcher is None and (missing := missing_viz_requirements()):
             self._reply(
                 404,
@@ -3067,9 +3075,12 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
                 "environment serving this report.",
             )
         else:
-            launcher = self.launcher or launcher_command()
-            subprocess.Popen([*launcher, str(path)], **_DETACHED_PROCESS)
-            self._reply(200, f"Skyline launched on {path.name}.")
+            paths = [served[target] for target in targets]
+            open_in_skyline(paths, launcher=self.launcher)
+            if len(paths) == 1:
+                self._reply(200, f"Skyline launched on {paths[0].name}.")
+            else:
+                self._reply(200, f"Skyline launched on {len(paths)} files.")
 
     def _send_page(self, *, page):
         with open(page, "rb") as f:
