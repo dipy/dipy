@@ -97,6 +97,10 @@ def test_evals_functions_axis_and_array_like(func):
     # Lists are accepted, as the docstrings say "array-like"
     npt.assert_array_almost_equal(func(evals[0].tolist()), expected[0])
 
+    # A single voxel gives a scalar-shaped result, as an array or a list
+    npt.assert_array_almost_equal(func(evals[0, 0]), expected[0, 0])
+    npt.assert_array_almost_equal(func(evals[0, 0].tolist()), expected[0, 0])
+
 
 @set_random_number_generator()
 def test_tensor_algebra(rng=None):

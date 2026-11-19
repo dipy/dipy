@@ -242,7 +242,8 @@ def geodesic_anisotropy(evals, *, axis=-1):
     log1 = np.zeros(ev1.shape)
     log2 = np.zeros(ev1.shape)
     log3 = np.zeros(ev1.shape)
-    idx = np.nonzero(ev1)
+    # A boolean mask, unlike np.nonzero, also works for a single (0-d) voxel
+    idx = ev1 != 0
 
     # this is the definition in :footcite:p:`Batchelor2005`
     detD = np.power(ev1 * ev2 * ev3, 1 / 3.0)
