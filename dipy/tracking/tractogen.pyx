@@ -4,15 +4,17 @@
 # cython: Nonecheck=False
 
 from cython.parallel import prange, threadid
+from nibabel.affines import apply_affine
 import numpy as np
 cimport numpy as cnp
 
 from dipy.align.fused_types cimport floating
 from dipy.direction.pmf cimport PmfGen
-from dipy.reconst.dirspeed cimport peak_directions_c
+from dipy.direction.pmf import pmf_peaks
 from dipy.tracking._utils import _iter_chunk
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.omp import determine_num_threads
 
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
@@ -29,6 +31,15 @@ from dipy.tracking.tracker_parameters cimport (TrackerParameters,
 from libc.string cimport memset
 
 
+# Size of the buffer receiving the raw streamlines of one batch. Each
+# streamline reserves 2 * max_nbr_pts points whatever its final length, so
+# the number of streamlines tracked at once is capped by this budget rather
+# than by ``chunk_size`` alone.
+SLINE_BUFFER_BYTES = 256 * 1024 * 1024
+
+
+@deprecated_params("buffer_frac", since="1.13.0", until="2.0.0",
+                   alternative="chunk_size")
 def generate_tractogram(double[:, ::1] seed_positions,
                         seed_directions,
                         StoppingCriterion sc,
@@ -37,6 +48,7 @@ def generate_tractogram(double[:, ::1] seed_positions,
                         affine,
                         int nbr_threads=0,
                         int chunk_size=25000,
+                        buffer_frac=None,
                         bint save_seeds=0,
                         int max_cross=-1,
                         double relative_peak_threshold=0.5,
@@ -62,7 +74,11 @@ def generate_tractogram(double[:, ::1] seed_positions,
     nbr_threads : int, optional
         Number of threads to use for streamline generation.
     chunk_size : int, optional
-        Number of seeds tracked at once. Lower it to reduce memory usage.
+        Number of seeds whose initial directions are computed at once. The
+        streamlines of a chunk are then tracked in batches whose raw buffer
+        stays under ``SLINE_BUFFER_BYTES``.
+    buffer_frac : float, optional
+        Deprecated and ignored. Use ``chunk_size``.
     save_seeds : bool, optional
         If True, return seeds alongside streamlines
     max_cross : int, optional
@@ -72,10 +88,10 @@ def generate_tractogram(double[:, ::1] seed_positions,
         Peak selection parameters when ``seed_directions`` is None (see
         :func:`dipy.direction.peak_directions`).
     chunked : bool, optional
-        If True, yield one ``(points, lengths)`` tuple per chunk of seeds
-        (``(points, lengths, seeds)`` with ``save_seeds``), where ``points``
-        is the concatenation of the chunk's streamlines. Much cheaper to
-        consume than one streamline at a time, e.g. with
+        If True, yield one ``(points, lengths)`` tuple per batch of
+        streamlines (``(points, lengths, seeds)`` with ``save_seeds``), where
+        ``points`` is the concatenation of the batch's streamlines. Much
+        cheaper to consume than one streamline at a time, e.g. with
         :func:`dipy.io.streamline.save_trx_from_generator`.
 
     Yields
@@ -88,19 +104,17 @@ def generate_tractogram(double[:, ::1] seed_positions,
     cdef:
         cnp.npy_intp nseed = seed_positions.shape[0]
         cnp.npy_intp step = 2 * params.max_nbr_pts
-        cnp.npy_intp start, n, nsl, sl_start = 0
+        cnp.npy_intp start, n, s0, s1, nsl, sl_start = 0
         cnp.npy_uint64 rng_seed
-        double[:, ::1] seeds, dirs, sline, scratch
-        cnp.npy_intp[::1] offsets, sl_seed, out_offsets
-        int[:, ::1] stream_idx
-        int[::1] status
+        double[:, ::1] seeds, dirs, scratch
+        cnp.npy_intp[::1] offsets
 
     if chunk_size <= 0:
         raise ValueError("chunk_size must be > 0.")
     if nbr_threads <= 0:
         nbr_threads = determine_num_threads(None)
+    max_sl = max(1, SLINE_BUFFER_BYTES // (step * 3 * 8))
 
-    # per-streamline rng seed, independent of thread scheduling
     if params.random_seed > 0:
         rng_seed = params.random_seed
     else:
@@ -108,13 +122,14 @@ def generate_tractogram(double[:, ::1] seed_positions,
 
     # per-thread scratch: pmf and propagator state (>= 100 doubles for PTT)
     scratch = np.empty((nbr_threads, max(100, pmf_gen.pmf.shape[0])))
+    sline_buf = np.empty((0, 3))
+    stream_idx_buf = np.empty((0, 2), dtype=np.intc)
+    status_buf = np.empty(0, dtype=np.intc)
 
-    cdef double[:, ::1] lin_T = np.asarray(affine[:3, :3].T, order="C")
-    cdef double[::1] offset = np.asarray(affine[:3, 3], order="C")
-
-    inv_affine = np.linalg.inv(affine)
-    seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T.copy())
-    seed_positions += inv_affine[:3, 3]
+    lin_T = np.asarray(affine[:3, :3].T, dtype=float, order="C")
+    offset = np.asarray(affine[:3, 3], dtype=float, order="C")
+    seed_positions = np.ascontiguousarray(
+        apply_affine(np.linalg.inv(affine), np.asarray(seed_positions)), dtype=float)
     if seed_directions is not None:
         seed_directions = np.asarray(seed_directions, dtype=float, order="C")
 
@@ -122,48 +137,137 @@ def generate_tractogram(double[:, ::1] seed_positions,
         n = min(chunk_size, nseed - start)
         seeds = seed_positions[start:start + n]
         if seed_directions is None:
-            offsets, dirs = seed_peaks(seeds, pmf_gen, params.is_symmetric,
-                                       nbr_threads, max_cross,
-                                       relative_peak_threshold,
-                                       min_separation_angle)
+            offsets, dirs = pmf_peaks(
+                seeds, pmf_gen, is_symmetric=params.is_symmetric,
+                nbr_threads=nbr_threads, max_peaks=max_cross,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle)
         else:
             offsets = np.arange(n + 1)
             dirs = seed_directions[start:start + n]
-        nsl = offsets[n]
-        sl_seed = np.repeat(np.arange(n), np.diff(offsets))
-        sline = np.empty((nsl * step, 3))
-        stream_idx = np.empty((nsl, 2), dtype=np.intc)
-        status = np.empty(nsl, dtype=np.intc)
 
-        generate_tractogram_c(seeds, dirs, sl_seed, sl_start, rng_seed,
-                              nbr_threads, sc, params, pmf_gen, scratch,
-                              sline, stream_idx, status)
-        # index in the whole tractogram of the next chunk's first streamline
-        sl_start += nsl
+        for s0, s1 in seed_batches(offsets, max_sl):
+            nsl = offsets[s1] - offsets[s0]
+            if nsl * step > sline_buf.shape[0]:
+                sline_buf = np.empty((nsl * step, 3))
+                stream_idx_buf = np.empty((nsl, 2), dtype=np.intc)
+                status_buf = np.empty(nsl, dtype=np.intc)
+            sl_seed = np.repeat(np.arange(s0, s1),
+                                np.diff(np.asarray(offsets)[s0:s1 + 1]))
+            generate_tractogram_c(seeds, dirs[offsets[s0]:offsets[s1]],
+                                  sl_seed, sl_start, rng_seed, nbr_threads,
+                                  sc, params, pmf_gen, scratch,
+                                  sline_buf[:nsl * step],
+                                  stream_idx_buf[:nsl], status_buf[:nsl])
+            sl_start += nsl
 
-        idx = np.asarray(stream_idx)
-        lengths = idx[:, 1] - idx[:, 0] + 1
-        keep = np.flatnonzero(
-            ((np.asarray(status) == <int>VALIDSTREAMLINE) | params.return_all)
-            & (lengths >= params.min_nbr_pts) & (lengths <= params.max_nbr_pts))
-        lengths = lengths[keep]
-        out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
-        np.cumsum(lengths, out=np.asarray(out_offsets)[1:])
-        points = np.empty((out_offsets[len(keep)], 3))
-        compact_chunk(sline, keep * step + idx[keep, 0], out_offsets, points,
-                      lin_T, offset, nbr_threads)
-        seeds_out = None
-        if save_seeds:
-            seeds_out = (
-                np.dot(np.asarray(seeds)[np.asarray(sl_seed)[keep]],
-                       np.asarray(lin_T)) + np.asarray(offset))
-        if chunked:
-            if seeds_out is None:
-                yield (points, lengths)
-            else:
-                yield (points, lengths, seeds_out)
+            idx = stream_idx_buf[:nsl]
+            lengths = idx[:, 1] - idx[:, 0] + 1
+            valid = (status_buf[:nsl] == <int>VALIDSTREAMLINE) | params.return_all
+            yield from finalize_chunk(
+                sline_buf, starts=idx[:, 0], lengths=lengths, valid=valid,
+                step=step, min_pts=params.min_nbr_pts,
+                max_pts=params.max_nbr_pts, seeds=seeds, sl_seed=sl_seed,
+                lin_T=lin_T, offset=offset, nbr_threads=nbr_threads,
+                save_seeds=save_seeds,
+                chunked=chunked)
+
+
+def seed_batches(offsets, max_streamlines, *, max_seeds=None):
+    """Split seeds into consecutive ranges of at most ``max_streamlines``.
+
+    Parameters
+    ----------
+    offsets : ndarray, shape (nseed + 1,)
+        Exclusive prefix sum of the number of streamlines per seed.
+    max_streamlines : int
+        Maximum number of streamlines per range. A single seed with more
+        streamlines still gets its own range.
+    max_seeds : int, optional
+        Maximum number of seeds per range.
+
+    Yields
+    ------
+    start, stop : int
+        Seed range ``[start, stop)`` with at least one streamline.
+    """
+    offsets = np.asarray(offsets)
+    n = offsets.shape[0] - 1
+    start = 0
+    while start < n:
+        stop = int(np.searchsorted(offsets, offsets[start] + max_streamlines,
+                                   side="right")) - 1
+        stop = min(max(stop, start + 1), n)
+        if max_seeds is not None:
+            stop = min(stop, start + max_seeds)
+        if offsets[stop] > offsets[start]:
+            yield start, stop
+        start = stop
+
+
+def finalize_chunk(sline, *, starts, lengths, valid, step, min_pts, max_pts,
+                   seeds, sl_seed, lin_T, offset, nbr_threads,
+                   save_seeds=False, chunked=False):
+    """Select, transform and emit the streamlines of a tracked batch.
+
+    Shared by the CPU tracker and the GPU backends of
+    :mod:`dipy.tracking.accel`.
+
+    Parameters
+    ----------
+    sline : ndarray, shape (nsl * step, 3)
+        Raw streamline buffer, float32 or float64; streamline ``i`` starts at
+        row ``i * step + starts[i]``.
+    starts : ndarray, shape (nsl,)
+        First point of each streamline in its block.
+    lengths : ndarray, shape (nsl,)
+        Number of points of each streamline.
+    valid : ndarray of bool, shape (nsl,) or bool
+        Status filter (e.g. ``return_all`` or a valid ending).
+    step : int
+        Rows reserved per streamline in ``sline``.
+    min_pts, max_pts : int
+        Range of the number of points of the kept streamlines.
+    seeds : ndarray, shape (nseed, 3)
+        Seeds in voxel space.
+    sl_seed : ndarray, shape (nsl,)
+        Index into ``seeds`` of each streamline.
+    lin_T, offset : ndarray
+        Transposed linear part and translation of the voxel-to-world affine.
+    nbr_threads : int
+        Number of threads for the copy.
+    save_seeds : bool, optional
+        Also emit the world-space seed of each streamline.
+    chunked : bool, optional
+        Emit one ``(points, lengths[, seeds])`` tuple instead of single
+        streamlines.
+
+    Yields
+    ------
+    streamline or chunk tuple
+        See :func:`generate_tractogram`.
+    """
+    lengths = np.asarray(lengths, dtype=np.intp)
+    keep = np.flatnonzero(valid & (lengths >= min_pts) & (lengths <= max_pts))
+    if keep.size == 0:
+        return
+    lengths = lengths[keep]
+    out_offsets = np.zeros(keep.size + 1, dtype=np.intp)
+    np.cumsum(lengths, out=out_offsets[1:])
+    points = np.empty((out_offsets[keep.size], 3))
+    compact_chunk(sline, keep * step + np.asarray(starts, dtype=np.intp)[keep],
+                  out_offsets, points, lin_T, offset, nbr_threads)
+    seeds_out = None
+    if save_seeds:
+        seeds_out = np.dot(np.asarray(seeds)[np.asarray(sl_seed)[keep]],
+                           lin_T) + offset
+    if chunked:
+        if seeds_out is None:
+            yield (points, lengths)
         else:
-            yield from _iter_chunk(points, lengths, seeds_out)
+            yield (points, lengths, seeds_out)
+    else:
+        yield from _iter_chunk(points, lengths, seeds_out)
 
 
 def compact_chunk(const floating[:, ::1] sline,
@@ -192,94 +296,6 @@ def compact_chunk(const floating[:, ::1] sline,
             for k in range(3):
                 out[dst + j, k] = (x * lin_T[0, k] + y * lin_T[1, k]
                                    + z * lin_T[2, k] + offset[k])
-
-
-def seed_peaks(double[:, ::1] seeds,
-               PmfGen pmf_gen,
-               bint is_symmetric,
-               int nbr_threads=0,
-               int max_cross=-1,
-               double relative_peak_threshold=0.5,
-               double min_separation_angle=25):
-    """Peaks of the pmf at each seed (voxel coordinates), in parallel.
-
-    Returns
-    -------
-    offsets : ndarray, shape (nseed + 1,)
-        Exclusive prefix sum of the number of peaks per seed.
-    directions : ndarray, shape (offsets[-1], 3)
-        Peak directions, sorted by decreasing peak value within each seed.
-    """
-    cdef:
-        cnp.npy_intp n = seeds.shape[0], dimt = pmf_gen.pmf.shape[0]
-        cnp.npy_intp cap = dimt if max_cross <= 0 else max_cross
-        cnp.npy_intp i, j, k, t
-        double[:, ::1] verts = pmf_gen.vertices
-        cnp.uint16_t[:, ::1] edges = np.asarray(
-            pmf_gen.sphere.edges, dtype=np.uint16, order="C")
-        cnp.npy_intp[::1] counts, offsets
-        double[:, ::1] dirs
-
-    if nbr_threads <= 0:
-        nbr_threads = determine_num_threads(None)
-
-    # per-thread scratch for peak_directions_c
-    cdef:
-        double[:, ::1] pmf = np.empty((nbr_threads, dimt))
-        double[:, ::1] values = np.empty((nbr_threads, dimt))
-        cnp.npy_intp[:, ::1] indices = np.empty((nbr_threads, dimt), dtype=np.intp)
-        double[:, :, ::1] out_dirs = np.empty((nbr_threads, dimt, 3))
-        double[:, :, ::1] uniq = np.empty((nbr_threads, dimt, 3))
-        cnp.uint16_t[:, ::1] mapping = np.empty((nbr_threads, dimt), dtype=np.uint16)
-        cnp.uint16_t[:, ::1] index = np.empty((nbr_threads, dimt), dtype=np.uint16)
-
-    counts = np.empty(n, dtype=np.intp)
-    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
-                    chunksize=64):
-        t = threadid()
-        counts[i] = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
-                              relative_peak_threshold, min_separation_angle,
-                              cap, pmf[t], out_dirs[t], values[t], indices[t],
-                              uniq[t], mapping[t], index[t])
-
-    offsets = np.zeros(n + 1, dtype=np.intp)
-    np.cumsum(counts, out=np.asarray(offsets)[1:])
-    dirs = np.empty((offsets[n], 3))
-    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
-                    chunksize=64):
-        t = threadid()
-        k = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
-                      relative_peak_threshold, min_separation_angle, cap,
-                      pmf[t], out_dirs[t], values[t], indices[t], uniq[t],
-                      mapping[t], index[t])
-        for j in range(k):
-            dirs[offsets[i] + j, 0] = verts[indices[t, j], 0]
-            dirs[offsets[i] + j, 1] = verts[indices[t, j], 1]
-            dirs[offsets[i] + j, 2] = verts[indices[t, j], 2]
-    return np.asarray(offsets), np.asarray(dirs)
-
-
-cdef cnp.npy_intp _peaks_at(double* seed,
-                            PmfGen pmf_gen,
-                            double[:, ::1] verts,
-                            cnp.uint16_t[:, ::1] edges,
-                            bint is_symmetric,
-                            double relative_peak_threshold,
-                            double min_separation_angle,
-                            cnp.npy_intp cap,
-                            double[::1] pmf,
-                            double[:, ::1] out_dirs,
-                            double[::1] values,
-                            cnp.npy_intp[::1] indices,
-                            double[:, ::1] uniq,
-                            cnp.uint16_t[::1] mapping,
-                            cnp.uint16_t[::1] index) noexcept nogil:
-    cdef cnp.npy_intp k
-    pmf_gen.get_pmf_c(seed, &pmf[0])
-    k = peak_directions_c(pmf, verts, edges, relative_peak_threshold,
-                          min_separation_angle, is_symmetric, out_dirs,
-                          values, indices, uniq, mapping, index)
-    return k if k < cap else cap
 
 
 cdef void generate_tractogram_c(
@@ -389,7 +405,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     rng_seed : int
         Base random seed of the tractogram.
     sl_index : int
-        Index of the streamline in the tractogram.
+        Index of the streamline in the tractogram (Philox stream only).
     sc : StoppingCriterion
         Stopping criterion for the streamline.
     params : TrackerParameters
@@ -410,11 +426,13 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         # same stream as the GPU trackers (dipy.tracking.accel)
         fast_numpy.seed_philox(&rng, rng_seed, sl_index)
     else:
-        # mix in the seed position so equal indices from different seeds differ
-        rng_seed = rng_seed ^ sl_index
+        # keyed by seed position and direction only, so that a seed gives the
+        # same streamline whatever its index, the chunking or the threads
         for j in range(3):
             rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> seed)[j])
-        fast_numpy.seed_rng(&rng, splitmix64(rng_seed))
+        for j in range(3):
+            rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> direction)[j])
+        fast_numpy.seed_rng(&rng, rng_seed)
 
     # set the initial position
     fast_numpy.copy_point(seed, point)
