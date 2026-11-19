@@ -26,80 +26,7 @@ from dipy.nn.mindgrab import MindGrab
 from dipy.nn.synb0 import Synb0
 from dipy.nn.utils import normalize
 from dipy.utils.logging import logger
-
-
-def _validate_b0_index(b0_index, n_volumes, image_name):
-    """Validate that b0_index is a valid integer index into a volume array.
-
-    Parameters
-    ----------
-    b0_index : int
-        Index to validate.
-    n_volumes : int
-        Total number of volumes in the image.
-    image_name : str
-        Name of the image (used in error messages).
-
-    Returns
-    -------
-    b0_index : int
-        The validated index as a Python int.
-
-    Raises
-    ------
-    TypeError
-        If b0_index is not an integer.
-    ValueError
-        If b0_index is out of range [0, n_volumes - 1].
-    """
-    if not isinstance(b0_index, (int, np.integer)):
-        raise TypeError("b0_index must be an integer.")
-
-    if b0_index < 0 or b0_index >= n_volumes:
-        raise ValueError(
-            f"b0_index ({b0_index}) must be in [0, {n_volumes - 1}] "
-            f"for {image_name} with {n_volumes} volumes."
-        )
-
-    return int(b0_index)
-
-
-def _select_3d_volume(image, image_name, b0_index):
-    """Select a 3D volume from a 3D or 4D array.
-
-    Parameters
-    ----------
-    image : ndarray
-        Input array, either 3D (X, Y, Z) or 4D (X, Y, Z, N).
-    image_name : str
-        Name of the image (used in error messages).
-    b0_index : int
-        Index of the volume to select when `image` is 4D.
-
-    Returns
-    -------
-    volume : ndarray (X, Y, Z)
-        Selected 3D volume.
-
-    Raises
-    ------
-    ValueError
-        If `image` is not 3D or 4D.
-    """
-    image = np.asarray(image)
-
-    if image.ndim == 3:
-        return image
-
-    if image.ndim != 4:
-        raise ValueError(
-            f"{image_name} must be a 3D or 4D array. Got shape {image.shape}."
-        )
-
-    idx = _validate_b0_index(
-        b0_index=b0_index, n_volumes=image.shape[-1], image_name=image_name
-    )
-    return image[..., idx]
+from dipy.utils.volume import select_3d_volume
 
 
 def _limit_resolution(image, affine, *, mask=None, zoom=1.0):
@@ -142,15 +69,18 @@ def _limit_resolution(image, affine, *, mask=None, zoom=1.0):
     return resampled, mask, new_affine
 
 
-def _warp_image(mapping, image):
+def _warp_image(mapping, image, *, num_threads=None):
     """Apply a deformation mapping to a 3D or 4D image.
 
     Parameters
     ----------
-    mapping : object
-        A mapping object with a ``transform(image)`` method.
+    mapping : DiffeomorphicMap
+        Mapping whose ``transform`` method warps `image`.
     image : ndarray
         Input array, either 3D (X, Y, Z) or 4D (X, Y, Z, N).
+    num_threads : int, optional
+        Number of OpenMP threads used for warping. If None, DIPY's default
+        thread count is used.
 
     Returns
     -------
@@ -165,19 +95,21 @@ def _warp_image(mapping, image):
     image = np.asarray(image)
 
     if image.ndim == 3:
-        return mapping.transform(image)
+        return mapping.transform(image, num_threads=num_threads)
 
     if image.ndim != 4:
         raise ValueError(
             f"DWI image must be a 3D or 4D array. Got shape {image.shape}."
         )
 
-    warped_0 = mapping.transform(image[..., 0])
+    warped_0 = mapping.transform(image[..., 0], num_threads=num_threads)
     warped = np.empty(image.shape, dtype=warped_0.dtype)
     warped[..., 0] = warped_0
 
     for vol_idx in range(1, image.shape[-1]):
-        warped[..., vol_idx] = mapping.transform(image[..., vol_idx])
+        warped[..., vol_idx] = mapping.transform(
+            image[..., vol_idx], num_threads=num_threads
+        )
 
     return warped
 
@@ -237,6 +169,29 @@ def _restrict_field_to_pe(field, direction, sigma):
     direction = np.asarray(direction, dtype=field.dtype)
     pe_disp = gaussian_filter(field @ direction, sigma=sigma)
     return pe_disp[..., None] * direction, pe_disp
+
+
+def _set_forward_field(mapping, field):
+    """Replace the field that ``mapping.transform`` uses.
+
+    ``SymmetricDiffeomorphicRegistration.optimize`` returns an inverted map
+    (``is_inverse=True``): its ``transform`` reads ``mapping.backward``, not
+    ``mapping.forward``. Only the field of ``transform`` is replaced, so
+    ``transform_inverse`` no longer matches it.
+
+    Parameters
+    ----------
+    mapping : DiffeomorphicMap
+        Map to modify in place.
+    field : ndarray (X, Y, Z, 3)
+        Displacement field, in world coordinates (mm), to use when warping
+        with ``mapping.transform``.
+    """
+    field = np.asarray(field, dtype=np.float32)
+    if mapping.is_inverse:
+        mapping.backward = field
+    else:
+        mapping.forward = field
 
 
 def _refine_b0_to_t1(
@@ -354,6 +309,7 @@ def synb0_syn(
     b0_to_t1_method="bbr",
     debug_dir=None,
     verbose=True,
+    num_threads=None,
     **kwargs,
 ):
     """
@@ -371,17 +327,15 @@ def synb0_syn(
         the volume for estimating the distortion field, and the estimated
         field is then applied to all volumes.
     T1 : ndarray (X, Y, Z) or (X, Y, Z, N)
-        The T1-weighted structural image. If 4D, `b0_index` is used to
-        select the volume for registration. Axes finer than 1 mm are
-        resampled to 1 mm.
+        The T1-weighted structural image. If 4D, its first volume is used.
+        Axes finer than 1 mm are resampled to 1 mm.
     dwi_affine : ndarray (4, 4)
         Affine transformation matrix for the DWI image.
     T1_affine : ndarray (4, 4)
         Affine transformation matrix for the T1 image.
     b0_index : int, optional
-        The index of the volume used for field estimation/registration when
-        `dwi` and/or `T1` are 4D. Must be less than the number of volumes in
-        each 4D input.
+        The index of the b0 volume used to estimate the field when `dwi` (and
+        `dwi_mask`) are 4D. Ignored when `dwi` is 3D.
     dwi_mask : ndarray (X, Y, Z), optional
         A binary mask for the DWI data. If None, no masking is applied.
     T1_mask : ndarray (X, Y, Z), optional
@@ -416,6 +370,10 @@ def synb0_syn(
         Directory to save intermediate debug NIfTI volumes.
     verbose : bool, optional
         Whether the MindGrab, DeepN4 and Synb0 models log their progress.
+    num_threads : int, optional
+        Number of threads used by the registrations, MindGrab, Synb0 and the
+        final warping. If None, the default of each step is used; a negative
+        value uses all the threads minus $|num_threads + 1|$.
     **kwargs :
         Additional keyword arguments to pass to Synb0.predict.
 
@@ -451,13 +409,13 @@ def synb0_syn(
     if T1.ndim not in (3, 4):
         raise ValueError(f"T1 must be a 3D or 4D array. Got shape {T1.shape}.")
 
-    dwi_for_field = _select_3d_volume(dwi, image_name="dwi", b0_index=b0_index)
-    T1_for_reg = _select_3d_volume(T1, image_name="T1", b0_index=b0_index)
+    dwi_for_field = select_3d_volume(dwi, index=b0_index, name="dwi")
+    T1_for_reg = select_3d_volume(T1, name="T1")
 
     if dwi_mask is not None:
-        dwi_mask = _select_3d_volume(dwi_mask, image_name="dwi_mask", b0_index=b0_index)
+        dwi_mask = select_3d_volume(dwi_mask, index=b0_index, name="dwi_mask")
     if T1_mask is not None:
-        T1_mask = _select_3d_volume(T1_mask, image_name="T1_mask", b0_index=b0_index)
+        T1_mask = select_3d_volume(T1_mask, name="T1_mask")
     # Registration and Synb0 do not use sub-millimetre detail, and a 0.5 mm
     # T1 has 8 times more voxels than at 1 mm.
     T1_for_reg, T1_mask, T1_affine = _limit_resolution(
@@ -486,7 +444,7 @@ def synb0_syn(
     # ── Optional: MindGrab skull stripping on T1 and DWI ─────────────────
     if apply_skull_strip:
         logger.info("Applying MindGrab skull stripping to T1 and DWI b0...")
-        mindgrab_model = MindGrab(verbose=verbose)
+        mindgrab_model = MindGrab(verbose=verbose, num_threads=num_threads)
         T1_mask = mindgrab_model.predict(T1_for_reg, T1_affine).astype(bool)
         dwi_mask = mindgrab_model.predict(dwi_for_field, dwi_affine).astype(bool)
         _save_debug_volume(
@@ -525,6 +483,7 @@ def synb0_syn(
         moving_affine=T1_affine,
         static_affine=mni_t1_affine,
         nbins=32,
+        num_threads=num_threads,
         metric="MI",
         pipeline=["center_of_mass", "translation", "rigid", "affine"],
         level_iters=[100, 50, 25],
@@ -572,6 +531,7 @@ def synb0_syn(
         moving_affine=dwi_affine,
         static_affine=T1_affine,
         nbins=32,
+        num_threads=num_threads,
         metric="MI",
         pipeline=["center_of_mass", "translation", "rigid"],
         level_iters=[100, 50, 25],
@@ -659,7 +619,7 @@ def synb0_syn(
     mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
 
     # ── Step 4: Synb0 synthesis ──────────────────────────────────────────
-    synb0 = Synb0(verbose=verbose)
+    synb0 = Synb0(verbose=verbose, num_threads=num_threads)
     logger.info("Synthesizing undistorted b0 with Synb0 model...")
     binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
     binf = binf * mni_mask_resized
@@ -714,6 +674,7 @@ def synb0_syn(
         step_length=0.25,
         ss_sigma_factor=0.1,
         opt_tol=1e-6,
+        num_threads=num_threads,
     )
     mapping = sdr.optimize(
         static=static_norm,
@@ -729,23 +690,22 @@ def synb0_syn(
     if pe_axis is not None:
         # The field is in world coordinates, the phase encoding is along a
         # voxel axis: project on the world direction of that axis.
-        mapping.forward, field = _restrict_field_to_pe(
+        warp_field, field = _restrict_field_to_pe(
             mapping.get_forward_field(), pe_direction, field_smooth_vox
         )
     else:
-        field = gaussian_filter(
+        warp_field = gaussian_filter(
             mapping.get_forward_field(), sigma=(*field_smooth_vox, 0)
         )
-        mapping.forward = field
+        field = warp_field
+    _set_forward_field(mapping, warp_field)
 
     # ── Step 8: Apply correction to DWI ──────────────────────────────────
-    dwi_to_binf = _warp_image(mapping=mapping, image=dwi)
+    dwi_to_binf = _warp_image(mapping=mapping, image=dwi, num_threads=num_threads)
     _save_debug_volume(
         debug_dir=debug_dir,
         name="08_dwi_corrected_b0",
-        data=_select_3d_volume(
-            dwi_to_binf, image_name="dwi_corrected", b0_index=b0_index
-        ),
+        data=select_3d_volume(dwi_to_binf, index=b0_index, name="dwi_corrected"),
         affine=dwi_affine,
     )
 

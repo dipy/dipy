@@ -9,11 +9,11 @@ from dipy.align.disco import (
     _refine_b0_to_t1,
     _restrict_field_to_pe,
     _save_debug_volume,
-    _select_3d_volume,
-    _validate_b0_index,
+    _set_forward_field,
     _warp_image,
     synb0_syn,
 )
+from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align.tests.test_bbr import (
     MOVING_AFFINE,
     STATIC_AFFINE,
@@ -25,67 +25,45 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data
 
 
-def test_validate_b0_index_valid():
-    assert _validate_b0_index(b0_index=0, n_volumes=5, image_name="dwi") == 0
-    assert _validate_b0_index(b0_index=4, n_volumes=5, image_name="dwi") == 4
-    # numpy integer types
-    assert _validate_b0_index(b0_index=np.int64(2), n_volumes=5, image_name="dwi") == 2
-
-
-def test_validate_b0_index_not_integer():
-    with pytest.raises(TypeError, match="must be an integer"):
-        _validate_b0_index(b0_index=1.5, n_volumes=5, image_name="dwi")
-
-
-def test_validate_b0_index_out_of_range():
-    with pytest.raises(ValueError, match="must be in"):
-        _validate_b0_index(b0_index=5, n_volumes=5, image_name="dwi")
-    with pytest.raises(ValueError, match="must be in"):
-        _validate_b0_index(b0_index=-1, n_volumes=5, image_name="dwi")
-
-
-def test_select_3d_volume_passthrough():
-    vol = np.random.rand(10, 10, 10)
-    result = _select_3d_volume(vol, image_name="test", b0_index=0)
-    assert_array_equal(result, vol)
-
-
-def test_select_3d_volume_from_4d():
-    data = np.random.rand(10, 10, 10, 5)
-    result = _select_3d_volume(data, image_name="test", b0_index=2)
-    assert_array_equal(result, data[..., 2])
-
-
-def test_select_3d_volume_wrong_ndim():
-    with pytest.raises(ValueError, match="must be a 3D or 4D"):
-        _select_3d_volume(np.zeros((5, 5)), image_name="test", b0_index=0)
-    with pytest.raises(ValueError, match="must be a 3D or 4D"):
-        _select_3d_volume(np.zeros((5, 5, 5, 5, 5)), image_name="test", b0_index=0)
-
-
-class _FakeMapping:
-    """Minimal mapping stub that applies a known transform."""
-
-    def transform(self, image):
-        return image * 2.0
+def _translation_map(shift_mm, shape, *, inverse=False):
+    """Map that warps with a constant world translation of `shift_mm`."""
+    mapping = DiffeomorphicMap(dim=3, disp_shape=shape, domain_shape=shape)
+    mapping.allocate()
+    mapping.forward[...] = shift_mm
+    mapping.backward[...] = -np.asarray(shift_mm)
+    return mapping.inverse() if inverse else mapping
 
 
 def test_warp_image_3d():
-    vol = np.ones((4, 4, 4))
-    result = _warp_image(mapping=_FakeMapping(), image=vol)
-    assert_array_equal(result, vol * 2.0)
+    vol = np.arange(6 * 6 * 6, dtype=np.float32).reshape(6, 6, 6)
+    result = _warp_image(mapping=_translation_map([1, 0, 0], vol.shape), image=vol)
+    assert_array_equal(result[:-1], vol[1:])
 
 
 def test_warp_image_4d():
-    data = np.ones((4, 4, 4, 3))
-    result = _warp_image(mapping=_FakeMapping(), image=data)
+    data = np.arange(6 * 6 * 6 * 3, dtype=np.float32).reshape(6, 6, 6, 3)
+    mapping = _translation_map([0, 1, 0], data.shape[:3])
+    result = _warp_image(mapping=mapping, image=data, num_threads=1)
     assert_equal(result.shape, data.shape)
-    assert_array_equal(result, data * 2.0)
+    assert_array_equal(result[:, :-1], data[:, 1:])
 
 
 def test_warp_image_wrong_ndim():
     with pytest.raises(ValueError, match="must be a 3D or 4D"):
-        _warp_image(mapping=_FakeMapping(), image=np.zeros((4, 4)))
+        _warp_image(mapping=_translation_map(0, (4, 4, 4)), image=np.zeros((4, 4)))
+
+
+def test_set_forward_field():
+    vol = np.arange(6 * 6 * 6, dtype=np.float32).reshape(6, 6, 6)
+    field = np.zeros((6, 6, 6, 3), dtype=np.float32)
+    field[..., 2] = 1
+    # SymmetricDiffeomorphicRegistration returns an inverted map, whose
+    # transform does not read mapping.forward.
+    for inverse in (False, True):
+        mapping = _translation_map([1, 0, 0], vol.shape, inverse=inverse)
+        _set_forward_field(mapping, field)
+        assert_array_equal(mapping.get_forward_field(), field)
+        assert_array_equal(mapping.transform(vol)[..., :-1], vol[..., 1:])
 
 
 def test_pe_direction():
@@ -225,6 +203,22 @@ def test_synb0_syn_4d_input(tmp_path):
     assert_equal(field.shape, dwi[..., 0].shape)
     assert np.all(np.isfinite(field))
     npt.assert_(np.any(field != 0))
+
+    # The DWI is warped with the returned field, along the phase encoding only.
+    _, direction = _pe_direction(1, dwi_img.affine)
+    mapping = DiffeomorphicMap(
+        dim=3,
+        disp_shape=field.shape,
+        disp_grid2world=dwi_img.affine,
+        domain_shape=field.shape,
+        domain_grid2world=dwi_img.affine,
+        codomain_shape=field.shape,
+        codomain_grid2world=dwi_img.affine,
+    )
+    mapping.forward = (field[..., None] * direction).astype(np.float32)
+    npt.assert_allclose(
+        corrected[..., 1], mapping.transform(dwi[..., 1]), rtol=1e-4, atol=1e-3
+    )
 
     # The correction brings the b0 closer to the synthesized undistorted b0.
     synthetic = load_nifti_data(tmp_path / "07_binf_in_dwi.nii.gz")

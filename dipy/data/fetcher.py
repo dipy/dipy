@@ -679,24 +679,6 @@ fetch_synb0_test = _make_fetcher(
     doc="Download Synb0 test data for Schilling et. al 2019",
 )
 
-fetch_mni_resized_templates = _make_fetcher(
-    "fetch_mni_resized_templates",
-    Path(dipy_home) / "mni_resized",
-    "https://ndownloader.figshare.com/files/",
-    ["61672486", "61672489", "62615755"],
-    [
-        Path("mni_icbm152_t2_tal_nlin_asym_09c_2_5.nii.gz"),
-        Path("mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"),
-        Path("mni_icbm152_t1_tal_nlin_asym_09c_mask_2_5.nii.gz"),
-    ],
-    md5_list=[
-        "4d0096fdba03e0c9aee79552cbb419e0",
-        "78633c9a826f7cabc7496e3297773276",
-        "c23fe61521c04dff06faf43d80c3c682",
-    ],
-    doc="Download resized MNI templates for Synb0 input",
-)
-
 fetch_deepn4_tf_weights = _make_fetcher(
     "fetch_deepn4_tf_weights",
     dipy_home / "deepn4",
@@ -2339,12 +2321,6 @@ def get_fnames(*, name="small_64D", include_optional=False):
         t1_mask = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_mask.nii"
         t1c = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c.nii"
         return t1, t2, t1_mask, t1c
-    if name == "mni_resized_templates":
-        files, folder = fetch_mni_resized_templates()
-        t1 = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"
-        t2 = Path(folder) / "mni_icbm152_t2_tal_nlin_asym_09c_2_5.nii.gz"
-        t1_mask = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_mask_2_5.nii.gz"
-        return t1, t2, t1_mask
     if name == "synb0_default_weights":
         _, folder = fetch_synb0_weights()
         w1 = Path(folder) / "synb0_default_weights1.h5"

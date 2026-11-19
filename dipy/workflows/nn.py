@@ -284,6 +284,7 @@ class Synb0SynFlow(Workflow):
         apply_skull_strip=False,
         apply_deepn4=False,
         b0_to_t1_method="bbr",
+        num_threads=None,
         out_dir="",
         out_corrected="corrected.nii.gz",
         out_field="field.nii.gz",
@@ -327,6 +328,10 @@ class Synb0SynFlow(Workflow):
             boundary-based registration :footcite:p:`Greve2009`, or
             'bbr_scaling' to also estimate a scaling along each axis, for a
             T1 and a DWI that do not share the same geometry.
+        num_threads : int, optional
+            Number of threads used by the registrations, MindGrab, Synb0 and
+            the final warping. If None, the default of each step is used; a
+            negative value uses all the threads minus $|num_threads + 1|$.
         out_dir : string or Path, optional
             Directory to save the corrected image and field map.
         out_corrected : string, optional
@@ -370,6 +375,7 @@ class Synb0SynFlow(Workflow):
                 apply_skull_strip=apply_skull_strip,
                 apply_deepn4=apply_deepn4,
                 b0_to_t1_method=b0_to_t1_method,
+                num_threads=num_threads,
             )
 
             logger.info(f"Saving corrected DWI to {ocorrected}")
