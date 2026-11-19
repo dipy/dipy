@@ -68,6 +68,24 @@ def ceil_div(a, b):
     return (a + b - 1) // b
 
 
+def block_rows(starts, step):
+    """First row of each streamline in a buffer of ``step`` rows per streamline.
+
+    Parameters
+    ----------
+    starts : ndarray, shape (n,)
+        First point of each streamline in its block.
+    step : int
+        Rows reserved per streamline.
+
+    Returns
+    -------
+    rows : ndarray of intp, shape (n,)
+    """
+    starts = np.asarray(starts, dtype=np.intp)
+    return np.arange(starts.shape[0], dtype=np.intp) * step + starts
+
+
 def kernel_params(tracker_data, *, n_seeds, sl_base):
     """Pack the ``ProbTrackingParams`` struct of kernel.wgsl / kernel.metal.
 
@@ -353,16 +371,16 @@ def _streamline_generator(
     are in voxel space; output is mapped through ``affine``.
 
     ``generate_streamlines(seeds, streamline_offsets, dirs, sl_base)`` must
-    return ``(streamline_buffer, streamline_starts, streamline_lengths)``,
+    return ``(streamline_buffer, streamline_rows, streamline_lengths)``,
     where ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the
     initial directions of seed ``i`` and ``sl_base`` is the index, in the
     tractogram, of the batch's first streamline (it selects the random
     streams). It is only called with at least one streamline. Streamline
     ``j`` has ``abs(streamline_lengths[j])`` points, the sign telling whether
     both ends reached the stopping map (positive) or not, starting at row
-    ``j * 2 * max_steps + streamline_starts[j]`` of ``streamline_buffer``,
-    which only needs to stay valid until the next call. ``close``, if given,
-    is called when the generator is exhausted or closed. ``max_seeds`` caps
+    ``streamline_rows[j]`` of ``streamline_buffer``, which only needs to
+    stay valid until the next call. ``close``, if given, is called when the
+    generator is exhausted or closed. ``max_seeds`` caps
     the number of seeds per call (e.g. a dispatch size limit). With
     ``return_all=False``, only streamlines with both ends on the stopping map
     are kept.
@@ -395,7 +413,7 @@ def _streamline_generator(
             for s0, s1 in seed_batches(offsets, max_sl, max_seeds=max_seeds):
                 batch_offsets = (offsets[s0 : s1 + 1] - offsets[s0]).astype(np.int32)
                 n_streamlines = int(batch_offsets[-1])
-                buffer, starts, lengths = generate_streamlines(
+                buffer, rows, lengths = generate_streamlines(
                     np.asarray(chunk[s0:s1], dtype=np.float32),
                     batch_offsets,
                     np.asarray(
@@ -409,10 +427,9 @@ def _streamline_generator(
                 valid = (lengths > 0) | return_all
                 yield from finalize_chunk(
                     buffer,
-                    starts=starts[:n_streamlines],
+                    rows=rows[:n_streamlines],
                     lengths=np.abs(lengths),
                     valid=valid,
-                    step=step,
                     min_pts=tracker_data.min_steps,
                     max_pts=tracker_data.max_steps,
                     seeds=chunk,

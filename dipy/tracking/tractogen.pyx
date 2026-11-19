@@ -165,8 +165,8 @@ def generate_tractogram(double[:, ::1] seed_positions,
             lengths = idx[:, 1] - idx[:, 0] + 1
             valid = (status_buf[:nsl] == <int>VALIDSTREAMLINE) | params.return_all
             yield from finalize_chunk(
-                sline_buf, starts=idx[:, 0], lengths=lengths, valid=valid,
-                step=step, min_pts=params.min_nbr_pts,
+                sline_buf, rows=np.arange(nsl) * step + idx[:, 0],
+                lengths=lengths, valid=valid, min_pts=params.min_nbr_pts,
                 max_pts=params.max_nbr_pts, seeds=seeds, sl_seed=sl_seed,
                 lin_T=lin_T, offset=offset, nbr_threads=nbr_threads,
                 save_seeds=save_seeds,
@@ -205,7 +205,7 @@ def seed_batches(offsets, max_streamlines, *, max_seeds=None):
         start = stop
 
 
-def finalize_chunk(sline, *, starts, lengths, valid, step, min_pts, max_pts,
+def finalize_chunk(sline, *, rows, lengths, valid, min_pts, max_pts,
                    seeds, sl_seed, lin_T, offset, nbr_threads,
                    save_seeds=False, chunked=False):
     """Select, transform and emit the streamlines of a tracked batch.
@@ -215,17 +215,14 @@ def finalize_chunk(sline, *, starts, lengths, valid, step, min_pts, max_pts,
 
     Parameters
     ----------
-    sline : ndarray, shape (nsl * step, 3)
-        Raw streamline buffer, float32 or float64; streamline ``i`` starts at
-        row ``i * step + starts[i]``.
-    starts : ndarray, shape (nsl,)
-        First point of each streamline in its block.
+    sline : ndarray, shape (nrows, 3)
+        Raw streamline buffer, float32 or float64.
+    rows : ndarray, shape (nsl,)
+        First row of each streamline in ``sline``.
     lengths : ndarray, shape (nsl,)
         Number of points of each streamline.
     valid : ndarray of bool, shape (nsl,) or bool
         Status filter (e.g. ``return_all`` or a valid ending).
-    step : int
-        Rows reserved per streamline in ``sline``.
     min_pts, max_pts : int
         Range of the number of points of the kept streamlines.
     seeds : ndarray, shape (nseed, 3)
@@ -255,7 +252,7 @@ def finalize_chunk(sline, *, starts, lengths, valid, step, min_pts, max_pts,
     out_offsets = np.zeros(keep.size + 1, dtype=np.intp)
     np.cumsum(lengths, out=out_offsets[1:])
     points = np.empty((out_offsets[keep.size], 3))
-    compact_chunk(sline, keep * step + np.asarray(starts, dtype=np.intp)[keep],
+    compact_chunk(sline, np.ascontiguousarray(np.asarray(rows, dtype=np.intp)[keep]),
                   out_offsets, points, lin_T, offset, nbr_threads)
     seeds_out = None
     if save_seeds:

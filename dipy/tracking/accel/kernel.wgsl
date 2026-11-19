@@ -209,15 +209,20 @@ fn prefix_sum_sh(wg_offset: u32, len: i32, tidx: u32) {
 
 // ── trilinear interpolation ─────────────────────────────────────────
 
-struct TrilinearSetup {
+// The 8 corners of a point: flat voxel offsets (times stride) and weights,
+// kept in vectors so that they stay in registers across the channel loop.
+struct Corners {
     status: i32,
-    wgh: array<array<f32, 2>, 3>,
-    coo: array<array<i32, 2>, 3>,
+    off_lo: vec4<i32>,
+    off_hi: vec4<i32>,
+    w_lo: vec4<f32>,
+    w_hi: vec4<f32>,
 }
 
-fn trilinear_setup(dimx: i32, dimy: i32, dimz: i32, point: vec3<f32>) -> TrilinearSetup {
+fn trilinear_corners(dimx: i32, dimy: i32, dimz: i32, stride: i32,
+                     point: vec3<f32>) -> Corners {
     let HALF: f32 = 0.5;
-    var r: TrilinearSetup;
+    var r: Corners;
 
     if (point.x < -HALF || point.x + HALF >= f32(dimx) ||
         point.y < -HALF || point.y + HALF >= f32(dimy) ||
@@ -230,72 +235,56 @@ fn trilinear_setup(dimx: i32, dimy: i32, dimz: i32, point: vec3<f32>) -> Triline
     // only the border voxel is used
     let fl = floor(point);
     let fli = vec3<i32>(fl);
+    let hi = point - fl;
+    let lo = vec3<f32>(1.0) - hi;
+    let c0 = max(vec3<i32>(0), fli);
+    let c1 = min(vec3<i32>(dimx, dimy, dimz) - vec3<i32>(1), fli + vec3<i32>(1));
 
-    r.wgh[0][1] = point.x - fl.x;
-    r.wgh[0][0] = 1.0 - r.wgh[0][1];
-    r.coo[0][0] = max(0, fli.x);
-    r.coo[0][1] = min(dimx - 1, fli.x + 1);
+    let sx = dimy * dimz * stride;
+    let sy = dimz * stride;
+    let x0 = c0.x * sx;
+    let x1 = c1.x * sx;
+    let y0 = c0.y * sy;
+    let y1 = c1.y * sy;
+    let z0 = c0.z * stride;
+    let z1 = c1.z * stride;
 
-    r.wgh[1][1] = point.y - fl.y;
-    r.wgh[1][0] = 1.0 - r.wgh[1][1];
-    r.coo[1][0] = max(0, fli.y);
-    r.coo[1][1] = min(dimy - 1, fli.y + 1);
-
-    r.wgh[2][1] = point.z - fl.z;
-    r.wgh[2][0] = 1.0 - r.wgh[2][1];
-    r.coo[2][0] = max(0, fli.z);
-    r.coo[2][1] = min(dimz - 1, fli.z + 1);
-
+    r.off_lo = vec4<i32>(x0 + y0 + z0, x0 + y0 + z1, x0 + y1 + z0, x0 + y1 + z1);
+    r.off_hi = vec4<i32>(x1 + y0 + z0, x1 + y0 + z1, x1 + y1 + z0, x1 + y1 + z1);
+    r.w_lo = vec4<f32>(lo.x * lo.y * lo.z, lo.x * lo.y * hi.z,
+                       lo.x * hi.y * lo.z, lo.x * hi.y * hi.z);
+    r.w_hi = vec4<f32>(hi.x * lo.y * lo.z, hi.x * lo.y * hi.z,
+                       hi.x * hi.y * lo.z, hi.x * hi.y * hi.z);
     r.status = 0;
     return r;
-}
-
-fn interpolation_helper_dataf(s: TrilinearSetup, dimy: i32, dimz: i32, dimt: i32, t: i32) -> f32 {
-    var tmp: f32 = 0.0;
-    for (var i = 0; i < 2; i++) {
-        for (var j = 0; j < 2; j++) {
-            for (var k = 0; k < 2; k++) {
-                let idx = s.coo[0][i] * dimy * dimz * dimt +
-                          s.coo[1][j] * dimz * dimt +
-                          s.coo[2][k] * dimt + t;
-                tmp += s.wgh[0][i] * s.wgh[1][j] * s.wgh[2][k] * dataf[idx];
-            }
-        }
-    }
-    return tmp;
-}
-
-fn interpolation_helper_metric(s: TrilinearSetup, dimy: i32, dimz: i32) -> f32 {
-    var tmp: f32 = 0.0;
-    for (var i = 0; i < 2; i++) {
-        for (var j = 0; j < 2; j++) {
-            for (var k = 0; k < 2; k++) {
-                let idx = s.coo[0][i] * dimy * dimz + s.coo[1][j] * dimz + s.coo[2][k];
-                tmp += s.wgh[0][i] * s.wgh[1][j] * s.wgh[2][k] * metric_map[idx];
-            }
-        }
-    }
-    return tmp;
 }
 
 // Interpolate all dimt channels of dataf at point into wg_sh_mem[wg_offset..].
 fn trilinear_interp_dataf(dimx: i32, dimy: i32, dimz: i32, dimt: i32,
                           point: vec3<f32>, wg_offset: u32, tidx: u32) -> i32 {
-    let s = trilinear_setup(dimx, dimy, dimz, point);
-    if (s.status != 0) { return -1; }
+    let c = trilinear_corners(dimx, dimy, dimz, dimt, point);
+    if (c.status != 0) { return -1; }
     for (var t = i32(tidx); t < dimt; t += i32(THR_X_SL)) {
-        wg_sh_mem[wg_offset + u32(t)] = interpolation_helper_dataf(s, dimy, dimz, dimt, t);
+        let v_lo = vec4<f32>(dataf[c.off_lo.x + t], dataf[c.off_lo.y + t],
+                             dataf[c.off_lo.z + t], dataf[c.off_lo.w + t]);
+        let v_hi = vec4<f32>(dataf[c.off_hi.x + t], dataf[c.off_hi.y + t],
+                             dataf[c.off_hi.z + t], dataf[c.off_hi.w + t]);
+        wg_sh_mem[wg_offset + u32(t)] = dot(c.w_lo, v_lo) + dot(c.w_hi, v_hi);
     }
     return 0;
 }
 
 fn check_point_fn(tc_threshold: f32, point: vec3<f32>,
                   dimx: i32, dimy: i32, dimz: i32) -> i32 {
-    let s = trilinear_setup(dimx, dimy, dimz, point);
-    if (s.status != 0) {
+    let c = trilinear_corners(dimx, dimy, dimz, 1, point);
+    if (c.status != 0) {
         return OUTSIDEIMAGE;
     }
-    if (interpolation_helper_metric(s, dimy, dimz) > tc_threshold) {
+    let v_lo = vec4<f32>(metric_map[c.off_lo.x], metric_map[c.off_lo.y],
+                         metric_map[c.off_lo.z], metric_map[c.off_lo.w]);
+    let v_hi = vec4<f32>(metric_map[c.off_hi.x], metric_map[c.off_hi.y],
+                         metric_map[c.off_hi.z], metric_map[c.off_hi.w]);
+    if (dot(c.w_lo, v_lo) + dot(c.w_hi, v_hi) > tc_threshold) {
         return TRACKPOINT;
     }
     return ENDPOINT;
@@ -486,5 +475,31 @@ fn genStreamlinesProb_k(
             let len = trF.nsteps + trB.nsteps - 1;
             slineLen[sl] = select(-len, len, trF.stopped && trB.stopped);
         }
+    }
+}
+
+
+// ── kernel: pack the streamlines for the readback ───────────────────
+// Each streamline reserves 2 * max_sline_len points in sline but only uses
+// |slineLen| of them: copying them contiguously, at outOffsets[sl], shrinks
+// the device-to-host copy by about the ratio of the two.
+
+@group(2) @binding(0) var<storage, read> outOffsets: array<u32>;
+@group(2) @binding(1) var<storage, read_write> packed: array<f32>;
+
+@compute @workgroup_size(64, 1, 1)
+fn compactStreamlines_k(@builtin(global_invocation_id) gid: vec3<u32>,
+                        @builtin(num_workgroups) nwg: vec3<u32>) {
+    let sl = gid.y * nwg.x * 64u + gid.x;
+    if (sl + 1u >= arrayLength(&outOffsets)) { return; }
+    let src = sl * u32(params.max_sline_len) * 2u + u32(slineStart[sl]);
+    let dst = outOffsets[sl];
+    let n = u32(abs(slineLen[sl]));
+    for (var i = 0u; i < n; i++) {
+        let a = (src + i) * 3u;
+        let b = (dst + i) * 3u;
+        packed[b] = sline[a];
+        packed[b + 1u] = sline[a + 1u];
+        packed[b + 2u] = sline[a + 2u];
     }
 }

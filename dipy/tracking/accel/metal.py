@@ -8,7 +8,7 @@ from time import time
 
 import numpy as np
 
-from dipy.tracking.accel.tracker import ceil_div, kernel_params
+from dipy.tracking.accel.tracker import block_rows, ceil_div, kernel_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -185,7 +185,7 @@ def metal_streamline_generator(tracker_data):
         # the next call, which is all the caller needs.
         return (
             _buffer_as_array(streamline_buf, KERNEL_DTYPE, (n_streamlines * step, 3)),
-            _buffer_as_array(starts_buf, np.int32, (n_streamlines,)),
+            block_rows(_buffer_as_array(starts_buf, np.int32, (n_streamlines,)), step),
             _buffer_as_array(lengths_buf, np.int32, (n_streamlines,)),
         )
 

@@ -7,7 +7,7 @@ from time import time
 
 import numpy as np
 
-from dipy.tracking.accel.tracker import ceil_div
+from dipy.tracking.accel.tracker import block_rows, ceil_div
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -270,7 +270,11 @@ def cuda_streamline_generator(tracker_data, *, n_gpus=1):
                 streamline_lengths[sl_start:sl_stop],
                 streamline_buffer[sl_start * step : sl_stop * step],
             )
-        return streamline_buffer, streamline_starts, streamline_lengths
+        return (
+            streamline_buffer,
+            block_rows(streamline_starts, step),
+            streamline_lengths,
+        )
 
     def close():
         while gpus:
