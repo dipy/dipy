@@ -9,6 +9,8 @@ import time
 
 import numpy as np
 
+from dipy.desktop.dialogs import window_title
+from dipy.desktop.ipc import WindowServer
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -31,12 +33,15 @@ if has_fury_v2:
     from fury.actor import Actor, show_slices
     from fury.colormap import distinguishable_colormap
     from fury.io import load_image_as_wgpu_texture_view
+    from fury.lib import loop
     from fury.window import update_camera
 
     from dipy.viz.skyline.render.image import Image3D, create_image_visualization
     from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
     from dipy.viz.skyline.render.renderer import (
         create_window,
+        focus_window,
+        is_window_focused,
         slice_slider_bounds,
         slice_slider_values_from_state,
         slice_state_from_slider_values,
@@ -50,6 +55,8 @@ if has_fury_v2:
         create_streamline_visualization,
     )
     from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
+
+_WINDOW_POLL_SECONDS = 0.25
 
 
 class Skyline:
@@ -317,9 +324,14 @@ class Skyline:
         self._cluster_length_thr = cluster_length_thr
         self._buan_pvals = buan_pvals
         self._sh_basis = sh_basis
+        self._window_server = None
+        self._pending_open_paths = []
+        self._shown_files = []
         previous_fury_offscreen = os.environ.get("FURY_OFFSCREEN")
         try:
             if self._visualizer_type != "stealth":
+                if self._visualizer_type == "standalone":
+                    self._window_server = WindowServer.start()
                 self.window = create_window(
                     visualizer_type=self._visualizer_type,
                     size=self.size,
@@ -398,6 +410,8 @@ class Skyline:
                     slice_visibility_callback=self._set_global_slice_visibility,
                 )
                 self.window._imgui.set_gui(self.draw_ui)
+                if self._visualizer_type == "standalone":
+                    loop.call_later(_WINDOW_POLL_SECONDS, self._poll_window_server)
             else:
                 self.UI_window = None
 
@@ -434,6 +448,14 @@ class Skyline:
             self._direct_load = False
             self.window.start()
         finally:
+            if self._window_server is not None:
+                self._window_server.close()
+                self._pending_open_paths.extend(self._window_server.receive())
+            if self._pending_open_paths:
+                logger.warning(
+                    "Skyline closed before opening: "
+                    f"{', '.join(self._pending_open_paths)}"
+                )
             if previous_fury_offscreen is None:
                 os.environ.pop("FURY_OFFSCREEN", None)
             else:
@@ -539,6 +561,47 @@ class Skyline:
             self.window.screens[0].scene.remove(self._tractogram_help)
             self._tractogram_help = False
 
+    def _poll_window_server(self):
+        """Keep a standalone window up to date and receive files from launches.
+
+        Runs on the render loop every ``_WINDOW_POLL_SECONDS`` and reschedules
+        itself. When the displayed files change, the window title follows.
+        While the window has the focus it counts as the one used last, which
+        is where launches open their files. Files that arrive are queued and
+        the window comes to the front. Once the window is closed it stops the
+        server, so that later requests fail and the launcher opens a new
+        window instead. Without a server, only the title is kept up to date.
+        """
+        server = self._window_server
+        if self.window.window.get_closed():
+            if server is not None:
+                server.close()
+            return
+        if server is not None:
+            if is_window_focused(self.window):
+                server.touch()
+            paths = server.receive()
+            if paths:
+                self._pending_open_paths.extend(
+                    path for path in paths if path not in self._pending_open_paths
+                )
+                focus_window(self.window)
+        names = [visualization.name for visualization in self.visualizations]
+        if names != self._shown_files:
+            self._shown_files = names
+            self.window.window.set_title(window_title(names))
+        loop.call_later(_WINDOW_POLL_SECONDS, self._poll_window_server)
+
+    def _open_pending_files(self):
+        """Load the files received from other launches once loading is idle.
+
+        A batch in progress owns the loading counters, so the received files
+        wait until it finishes.
+        """
+        if self._pending_open_paths and self._loading_total == 0:
+            paths, self._pending_open_paths = self._pending_open_paths, []
+            self._append_visualization(filenames=paths)
+
     def draw_ui(self):
         """Draw the ImGui overlay for a single frame.
 
@@ -548,12 +611,14 @@ class Skyline:
         pending background color change and refreshing if required.
         """
         process_async_callbacks()
+        self._open_pending_files()
         self._is_drawing_ui = True
         try:
-            if len(self.visualizations) == 0 and self._loading_total == 0:
-                self.UI_window.request_file_dialog = True
-            else:
-                self.UI_window.request_file_dialog = False
+            self.UI_window.request_file_dialog = (
+                len(self.visualizations) == 0
+                and self._loading_total == 0
+                and not self._pending_open_paths
+            )
             self.UI_window.render()
         finally:
             self._is_drawing_ui = False

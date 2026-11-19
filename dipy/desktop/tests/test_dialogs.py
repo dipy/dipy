@@ -6,7 +6,10 @@ from dipy.desktop.dialogs import (
     acquire_confirmation_slot,
     confirm_message,
     display_text,
+    files_summary,
     linux_dialog_text,
+    window_choice_message,
+    window_title,
 )
 
 
@@ -57,8 +60,22 @@ def test_confirm_message_shows_where_a_link_leads(tmp_path):
     assert f"(a link to {target})" in message
 
 
+def test_window_choice_message_names_the_files_safely():
+    message = window_choice_message(["fa.nii.gz", "bad\nname.trk"])
+
+    assert "fa.nii.gz, bad\\u000aname.trk" in message
+    assert "window used last" in message
+
+
 def test_display_text_escapes_what_could_fake_or_hide_dialog_text():
     assert display_text("a\nb\u202ec") == "a\\u000ab\\u202ec"
     assert display_text("a\u00a0b\u3000c") == "a\\u00a0b\\u3000c"
     assert display_text("a\U000e0001b") == "a\\U000e0001b"
     assert display_text("fa \u00e9.nii.gz") == "fa \u00e9.nii.gz"
+
+
+def test_window_title_names_the_files_it_displays():
+    assert window_title([]) == "DIPY SKYLINE"
+    assert window_title(["a.nii.gz"]) == "DIPY SKYLINE - a.nii.gz"
+    assert files_summary(["a", "b", "c", "d", "e"]) == "a, b, c (+2)"
+    assert files_summary(["a\nb"]) == "a\\u000ab"

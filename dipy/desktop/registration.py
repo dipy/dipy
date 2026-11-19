@@ -429,7 +429,8 @@ def _windows_register(*, icon):
     Notes
     -----
     The command ends with ``"%1"``: Explorer starts one launcher for each
-    selected file, so selecting several files opens one window for each.
+    selected file, and the launchers merge their files into one window
+    (``dipy.desktop.ipc.collect_batch``).
     """
     command = f'{subprocess.list2cmdline(_app_command())} "%1"'
     icon_value = f'"{icon}",0'

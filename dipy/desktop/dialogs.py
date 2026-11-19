@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 
-from dipy.desktop.constants import APP_NAME, SKYLINE_HOME
+from dipy.desktop.constants import APP_NAME, SKYLINE_HOME, SUMMARY_FILES
 from dipy.utils.logging import logger
 
 _LINUX_DIALOGS = (
@@ -29,6 +29,34 @@ _LINUX_CONFIRM_DIALOGS = (
         ),
     ),
     ("kdialog", ("--title", APP_NAME, "--yesno")),
+)
+_LINUX_WINDOW_DIALOGS = (
+    (
+        "zenity",
+        (
+            "--question",
+            "--no-markup",
+            "--title",
+            APP_NAME,
+            "--ok-label",
+            "Last window",
+            "--cancel-label",
+            "New window",
+            "--text",
+        ),
+    ),
+    (
+        "kdialog",
+        (
+            "--title",
+            APP_NAME,
+            "--yes-label",
+            "Last window",
+            "--no-label",
+            "New window",
+            "--yesno",
+        ),
+    ),
 )
 CONFIRM_LOCK = SKYLINE_HOME / "confirm.lock"
 CONFIRM_LOCK_SECONDS = 120
@@ -162,6 +190,44 @@ def display_text(text):
     return "".join(escaped)
 
 
+def files_summary(names):
+    """Summarize the files a window displays, for its title.
+
+    Parameters
+    ----------
+    names : sequence of str
+        File names, in the order displayed.
+
+    Returns
+    -------
+    str
+        The first ``SUMMARY_FILES`` names, made safe by ``display_text`` and
+        joined by commas, then ``(+N)`` for the N others. Empty without names.
+    """
+    summary = ", ".join(display_text(name) for name in names[:SUMMARY_FILES])
+    if len(names) > SUMMARY_FILES:
+        summary += f" (+{len(names) - SUMMARY_FILES})"
+    return summary
+
+
+def window_title(names):
+    """Build the title of a Skyline window.
+
+    Parameters
+    ----------
+    names : sequence of str
+        Names of the files the window displays.
+
+    Returns
+    -------
+    str
+        The application name, followed by ``files_summary(names)`` when the
+        window displays files.
+    """
+    summary = files_summary(names)
+    return f"{APP_NAME} - {summary}" if summary else APP_NAME
+
+
 def confirm_message(paths, resolved):
     """Build the text that asks to confirm the files a link opens.
 
@@ -233,3 +299,75 @@ def confirm_open(paths, resolved):
         "Opening files from links needs zenity or kdialog to ask for "
         "confirmation; open the files from the file manager instead."
     )
+
+
+def window_choice_message(names):
+    """Build the text that asks where to open files when a window is open.
+
+    Parameters
+    ----------
+    names : sequence of str
+        File names to open.
+
+    Returns
+    -------
+    str
+        Question naming the first files, made safe by ``display_text``.
+    """
+    return (
+        f"{APP_NAME} is already open.\n\n"
+        f"Open {files_summary(names)} in the window used last?"
+    )
+
+
+def use_last_window(names):
+    """Ask whether files open in the window used last or in a new window.
+
+    Parameters
+    ----------
+    names : sequence of str
+        File names to open, shown in the question.
+
+    Returns
+    -------
+    bool
+        True to open the files in the window used last. False to open a new
+        window, which is also the answer when the user closes the dialog.
+        True without asking when Linux has neither ``zenity`` nor ``kdialog``.
+    """
+    message = window_choice_message(names)
+    if sys.platform == "win32":
+        message += "\n\nYes: the window used last\nNo: a new window"
+        # MB_YESNO | MB_ICONQUESTION | MB_SETFOREGROUND; 6 is IDYES.
+        return ctypes.windll.user32.MessageBoxW(None, message, APP_NAME, 0x10024) == 6
+    if sys.platform == "darwin":
+        script = (
+            f"display dialog {applescript_string(message)} "
+            f"with title {applescript_string(APP_NAME)} "
+            'buttons {"New window", "Last window"} default button "Last window"'
+        )
+        result = subprocess.run(
+            ["osascript", "-e", script], capture_output=True, text=True, check=False
+        )
+        return result.returncode == 0 and "Last window" in result.stdout
+    for name, arguments in _LINUX_WINDOW_DIALOGS:
+        tool = shutil.which(name)
+        if tool is not None:
+            text = linux_dialog_text(name, message)
+            return subprocess.run([tool, *arguments, text], check=False).returncode == 0
+    return True
+
+
+def allow_foreground_window(pid):
+    """Let a process bring its window to the front, on Windows.
+
+    Windows only lets the process that has the foreground hand it over.
+
+    Parameters
+    ----------
+    pid : int
+        Process id of the window that will be asked to come forward. Nothing
+        happens on other systems.
+    """
+    if sys.platform == "win32":
+        ctypes.windll.user32.AllowSetForegroundWindow(pid)

@@ -474,3 +474,38 @@ def create_window(
     else:
         os.environ.pop("FURY_OFFSCREEN", None)
     return show_m
+
+
+def focus_window(show_m):
+    """Bring a standalone Skyline window to the front.
+
+    Parameters
+    ----------
+    show_m : ShowManager
+        Window created by ``create_window`` with ``visualizer_type="standalone"``.
+
+    Notes
+    -----
+    A minimized window is restored first. The operating system may refuse to
+    give the focus to a window of a process that is not in the foreground.
+    """
+    handle = show_m.window._window
+    if glfw.get_window_attrib(handle, glfw.ICONIFIED):
+        glfw.restore_window(handle)
+    glfw.focus_window(handle)
+
+
+def is_window_focused(show_m):
+    """Tell whether a standalone Skyline window has the keyboard focus.
+
+    Parameters
+    ----------
+    show_m : ShowManager
+        Window created by ``create_window`` with ``visualizer_type="standalone"``.
+
+    Returns
+    -------
+    bool
+        True when the window is the one the user is typing in.
+    """
+    return bool(glfw.get_window_attrib(show_m.window._window, glfw.FOCUSED))

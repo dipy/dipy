@@ -1661,3 +1661,23 @@ def test_global_position_preserves_unsynchronized_shared_state_without_affine(
         [child.material.plane[3] for child in fixed.actor.children],
         before_planes[:, 3] + len(viewer._image_visualizations) * 0.005,
     )
+
+
+def test_files_received_from_other_launches_load_into_the_viewer(
+    make_skyline, tmp_path
+):
+    path = tmp_path / "second.nii.gz"
+    save_nifti(str(path), _volume(seed=3), AFFINE)
+    viewer = make_skyline(images=[_image_input()])
+    viewer._pending_open_paths = [str(path)]
+
+    viewer._open_pending_files()
+
+    assert viewer._pending_open_paths == []
+    deadline = time.monotonic() + 10
+    while len(viewer._image_visualizations) < 2 and time.monotonic() < deadline:
+        process_async_callbacks()
+        viewer._drain_pending_visualizations()
+        time.sleep(0.01)
+    assert len(viewer._image_visualizations) == 2
+    assert viewer._image_visualizations[-1].name == "second.nii.gz"

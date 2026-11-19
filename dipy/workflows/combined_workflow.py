@@ -34,7 +34,6 @@ from pathlib import Path
 import re
 import secrets
 import shutil
-import socket
 import sys
 import time
 import traceback
@@ -47,6 +46,7 @@ import numpy as np
 from dipy.data import fetch_30_bundle_atlas_hcp842
 from dipy.desktop.constants import MAX_FILES
 from dipy.desktop.environment import missing_viz_requirements, open_in_skyline
+from dipy.desktop.ipc import exclusive_address_use
 from dipy.desktop.registration import ensure_app_registered
 from dipy.io.bids import (
     BIDS_ENTITY_ORDER,
@@ -3126,8 +3126,7 @@ class _ReportServer(http.server.ThreadingHTTPServer):
 
     def server_bind(self):
         """Bind the socket, exclusively on Windows."""
-        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        exclusive_address_use(self.socket)
         super().server_bind()
 
 

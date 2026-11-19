@@ -3,6 +3,7 @@ python_sources = [
   'constants.py',
   'dialogs.py',
   'environment.py',
+  'ipc.py',
   'launch.py',
   'links.py',
   'registration.py',

@@ -6,7 +6,13 @@ before Skyline opens it. Links to network paths (UNC paths, ``file:`` URLs with
 a remote host) and to files of other formats are refused. The remaining
 exposure is the file readers (NIfTI, TRK, VTK, ...) parsing a local file that
 someone else placed on the disk, for instance in Downloads; the confirmation
-dialog, which names the file and defaults to cancel, guards against it.
+dialog, which names every file and defaults to cancel, guards against it.
+
+Launches that start together, such as one for each file selected in a file
+manager, merge into one. When Skyline windows are already open, a dialog asks
+whether the files open in the one used last or in a new window.
+``dipy_skyline`` typed in a terminal does not go through this module, so it
+always opens a new window.
 
 This module must stay light: it never imports numpy, nibabel, FURY or the
 report modules, so that it can run, and explain itself, before the viewer
@@ -21,10 +27,13 @@ from dipy.desktop.constants import APP_LOG_FILE, MAX_FILES, SKYLINE_HOME
 from dipy.desktop.dialogs import (
     CONFIRM_LOCK,
     acquire_confirmation_slot,
+    allow_foreground_window,
     confirm_open,
     report_error,
+    use_last_window,
 )
 from dipy.desktop.environment import missing_viz_requirements
+from dipy.desktop.ipc import collect_batch, live_windows, send_open
 from dipy.desktop.links import (
     checked_file,
     is_skyline_link,
@@ -163,6 +172,29 @@ def resolve_targets(targets):
     return shown, resolved, errors
 
 
+def _wants_last_window(batch):
+    """Ask whether files open in the window used last, when a window is open.
+
+    Parameters
+    ----------
+    batch : sequence of str
+        Paths to open.
+
+    Returns
+    -------
+    bool
+        False when the user asks for a new window. True otherwise, also when
+        another dialog of the launcher is open, so that launches never pile
+        up questions.
+    """
+    if not acquire_confirmation_slot():
+        return True
+    try:
+        return use_last_window([Path(path).name for path in batch])
+    finally:
+        CONFIRM_LOCK.unlink(missing_ok=True)
+
+
 def main(argv):
     """Open Skyline, on files when given, reporting problems in a dialog.
 
@@ -232,6 +264,25 @@ def main(argv):
                 "of this environment."
             )
             return 1
+
+        if targets:
+            batch = collect_batch([str(target) for target in targets])
+            if batch is None:
+                logger.info(
+                    f"Handed {len(targets)} file(s) to the Skyline launch "
+                    "already collecting files."
+                )
+                return 0
+            windows = live_windows()
+            if windows and _wants_last_window(batch):
+                window = max(windows, key=lambda window: window.last_active)
+                allow_foreground_window(window.pid)
+                if send_open(window, batch):
+                    return 0
+                logger.warning(
+                    "The window used last did not take the files; opening a new window."
+                )
+            targets = batch
 
         arguments = [skyline_argument(path=target) for target in targets]
         sys.argv = ["dipy_skyline", *(arguments or ["run"])]
