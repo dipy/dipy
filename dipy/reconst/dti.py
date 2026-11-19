@@ -119,23 +119,29 @@ def _roll_evals(evals, *, axis=-1):
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor. shape should be (...,3).
+        Eigenvalues of a diffusion tensor. The axis given by `axis` should
+        have length 3.
 
     axis : int, optional
         The axis of the array which contains the 3 eigenvals. Default: -1
 
     Returns
     -------
-    evals : array-like
+    evals : ndarray
         Eigenvalues of a diffusion tensor, rolled so that the 3 eigenvals are
-        the last axis.
+        the first axis.
 
     """
-    if evals.shape[-1] != 3:
-        msg = f"Expecting 3 eigenvalues, got {evals.shape[-1]}"
-        raise ValueError(msg)
+    # asanyarray converts lists but keeps subclasses such as masked arrays
+    evals = np.asanyarray(evals)
+    if evals.ndim == 0:
+        raise ValueError("evals must have at least one dimension")
 
+    # rollaxis raises AxisError (a ValueError) for an out-of-range axis
     evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = f"Expecting 3 eigenvalues, got {evals.shape[0]}"
+        raise ValueError(msg)
 
     return evals
 
