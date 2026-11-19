@@ -18,6 +18,7 @@ python_sources = [
   'test_reconst_mapmri.py',
   'test_reconst.py',
   'test_segment.py',
+  'test_skyline_app.py',
   'test_stats.py',
   'test_tracking.py',
   'test_utils.py',

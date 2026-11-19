@@ -8,7 +8,6 @@ every page opens with a double-click, without a web server.
 """
 
 from datetime import datetime
-import glob
 import html
 import importlib
 import json
@@ -17,12 +16,12 @@ import os
 from pathlib import Path
 import re
 import shlex
-import subprocess
 import urllib.parse
 
 from dipy.utils.logging import logger
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.qc import STATUS_LEVELS
+from dipy.workflows.skyline_app import SKYLINE_FORMATS, skyline_argument, skyline_url
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -686,7 +685,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <div class="qc-dialog" id="qc-dialog">
         <div class="qc-dialog-box">
-            <h2 id="qc-dialog-title">Skyline was not found</h2>
+            <h2 id="qc-dialog-title">Open in Skyline</h2>
             <p id="qc-dialog-msg"></p>
             <code id="qc-dialog-cmd"></code>
             <button class="qc-open" onclick="qcCopy()">Copy command</button>
@@ -711,15 +710,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 window.prompt('Copy the command:', text);
             }}
         }}
-        function qcOpen(path, command) {{
-            var notServed =
-                'Skyline can only be launched when this report is served. ' +
-                'Run "dipy_auto <report.html>" and use the button from there, ' +
-                'or run the command below yourself.';
+        function qcLaunchApp(url, command) {{
+            var left = false;
+            var onBlur = function () {{ left = true; }};
+            window.addEventListener('blur', onBlur);
+            var frame = document.createElement('iframe');
+            frame.style.display = 'none';
+            frame.src = url;
+            document.body.appendChild(frame);
+            setTimeout(function () {{
+                document.body.removeChild(frame);
+                window.removeEventListener('blur', onBlur);
+                if (!left) {{
+                    qcDialog(
+                        'If nothing opened, your browser may still be asking ' +
+                        'for permission, or Skyline is not registered on this ' +
+                        'computer. In that case run dipy_auto with ' +
+                        '--register_skyline on a pipeline or on this report, ' +
+                        'or run "dipy_skyline --setup" in a terminal of the ' +
+                        'Python environment where DIPY is installed, then use ' +
+                        'this button again. You can also run the command below ' +
+                        'yourself.',
+                        command
+                    );
+                }}
+            }}, 2000);
+        }}
+        function qcOpen(path, command, url) {{
             // The server adds this tag to the pages it serves, never to files.
             var token = document.querySelector('meta[name="dipy-qc-token"]');
             if (!token) {{
-                qcDialog(notServed, command);
+                qcLaunchApp(url, command);
                 return;
             }}
             fetch('/qc-open', {{
@@ -731,29 +752,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                         return r.text().then(function (t) {{ qcDialog(t, command); }});
                     }}
                 }})
-                .catch(function () {{ qcDialog(notServed, command); }});
+                .catch(function () {{ qcLaunchApp(url, command); }});
         }}
     </script>
 </body>
 </html>
 """
-
-# Formats the Skyline viewer can load; anything else opens in the browser.
-SKYLINE_FORMATS = (
-    ".nii",
-    ".nii.gz",
-    ".trx",
-    ".trk",
-    ".tck",
-    ".pam5",
-    ".vtk",
-    ".vtp",
-    ".fib",
-    ".dpy",
-    ".nrrd",
-    ".mgh",
-    ".mgz",
-)
 
 
 # =============================================================================
@@ -867,25 +871,6 @@ def _format_value(*, value, unit):
     return html.escape(f"{text} {unit}".strip())
 
 
-def skyline_argument(*, path):
-    """Command-line argument that makes Skyline load exactly ``path``.
-
-    Skyline expands its input files as glob patterns, so the characters
-    ``*``, ``?`` and ``[`` of a real file name are escaped.
-
-    Parameters
-    ----------
-    path : str
-        File to display.
-
-    Returns
-    -------
-    str
-        Glob-escaped path.
-    """
-    return glob.escape(str(path))
-
-
 def skyline_command(*, path):
     """Shell command that opens ``path`` in Skyline.
 
@@ -899,10 +884,18 @@ def skyline_command(*, path):
     str
         ``dipy_skyline`` followed by the escaped path, quoted for the shell
         of the current platform so that it can be pasted as is.
+
+    Notes
+    -----
+    On Windows the path is double-quoted, which both ``cmd.exe`` and PowerShell
+    read literally except for ``%``, ``$``, the backtick and the curly double
+    quotes that PowerShell accepts. Those are replaced by the glob wildcard
+    ``?``, which Skyline expands.
     """
     argument = skyline_argument(path=path)
     if os.name == "nt":
-        return f"dipy_skyline {subprocess.list2cmdline([argument])}"
+        argument = re.sub("[%$`\u201c\u201d\u201e]", "?", argument)
+        return f'dipy_skyline "{argument}"'
     return f"dipy_skyline {shlex.quote(argument)}"
 
 
@@ -961,13 +954,17 @@ def skyline_files(*, root):
     Returns
     -------
     dict
-        Mapping of :func:`skyline_key` to file path.
+        Mapping of :func:`skyline_key` to file path. A symbolic link that leads
+        out of ``root`` is left out.
     """
     root = Path(root)
+    real_root = root.resolve()
     return {
         path.relative_to(root).as_posix(): path
         for path in root.rglob("*")
-        if path.name.endswith(SKYLINE_FORMATS) and path.is_file()
+        if path.name.endswith(SKYLINE_FORMATS)
+        and path.is_file()
+        and path.resolve().is_relative_to(real_root)
     }
 
 
@@ -998,8 +995,10 @@ def _output_items(*, outputs, page_dir):
         elif path.endswith(SKYLINE_FORMATS):
             target = skyline_key(path=path, page_dir=page_dir)
             command = skyline_command(path=Path(path).absolute())
+            url = skyline_url(path=path)
             arguments = html.escape(
-                f"{json.dumps(target)}, {json.dumps(command)}", quote=True
+                f"{json.dumps(target)}, {json.dumps(command)}, {json.dumps(url)}",
+                quote=True,
             )
             button = (
                 f'<button class="qc-open" onclick="qcOpen({arguments})">'

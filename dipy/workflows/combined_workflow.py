@@ -35,7 +35,6 @@ import re
 import secrets
 import shutil
 import socket
-import socketserver
 import subprocess
 import sys
 import time
@@ -63,7 +62,7 @@ from dipy.io.bids import (
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
-from dipy.workflows import interactive, report, templates
+from dipy.workflows import interactive, report, skyline_app, templates
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.multi_io import _resolve_path_or_pattern, connect_output_paths
 from dipy.workflows.qc import qc_result, run_stage_qc
@@ -2962,6 +2961,13 @@ def _validate_mask_file(*, mask_file):
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
+_DETACHED_PROCESS = (
+    {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    if os.name == "nt"
+    else {"start_new_session": True}
+)
+
+
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
@@ -2970,8 +2976,9 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     a ``POST /qc-open`` request. A launch requires that token, so that no
     other web page can trigger one. The request names the file by its
     :func:`~dipy.workflows.report.skyline_key`, and only files Skyline can
-    display under the served directory are known. The response body is the message the page shows when the
-    launch fails. Anything else is served statically.
+    display under the served directory are known. The response body is the
+    message the page shows when the launch fails. Anything else is served
+    statically.
 
     Parameters
     ----------
@@ -2980,16 +2987,42 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     token : str, optional
         Secret a launch request must carry. Without it, every launch request
         is refused.
+    launcher : list of str, optional
+        Command prefix that opens a file in Skyline; the file path is appended.
+        When None, the serving interpreter is used and a launch is refused with
+        a 404 when its viewer packages are missing. A custom launcher may run
+        another environment, so it is not checked.
     **kwargs
         Keyword arguments of :class:`http.server.SimpleHTTPRequestHandler`.
     """
 
-    def __init__(self, *args, token=None, **kwargs):
+    timeout = 10
+
+    def __init__(self, *args, token=None, launcher=None, **kwargs):
         # The base class handles the request from its constructor.
         self.token = token
+        self.launcher = launcher
         super().__init__(*args, **kwargs)
 
+    def _host_is_local(self):
+        """Refuse the request, and return False, unless it was sent to this server.
+
+        A web page whose DNS name was rebound to this machine sends its own
+        name in ``Host``; answering it would let that page read the report.
+        """
+        port = self.server.server_address[1]
+        if self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}"):
+            return True
+        self.send_error(403, "This request does not come from a page of this report.")
+        return False
+
+    def do_HEAD(self):
+        if self._host_is_local():
+            super().do_HEAD()
+
     def do_GET(self):
+        if not self._host_is_local():
+            return
         if urllib.parse.urlparse(self.path).path == "/qc-open":
             self._reply(405, "Skyline is launched with a POST request.")
             return
@@ -3003,12 +3036,14 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        if not self._host_is_local():
+            return
         if urllib.parse.urlparse(self.path).path != "/qc-open":
             self._reply(404, "Not found.")
             return
 
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 65536)
+            length = max(0, min(int(self.headers.get("Content-Length") or 0), 65536))
         except ValueError:
             length = 0
         fields = urllib.parse.parse_qs(
@@ -3016,25 +3051,24 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         )
         token = fields.get("token", [""])[0].encode()
         target = fields.get("path", [""])[0]
-        host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
 
-        if (
-            not self.token
-            or not hmac.compare_digest(token, self.token.encode())
-            or host not in ("127.0.0.1", "localhost")
-        ):
+        if not self.token or not hmac.compare_digest(token, self.token.encode()):
             self._reply(403, "This request does not come from a page of this report.")
         # A lookup, so that no file path is ever built from the request.
         elif (path := report.skyline_files(root=self.directory).get(target)) is None:
             self._reply(403, f"'{target}' is not a file served by this report.")
-        elif (skyline := shutil.which("dipy_skyline")) is None:
+        elif self.launcher is None and (
+            missing := skyline_app.missing_viz_requirements()
+        ):
             self._reply(
                 404,
-                "Skyline (dipy_skyline) was not found in this environment. "
-                "Install it, or run the command below yourself.",
+                "Skyline needs packages that are not installed: "
+                f'{", ".join(missing)}. Run "dipy_skyline --setup" in the '
+                "environment serving this report.",
             )
         else:
-            subprocess.Popen([skyline, report.skyline_argument(path=path)])
+            launcher = self.launcher or skyline_app.launcher_command()
+            subprocess.Popen([*launcher, str(path)], **_DETACHED_PROCESS)
             self._reply(200, f"Skyline launched on {path.name}.")
 
     def _send_page(self, *, page):
@@ -3068,6 +3102,24 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class _ReportServer(http.server.ThreadingHTTPServer):
+    """Threaded HTTP server that refuses to share its port.
+
+    On Windows, ``SO_REUSEADDR``, which ``HTTPServer`` sets, lets another
+    process bind the same port and receive the requests, token included.
+    Dropping it is not enough there, since a process that sets it can still
+    take the port, so ``SO_EXCLUSIVEADDRUSE`` is set before binding.
+    """
+
+    allow_reuse_address = False
+
+    def server_bind(self):
+        """Bind the socket, exclusively on Windows."""
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def _serve_html_report(*, report_path):
     """Serve an HTML pipeline report via a local HTTP server and open it.
 
@@ -3085,24 +3137,23 @@ def _serve_html_report(*, report_path):
     report_dir = str(root)
     report_name = str(report_path.relative_to(root))
 
-    host = "127.0.0.1"
-    port = 8000
-    while True:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind((host, port))
-                break
-            except OSError:
-                port += 1
-
     handler = partial(
         _ReportHandler, directory=report_dir, token=secrets.token_urlsafe(32)
     )
+    host = "127.0.0.1"
+    port = 8000
+    while True:
+        try:
+            httpd = _ReportServer((host, port), handler)
+            break
+        except OSError:
+            port += 1
+
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
     webbrowser.open(url)
-    with socketserver.TCPServer((host, port), handler) as httpd:
+    with httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -3170,6 +3221,7 @@ class AutoFlow(Workflow):
         start=None,
         dry_run=False,
         list_pipelines=False,
+        register_skyline=False,
         out_dir="",
         out_report="reports.toml",
     ):
@@ -3237,6 +3289,11 @@ class AutoFlow(Workflow):
             Show execution plan without running commands.
         list_pipelines : bool, optional
             List all available predefined pipelines and exit.
+        register_skyline : bool, optional
+            Register Skyline as a desktop application of the user, so that the
+            *Open in Skyline* buttons of the reports work, unless a working
+            registration of any environment exists. Skipped on Linux without a
+            graphical session.
         out_dir : str, optional
             Output directory. When omitted, the ``out_dir`` of the ``[io]``
             section of the configuration, or the current directory. With
@@ -3262,6 +3319,9 @@ class AutoFlow(Workflow):
             sys.exit(2)
 
         inputs = _classify_inputs(input_files=input_files, bids_mode=bids)
+
+        if register_skyline:
+            skyline_app.ensure_app_registered()
 
         if inputs["report"]:
             logger.info(

@@ -271,6 +271,8 @@ class ApiDocWriter:
                             if func_name.startswith("_") or pat.search(func_name) or  \
                                isinstance(n.targets[0], ast.Tuple):
                                 continue
+                            if not callable(getattr(mod, func_name, None)):
+                                continue
                             if isinstance(n.value, (ast.Constant, ast.Dict, ast.Tuple)):
                                 constants.append(n.targets[0].id)
                                 continue
