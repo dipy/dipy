@@ -130,6 +130,16 @@ DIPY 1.13.0 changes
   ``--device`` option runs it on any GPU through WebGPU when the optional
   ``wgpu`` package is installed.
 
+**Neural Networks**
+
+- ``dipy.nn.synb0`` no longer depends on a deep learning framework: ``Synb0``
+  runs on the CPU with a compiled kernel and reads the PyTorch weights without
+  PyTorch, which is only used to run it on CUDA (``device="cuda"``). The
+  ``DIPY_NN_BACKEND`` environment variable no longer switches it to the
+  TensorFlow version, which stays available in ``dipy.nn.tf.synb0``.
+- ``dipy.nn.utils.load_state_dict`` also reads the files saved in the legacy
+  format of PyTorch < 1.6.
+
 DIPY 1.12.0 changes
 -------------------
 

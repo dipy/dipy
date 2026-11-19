@@ -1,4 +1,5 @@
-"""Utilities for calculating voxel adjacencies and neighbourhoods"""
+"""Utilities for image volumes: volume selection, voxel adjacencies and
+neighbourhoods."""
 
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
@@ -54,3 +55,44 @@ def adjacency_calc(img_shape, *, mask=None, cutoff=1.99):
             adj.append(np.argwhere(cond).flatten().tolist())
 
     return adj
+
+
+def select_3d_volume(image, *, index=0, name="image"):
+    """Select a 3D volume from a 3D or 4D array.
+
+    Parameters
+    ----------
+    image : ndarray (X, Y, Z) or (X, Y, Z, N)
+        Input array.
+    index : int, optional
+        Index, along the last axis, of the volume to select when `image` is
+        4D. Ignored when `image` is 3D.
+    name : str, optional
+        Name of the image, used in error messages.
+
+    Returns
+    -------
+    volume : ndarray (X, Y, Z)
+        `image` itself when it is 3D, otherwise ``image[..., index]``.
+
+    Raises
+    ------
+    ValueError
+        If `image` is not 3D or 4D, or if `index` is out of range.
+    TypeError
+        If `image` is 4D and `index` is not an integer.
+    """
+    image = np.asarray(image)
+    if image.ndim == 3:
+        return image
+    if image.ndim != 4:
+        raise ValueError(f"{name} must be a 3D or 4D array. Got shape {image.shape}.")
+    if isinstance(index, bool) or not isinstance(index, (int, np.integer)):
+        raise TypeError(f"The volume index of {name} must be an integer.")
+    n_volumes = image.shape[-1]
+    if not 0 <= index < n_volumes:
+        raise ValueError(
+            f"The volume index ({index}) must be in [0, {n_volumes - 1}] for "
+            f"{name} with {n_volumes} volumes."
+        )
+    return image[..., int(index)]

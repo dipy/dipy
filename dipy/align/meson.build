@@ -33,7 +33,9 @@ endforeach
 
 python_sources = ['__init__.py',
   '_public.py',
+  'bbr.py',
   'cpd.py',
+  'disco.py',
   'imaffine.py',
   'imwarp.py',
   'metrics.py',

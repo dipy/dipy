@@ -7,6 +7,7 @@ python_sources = [
   'test_mindgrab.py',
   'test_synb0.py',
   'test_tf.py',
+  'test_unet3d.py',
   'test_utils.py',
   'test_synthseg.py',
   ]

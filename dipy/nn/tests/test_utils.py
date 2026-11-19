@@ -111,14 +111,15 @@ def test_load_state_dict(tmp_path, rng=None):
         double=torch.arange(5, dtype=torch.float64),
         count=torch.tensor(7),
     )
-    fname = tmp_path / "state.pth"
-    torch.save(state, fname)
+    for zip_format in (True, False):
+        fname = tmp_path / f"state_{zip_format}.pth"
+        torch.save(state, fname, _use_new_zipfile_serialization=zip_format)
 
-    loaded = load_state_dict(fname)
-    npt.assert_equal(list(loaded), list(state))
-    for name, tensor in state.items():
-        npt.assert_equal(loaded[name].dtype, tensor.numpy().dtype)
-        npt.assert_array_equal(loaded[name], tensor.numpy())
+        loaded = load_state_dict(fname)
+        npt.assert_equal(list(loaded), list(state))
+        for name, tensor in state.items():
+            npt.assert_equal(loaded[name].dtype, tensor.numpy().dtype)
+            npt.assert_array_equal(loaded[name], tensor.numpy())
 
 
 def test_load_state_dict_wrong_files(tmp_path):
@@ -135,3 +136,16 @@ def test_load_state_dict_wrong_files(tmp_path):
     with zipfile.ZipFile(unsafe, "w") as archive:
         archive.writestr("archive/data.pkl", pickle.dumps(os.system))
     npt.assert_raises(ValueError, load_state_dict, unsafe)
+
+    # Files in the legacy format, written before PyTorch 1.6.
+    header = [0x1950A86A20F9469CFC6C, 1001, {"little_endian": True}]
+    for name, objects in (
+        ("wrong_magic", [0, 1001, {"little_endian": True}, {}, []]),
+        ("big_endian", header[:2] + [{"little_endian": False}, {}, []]),
+        ("unsafe", header + [os.system, []]),
+        ("no_keys", header + [{}]),
+        ("not_dict", header + [[1, 2], []]),
+    ):
+        legacy = tmp_path / f"legacy_{name}.pth"
+        legacy.write_bytes(b"".join(pickle.dumps(o, protocol=2) for o in objects))
+        npt.assert_raises(ValueError, load_state_dict, legacy)

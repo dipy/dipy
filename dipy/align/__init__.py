@@ -18,6 +18,7 @@ from dipy.align._public import (
     translation,
     write_mapping,
 )
+from dipy.align.bbr import bbr_registration
 
 __all__ = [
     "syn_registration",
@@ -36,6 +37,7 @@ __all__ = [
     "register_series",
     "register_dwi_series",
     "streamline_registration",
+    "bbr_registration",
 ]
 
 
