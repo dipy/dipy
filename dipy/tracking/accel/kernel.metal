@@ -331,7 +331,8 @@ inline int get_direction_prob(thread PhiloxState& st,
 
 // ── tracker: follow one direction from a seed ────────────────────────
 // Point i is written to streamline[i * stride]; returns the number of points
-// kept, counting the seed (see tracker_d in kernel.cu).
+// kept, counting the seed (see tracker_d in kernel.cu). stopped is set when
+// the stopping map ended the streamline (a valid ending on the CPU).
 
 inline int tracker_prob(thread PhiloxState& st,
                         constant ProbTrackingParams& params,
@@ -343,11 +344,13 @@ inline int tracker_prob(thread PhiloxState& st,
                         device packed_float3* streamline,
                         int stride,
                         thread float3& first_dir,
+                        thread bool& stopped,
                         threadgroup float3* sh_new_dir,
                         threadgroup float* pmf_data_sh,
                         uint tidx, uint tidy) {
     float3 point = seed;
     float3 direction = first_step;
+    stopped = false;
 
     int i;
     for (i = 1; i < params.max_sline_len; i++) {
@@ -374,6 +377,7 @@ inline int tracker_prob(thread PhiloxState& st,
 
         if (check_point(params.tc_threshold, point, params.dimx, params.dimy,
                         params.dimz, metric_map) != TRACKPOINT) {
+            stopped = true;
             break;
         }
     }
@@ -427,20 +431,23 @@ kernel void genStreamlinesProb_k(
 
         // forward, then backward from the direction of the first forward step
         float3 first_dir = first_step;
+        bool stoppedF, stoppedB;
         const int stepsF = tracker_prob(st, params, seed, first_step,
                                         dataf, metric_map, sphere_vertices,
-                                        center, 1, first_dir,
+                                        center, 1, first_dir, stoppedF,
                                         sh_new_dir, pmf_data_sh, tidx, tidy);
         const float3 back = (stepsF > 1) ? first_dir : first_step;
         float3 unused = back;
         const int stepsB = tracker_prob(st, params, seed, -back,
                                         dataf, metric_map, sphere_vertices,
-                                        center, -1, unused,
+                                        center, -1, unused, stoppedB,
                                         sh_new_dir, pmf_data_sh, tidx, tidy);
 
         if (tidx == 0) {
             slineStart[sl] = params.max_sline_len - (stepsB - 1);
-            slineLen[sl] = stepsF + stepsB - 1;
+            // negative length: invalid ending (see _streamline_generator)
+            const int len = stepsF + stepsB - 1;
+            slineLen[sl] = (stoppedF && stoppedB) ? len : -len;
         }
     }
 }

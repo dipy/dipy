@@ -26,6 +26,31 @@ from dipy.tracking.utils import seeds_directions_pairs
 from dipy.utils.deprecator import deprecated_params
 
 
+def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
+    """Resolve the ``is_symmetric`` tracking option.
+
+    Parameters
+    ----------
+    is_symmetric : bool or None
+        User choice. None infers it from ``sh``.
+    sh : ndarray or None
+        Spherical harmonic coefficients. A full (odd and even order) basis
+        describes an asymmetric ODF.
+    full_basis : bool or None
+        Whether ``sh`` uses a full basis. None infers it from the number of
+        coefficients.
+
+    Returns
+    -------
+    is_symmetric : bool
+    """
+    if is_symmetric is not None:
+        return bool(is_symmetric)
+    if sh is not None:
+        return not _sh_order_from_ncoef(sh.shape[-1], full_basis)[1]
+    return True
+
+
 @deprecated_params(
     "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
 )
@@ -208,7 +233,7 @@ def probabilistic_tracking(
     save_seeds=False,
     max_cross=None,
     backend="cpu",
-    is_symmetric=True,
+    is_symmetric=None,
     rng=None,
 ):
     """Probabilistic tracking algorithm.
@@ -257,10 +282,13 @@ def probabilistic_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+        With ``rng="philox"``, the trajectory instead depends on the index of
+        the streamline in the tractogram (see ``rng``).
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -287,9 +315,12 @@ def probabilistic_tracking(
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a ThresholdStoppingCriterion.
-    is_symmetric : bool, optional
+        Given a ``pam``, the CPU tracks its peaks while GPU backends track
+        its ODF (``pam.odf`` on ``pam.sphere``).
+    is_symmetric : bool or None, optional
         If False, the pmf is treated as an asymmetric spherical function
-        (no antipodal folding when selecting directions).
+        (no antipodal folding when selecting directions). If None, it is
+        False for a full-basis ``sh`` and True otherwise.
     rng : {None, "pcg", "philox"}, optional
         Random number generator. "philox" is the generator of the GPU
         backends: every backend, and the CPU with ``rng="philox"``, draws the
@@ -309,6 +340,7 @@ def probabilistic_tracking(
         rng = "pcg" if backend == "cpu" else "philox"
     elif backend != "cpu" and rng != "philox":
         raise ValueError(f"GPU backends only support rng='philox', not {rng!r}.")
+    is_symmetric = _resolve_is_symmetric(is_symmetric, sh=sh, full_basis=full_basis)
 
     params = generate_tracking_parameters(
         "prob",
@@ -338,8 +370,10 @@ def probabilistic_tracking(
                 full_basis=full_basis,
                 legacy=legacy,
             )
-        elif pam is not None and pam.odf is not None:
+        elif pam is not None and getattr(pam, "odf", None) is not None:
             pmf_field = pam.odf
+            if getattr(pam, "sphere", None) is not None:
+                sphere = pam.sphere
         else:
             raise ValueError("GPU backends need sf, sh or a pam with odf.")
         if not isinstance(sc, ThresholdStoppingCriterion):
@@ -375,6 +409,7 @@ def probabilistic_tracking(
             save_seeds=save_seeds,
             affine=affine,
             chunked=chunked,
+            return_all=return_all,
         )
 
     return generic_tracking(
@@ -474,10 +509,11 @@ def deterministic_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -622,10 +658,11 @@ def ptt_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -750,10 +787,11 @@ def closestpeak_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -878,10 +916,11 @@ def bootstrap_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -1005,10 +1044,11 @@ def eudx_tracking(
         Number of threads to use for parallel processing. Default is 0, which
         uses all available cores.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
@@ -1147,10 +1187,11 @@ def pft_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional

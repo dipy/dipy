@@ -3,14 +3,13 @@ CUDA backend for :mod:`dipy.tracking.accel.tracker`.
 """
 
 from importlib.resources import files
-import logging
 from time import time
 
 import numpy as np
 
+from dipy.tracking.accel.tracker import ceil_div
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-
-logger = logging.getLogger("dipy")
 
 _TRIP_MSG = (
     "CUDA tracking requires cuda-python, cuda-core and cuda-cccl. "
@@ -60,10 +59,6 @@ def _check(result, *, hard_error=True):
     if len(result) == 2:
         return result[1]
     return result[1:]
-
-
-def _ceil_div(a, b):
-    return (a + b - 1) // b
 
 
 def _to_device(host):
@@ -148,7 +143,7 @@ def _launch(
 
     config = core.LaunchConfig(
         block=(THREADS_PER_STREAMLINE, STREAMLINES_PER_BLOCK, 1),
-        grid=(_ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
+        grid=(ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
         shmem_size=0,
     )
     core.launch(
@@ -248,7 +243,7 @@ def cuda_streamline_generator(tracker_data, *, n_gpus=1):
         streamline_starts = np.zeros(n_streamlines, dtype=np.int32)
         streamline_lengths = np.zeros(n_streamlines, dtype=np.int32)
 
-        seeds_per_gpu = _ceil_div(n_seeds, n_gpus)
+        seeds_per_gpu = ceil_div(n_seeds, n_gpus)
         for device_id, (stream, *device_data) in enumerate(gpus):
             seed_start = device_id * seeds_per_gpu
             seed_stop = min(n_seeds, seed_start + seeds_per_gpu)

@@ -3,14 +3,13 @@ WebGPU backend for :mod:`dipy.tracking.accel.tracker`.
 """
 
 from importlib.resources import files
-import logging
 from time import time
 
 import numpy as np
 
+from dipy.tracking.accel.tracker import ceil_div, kernel_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-
-logger = logging.getLogger("dipy")
 
 wgpu, have_wgpu, _ = optional_package(
     "wgpu",
@@ -24,6 +23,8 @@ THREADS_PER_STREAMLINE = 32
 STREAMLINES_PER_BLOCK = 2
 # entry point in kernel.wgsl
 KERNEL_NAME = "genStreamlinesProb_k"
+# WebGPU caps a dispatch at 65535 workgroups per dimension
+MAX_SEEDS = 65535 * STREAMLINES_PER_BLOCK
 
 
 def webgpu_available():
@@ -36,10 +37,6 @@ def webgpu_available():
     return adapter is not None and "subgroup" in adapter.features
 
 
-def _ceil_div(a, b):
-    return (a + b - 1) // b
-
-
 def _data_buffer(device, arr, *, label=""):
     # a byte view of the array, rather than a copy from tobytes()
     return device.create_buffer_with_data(
@@ -47,6 +44,21 @@ def _data_buffer(device, arr, *, label=""):
         usage="STORAGE | COPY_SRC",
         label=label,
     )
+
+
+def _upload_slabs(device, arr, *, dtype, label=""):
+    """Upload ``arr`` converted to ``dtype``, one slab of its first axis at a
+    time, so that the full converted host copy (as large as the PMF) is never
+    allocated."""
+    arr = np.asarray(arr)
+    itemsize = np.dtype(dtype).itemsize
+    buf = _empty_buffer(device, arr.size * itemsize, label=label)
+    row_bytes = (arr.size // max(arr.shape[0], 1)) * itemsize
+    rows = max(1, (64 * 1024 * 1024) // max(row_bytes, 1))
+    for start in range(0, arr.shape[0], rows):
+        slab = np.ascontiguousarray(arr[start : start + rows], dtype=dtype)
+        device.queue.write_buffer(buf, start * row_bytes, memoryview(slab).cast("B"))
+    return buf
 
 
 def _empty_buffer(device, nbytes, *, label=""):
@@ -93,7 +105,7 @@ def _compile(device, tracker_data):
     start = time()
     logger.info("Compiling WebGPU GPU tracker kernel...")
     dim_t = tracker_data.shape[3]
-    n32_dim_t = _ceil_div(dim_t, 32) * 32
+    n32_dim_t = ceil_div(dim_t, 32) * 32
     source = files("dipy.tracking.accel").joinpath("kernel.wgsl").read_text()
     source = (
         f"const SPHERE_SYMM: u32 = {1 if tracker_data.is_symmetric else 0}u;\n"
@@ -105,31 +117,6 @@ def _compile(device, tracker_data):
     )
     logger.info("WebGPU GPU tracker kernel compiled in %.2f s", time() - start)
     return pipeline
-
-
-def _params(tracker_data, n_seeds, sl_base):
-    # Must match ProbTrackingParams in kernel.wgsl: 4 f32, 4 u32, 6 i32.
-    seed = tracker_data.random_seed
-    params = np.zeros(14, dtype=np.uint32)
-    params[:4] = np.array(
-        [
-            tracker_data.max_angle,
-            tracker_data.stop_threshold,
-            tracker_data.step_size,
-            tracker_data.pmf_threshold,
-        ],
-        dtype=np.float32,
-    ).view(np.uint32)
-    params[4:] = [
-        seed & 0xFFFFFFFF,
-        (seed >> 32) & 0xFFFFFFFF,
-        sl_base & 0xFFFFFFFF,
-        (sl_base >> 32) & 0xFFFFFFFF,
-        n_seeds,
-        *tracker_data.shape,
-        tracker_data.max_steps,
-    ]
-    return params
 
 
 def webgpu_streamline_generator(tracker_data):
@@ -157,7 +144,7 @@ def webgpu_streamline_generator(tracker_data):
 
     pipeline = _compile(device, tracker_data)
     static_buffers = [
-        _data_buffer(device, tracker_data.pmf.astype(KERNEL_DTYPE), label="pmf"),
+        _upload_slabs(device, tracker_data.pmf, dtype=KERNEL_DTYPE, label="pmf"),
         _data_buffer(
             device, tracker_data.stop_map.astype(KERNEL_DTYPE), label="stop_map"
         ),
@@ -171,13 +158,6 @@ def webgpu_streamline_generator(tracker_data):
     def generate_streamlines(seeds, streamline_offsets, peak_dirs, sl_base):
         n_seeds = len(seeds)
         n_streamlines = int(streamline_offsets[-1])
-        if n_seeds == 0 or n_streamlines == 0:
-            return (
-                np.empty((0, 3), dtype=KERNEL_DTYPE),
-                np.zeros(0, dtype=np.int32),
-                np.zeros(0, dtype=np.int32),
-            )
-
         streamline_nbytes = 4 * 3 * step * n_streamlines
         if streamline_nbytes > max_binding:
             max_streamlines = max_binding // (4 * 3 * step)
@@ -189,7 +169,9 @@ def webgpu_streamline_generator(tracker_data):
             )
 
         params_buf = _data_buffer(
-            device, _params(tracker_data, n_seeds, sl_base), label="params"
+            device,
+            kernel_params(tracker_data, n_seeds=n_seeds, sl_base=sl_base),
+            label="params",
         )
         seeds_buf = _data_buffer(device, seeds, label="seeds")
         offsets_buf = _data_buffer(device, streamline_offsets, label="offsets")
@@ -228,7 +210,7 @@ def webgpu_streamline_generator(tracker_data):
         cpass.set_pipeline(pipeline)
         cpass.set_bind_group(0, bg0)
         cpass.set_bind_group(1, bg1)
-        cpass.dispatch_workgroups(_ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1)
+        cpass.dispatch_workgroups(ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1)
         cpass.end()
         device.queue.submit([encoder.finish()])
 

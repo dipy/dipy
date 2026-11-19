@@ -1,17 +1,14 @@
 from dataclasses import dataclass
 import importlib
-import logging
 
+from nibabel.affines import apply_affine
 import numpy as np
 
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
-from dipy.direction.pmf import SimplePmfGen
-from dipy.tracking._utils import _iter_chunk
-from dipy.tracking.tractogen import compact_chunk, seed_peaks
+from dipy.direction.pmf import SimplePmfGen, pmf_peaks
+from dipy.tracking.tractogen import SLINE_BUFFER_BYTES, finalize_chunk, seed_batches
 from dipy.utils.omp import determine_num_threads
-
-logger = logging.getLogger("dipy")
 
 
 @dataclass(frozen=True)
@@ -64,6 +61,51 @@ ACCEL_BACKENDS = {
         multi_device=False,
     ),
 }
+
+
+def ceil_div(a, b):
+    """Ceiling of ``a / b`` for positive integers."""
+    return (a + b - 1) // b
+
+
+def kernel_params(tracker_data, *, n_seeds, sl_base):
+    """Pack the ``ProbTrackingParams`` struct of kernel.wgsl / kernel.metal.
+
+    Parameters
+    ----------
+    tracker_data : _GpuTrackerData
+        Output of :func:`prepare_gpu_tracker_data`.
+    n_seeds : int
+        Number of seeds of the launch.
+    sl_base : int
+        Index in the tractogram of the launch's first streamline.
+
+    Returns
+    -------
+    params : ndarray of uint32, shape (14,)
+        4 f32, 4 u32 and 6 i32 fields, bit-cast to uint32.
+    """
+    seed = tracker_data.random_seed
+    params = np.zeros(14, dtype=np.uint32)
+    params[:4] = np.array(
+        [
+            tracker_data.max_angle,
+            tracker_data.stop_threshold,
+            tracker_data.step_size,
+            tracker_data.pmf_threshold,
+        ],
+        dtype=np.float32,
+    ).view(np.uint32)
+    params[4:] = [
+        seed & 0xFFFFFFFF,
+        (seed >> 32) & 0xFFFFFFFF,
+        sl_base & 0xFFFFFFFF,
+        (sl_base >> 32) & 0xFFFFFFFF,
+        n_seeds,
+        *tracker_data.shape,
+        tracker_data.max_steps,
+    ]
+    return params
 
 
 def prepare_gpu_tracker_data(
@@ -212,6 +254,7 @@ def gpu_streamline_generator(
     save_seeds=False,
     affine=None,
     chunked=False,
+    return_all=True,
 ):
     """
     Generate streamlines in chunks from GPU tracker data and seeds.
@@ -240,6 +283,9 @@ def gpu_streamline_generator(
     chunked : bool, optional
         Yield ``(points, lengths[, seeds])`` per chunk instead of single
         streamlines (see :func:`dipy.tracking.tractogen.generate_tractogram`).
+    return_all : bool, optional
+        True to return all the streamlines, False to return only those whose
+        both ends reached the stopping map.
 
     Yields
     ------
@@ -271,10 +317,9 @@ def gpu_streamline_generator(
         generate_streamlines, close = factory(tracker_data, n_gpus=tracker_data.n_procs)
     else:
         generate_streamlines, close = factory(tracker_data)
-    inv_affine = np.linalg.inv(affine)
     return _streamline_generator(
         tracker_data,
-        np.dot(seeds, inv_affine[:3, :3].T) + inv_affine[:3, 3],
+        apply_affine(np.linalg.inv(affine), np.asarray(seeds, dtype=float)),
         generate_streamlines,
         pmf_gen,
         affine,
@@ -283,6 +328,8 @@ def gpu_streamline_generator(
         nbr_threads=nbr_threads,
         save_seeds=save_seeds,
         chunked=chunked,
+        return_all=return_all,
+        max_seeds=getattr(importlib.import_module(spec.module), "MAX_SEEDS", None),
     )
 
 
@@ -298,25 +345,31 @@ def _streamline_generator(
     close=None,
     save_seeds=False,
     chunked=False,
+    max_seeds=None,
+    return_all=True,
 ):
     """
-    Yield streamlines chunk by chunk from a GPU backend function. ``seeds``
+    Yield streamlines batch by batch from a GPU backend function. ``seeds``
     are in voxel space; output is mapped through ``affine``.
 
     ``generate_streamlines(seeds, streamline_offsets, dirs, sl_base)`` must
     return ``(streamline_buffer, streamline_starts, streamline_lengths)``,
     where ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the
     initial directions of seed ``i`` and ``sl_base`` is the index, in the
-    tractogram, of the chunk's first streamline (it selects the random
-    streams). Streamline ``j`` has ``streamline_lengths[j]`` points starting
-    at row ``j * 2 * max_steps + streamline_starts[j]`` of
-    ``streamline_buffer``, which only needs to stay valid until the next
-    call. ``close``, if given, is called when the generator is exhausted or
-    closed.
+    tractogram, of the batch's first streamline (it selects the random
+    streams). It is only called with at least one streamline. Streamline
+    ``j`` has ``abs(streamline_lengths[j])`` points, the sign telling whether
+    both ends reached the stopping map (positive) or not, starting at row
+    ``j * 2 * max_steps + streamline_starts[j]`` of ``streamline_buffer``,
+    which only needs to stay valid until the next call. ``close``, if given,
+    is called when the generator is exhausted or closed. ``max_seeds`` caps
+    the number of seeds per call (e.g. a dispatch size limit). With
+    ``return_all=False``, only streamlines with both ends on the stopping map
+    are kept.
     """
     step = tracker_data.max_steps * 2
     chunk_size = tracker_data.chunk_size
-    n_chunks = (seeds.shape[0] + chunk_size - 1) // chunk_size
+    max_sl = max(1, SLINE_BUFFER_BYTES // (step * 3 * np.dtype(np.float32).itemsize))
     lin_T = np.asarray(affine[:3, :3].T, dtype=float, order="C")
     offset = np.asarray(affine[:3, 3], dtype=float, order="C")
     if nbr_threads <= 0:
@@ -324,69 +377,52 @@ def _streamline_generator(
 
     sl_base = 0
     try:
-        for idx in range(n_chunks):
-            start = idx * chunk_size
-            chunk = np.asarray(
-                seeds[start : start + chunk_size], dtype=np.float32, order="C"
-            )
+        for start in range(0, seeds.shape[0], chunk_size):
+            chunk = np.ascontiguousarray(seeds[start : start + chunk_size], dtype=float)
             if seed_directions is not None:
-                streamline_offsets = np.arange(len(chunk) + 1, dtype=np.int32)
+                offsets = np.arange(len(chunk) + 1)
                 dirs = seed_directions[start : start + len(chunk)]
             else:
-                streamline_offsets, dirs = seed_peaks(
-                    np.asarray(chunk, dtype=float),
-                    pmf_gen,
-                    tracker_data.is_symmetric,
-                    nbr_threads,
-                    tracker_data.max_cross,
-                    tracker_data.relative_peak_thresh,
-                    np.rad2deg(tracker_data.min_separation_angle),
-                )
-                streamline_offsets = streamline_offsets.astype(np.int32)
-            n_streamlines = int(streamline_offsets[-1])
-            streamline_buffer, streamline_starts, streamline_lengths = (
-                generate_streamlines(
+                offsets, dirs = pmf_peaks(
                     chunk,
-                    streamline_offsets,
-                    np.asarray(dirs, dtype=np.float32, order="C"),
+                    pmf_gen,
+                    is_symmetric=tracker_data.is_symmetric,
+                    nbr_threads=nbr_threads,
+                    max_peaks=tracker_data.max_cross,
+                    relative_peak_threshold=tracker_data.relative_peak_thresh,
+                    min_separation_angle=np.rad2deg(tracker_data.min_separation_angle),
+                )
+            for s0, s1 in seed_batches(offsets, max_sl, max_seeds=max_seeds):
+                batch_offsets = (offsets[s0 : s1 + 1] - offsets[s0]).astype(np.int32)
+                n_streamlines = int(batch_offsets[-1])
+                buffer, starts, lengths = generate_streamlines(
+                    np.asarray(chunk[s0:s1], dtype=np.float32),
+                    batch_offsets,
+                    np.asarray(
+                        dirs[offsets[s0] : offsets[s1]], dtype=np.float32, order="C"
+                    ),
                     sl_base,
                 )
-            )
-            sl_base += n_streamlines
-
-            seed_of_streamline = np.repeat(
-                np.arange(len(chunk)), np.diff(streamline_offsets)
-            )
-            lengths = np.asarray(streamline_lengths[:n_streamlines], dtype=np.intp)
-            keep = np.flatnonzero(
-                (lengths >= tracker_data.min_steps)
-                & (lengths <= tracker_data.max_steps)
-            )
-            lengths = lengths[keep]
-            starts = keep * step + np.asarray(streamline_starts, dtype=np.intp)[keep]
-            out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
-            np.cumsum(lengths, out=out_offsets[1:])
-            points = np.empty((out_offsets[-1], 3))
-            compact_chunk(
-                streamline_buffer,
-                starts,
-                out_offsets,
-                points,
-                lin_T,
-                offset,
-                nbr_threads,
-            )
-            seeds_out = None
-            if save_seeds:
-                seeds_out = np.dot(chunk[seed_of_streamline[keep]], lin_T) + offset
-            if chunked:
-                yield (
-                    (points, lengths)
-                    if seeds_out is None
-                    else (points, lengths, seeds_out)
+                sl_base += n_streamlines
+                sl_seed = np.repeat(np.arange(s0, s1), np.diff(offsets[s0 : s1 + 1]))
+                lengths = np.asarray(lengths[:n_streamlines], dtype=np.intp)
+                valid = (lengths > 0) | return_all
+                yield from finalize_chunk(
+                    buffer,
+                    starts=starts[:n_streamlines],
+                    lengths=np.abs(lengths),
+                    valid=valid,
+                    step=step,
+                    min_pts=tracker_data.min_steps,
+                    max_pts=tracker_data.max_steps,
+                    seeds=chunk,
+                    sl_seed=sl_seed,
+                    lin_T=lin_T,
+                    offset=offset,
+                    nbr_threads=nbr_threads,
+                    save_seeds=save_seeds,
+                    chunked=chunked,
                 )
-            else:
-                yield from _iter_chunk(points, lengths, seeds_out)
     finally:
         if close is not None:
             close()

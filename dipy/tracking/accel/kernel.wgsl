@@ -390,10 +390,13 @@ fn get_direction_prob(st: PhiloxState, dir: vec3<f32>, point: vec3<f32>,
 // Point i is stored at point index sline_center + i * stride; nsteps is the
 // number of points kept, counting the seed (see tracker_d in kernel.cu).
 
+// stopped is set when the stopping map ended the streamline (a valid
+// ending on the CPU).
 struct TrackerResult {
     nsteps: i32,
     first_dir: vec3<f32>,
     state: PhiloxState,
+    stopped: bool,
 }
 
 fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
@@ -403,6 +406,7 @@ fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
     var point = seed;
     var direction = first_step;
     var first_dir = first_step;
+    var stopped = false;
 
     var i: i32 = 1;
     for (; i < params.max_sline_len; i++) {
@@ -424,10 +428,11 @@ fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
 
         if (check_point_fn(params.tc_threshold, point,
                            params.dimx, params.dimy, params.dimz) != TRACKPOINT) {
+            stopped = true;
             break;
         }
     }
-    return TrackerResult(min(i, params.max_sline_len - 1), first_dir, rng);
+    return TrackerResult(min(i, params.max_sline_len - 1), first_dir, rng, stopped);
 }
 
 // ── kernel: generate streamlines from precomputed seed directions ───
@@ -477,7 +482,9 @@ fn genStreamlinesProb_k(
 
         if (tidx == 0u) {
             slineStart[sl] = params.max_sline_len - (trB.nsteps - 1);
-            slineLen[sl] = trF.nsteps + trB.nsteps - 1;
+            // negative length: invalid ending (see _streamline_generator)
+            let len = trF.nsteps + trB.nsteps - 1;
+            slineLen[sl] = select(-len, len, trF.stopped && trB.stopped);
         }
     }
 }

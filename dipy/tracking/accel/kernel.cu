@@ -358,7 +358,8 @@ __device__ int get_direction_prob_d(PhiloxState *st,
 // (the seed, point 0, is written by the caller). Returns the number of points
 // kept, counting the seed, with the same convention as the CPU tracker: the
 // point that stopped the streamline is not kept. *first_dir receives the
-// direction of the first step.
+// direction of the first step; *stopped is set when the stopping map ended
+// the streamline (a valid ending on the CPU).
 template<int BDIM_X, int BDIM_Y>
 __device__ int tracker_d(PhiloxState *st,
                          const REAL3 seed,
@@ -368,7 +369,8 @@ __device__ int tracker_d(PhiloxState *st,
                          const REAL3 *__restrict__ sphere_vertices,
                          REAL3 *__restrict__ streamline,
                          const int stride,
-                         REAL3 *first_dir) {
+                         REAL3 *first_dir,
+                         bool *stopped) {
         const int tidx = threadIdx.x;
         const int tidy = threadIdx.y;
         const unsigned int WMASK = WARP_MASK(BDIM_X);
@@ -376,6 +378,7 @@ __device__ int tracker_d(PhiloxState *st,
         REAL3 point = seed;
         REAL3 direction = first_step;
         __shared__ REAL3 __sh_new_dir[BDIM_Y];
+        *stopped = false;
 
         int i;
         for(i = 1; i < MAX_SLINE_LEN; i++) {
@@ -402,6 +405,7 @@ __device__ int tracker_d(PhiloxState *st,
                 __syncwarp(WMASK);
 
                 if (check_point_d(point, metric_map) != TRACKPOINT) {
+                        *stopped = true;
                         break;
                 }
         }
@@ -463,19 +467,22 @@ __global__ void genStreamlinesProb_k(const int nseed,
                 // forward, then backward from the direction of the first
                 // forward step (as on the CPU)
                 REAL3 first_dir = first_step;
+                bool stoppedF, stoppedB;
                 const int stepsF = tracker_d<BDIM_X, BDIM_Y>(&st, seed, first_step,
                                                              dataf, metric_map, sphere_vertices,
-                                                             center, 1, &first_dir);
+                                                             center, 1, &first_dir, &stoppedF);
                 const REAL3 back = (stepsF > 1) ? first_dir : first_step;
                 REAL3 unused;
                 const int stepsB = tracker_d<BDIM_X, BDIM_Y>(&st, seed,
                                                              MAKE_REAL3(-back.x, -back.y, -back.z),
                                                              dataf, metric_map, sphere_vertices,
-                                                             center, -1, &unused);
+                                                             center, -1, &unused, &stoppedB);
 
                 if (tidx == 0) {
                         slineStart[sl] = MAX_SLINE_LEN - (stepsB - 1);
-                        slineLen[sl] = stepsF + stepsB - 1;
+                        // negative length: invalid ending (see _streamline_generator)
+                        const int len = stepsF + stepsB - 1;
+                        slineLen[sl] = (stoppedF && stoppedB) ? len : -len;
                 }
         }
 }

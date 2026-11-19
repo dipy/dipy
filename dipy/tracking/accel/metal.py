@@ -4,15 +4,13 @@ Metal (Apple Silicon) backend for :mod:`dipy.tracking.accel.tracker`.
 
 from contextlib import nullcontext
 from importlib.resources import files
-import logging
-import struct
 from time import time
 
 import numpy as np
 
+from dipy.tracking.accel.tracker import ceil_div, kernel_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-
-logger = logging.getLogger("dipy")
 
 _TRIP_MSG = (
     "Metal tracking requires pyobjc-framework-Metal and Apple Silicon. "
@@ -30,10 +28,6 @@ KERNEL_NAME = "genStreamlinesProb_k"
 
 def metal_available():
     return have_metal and Metal.MTLCreateSystemDefaultDevice() is not None
-
-
-def _ceil_div(a, b):
-    return (a + b - 1) // b
 
 
 def _autorelease_pool():
@@ -91,7 +85,7 @@ def _compile(device, tracker_data):
     start = time()
     logger.info("Compiling Metal GPU tracker kernel...")
     dim_t = tracker_data.shape[3]
-    n32_dim_t = _ceil_div(dim_t, 32) * 32
+    n32_dim_t = ceil_div(dim_t, 32) * 32
     source = files("dipy.tracking.accel").joinpath("kernel.metal").read_text()
     source = (
         f"#define SPHERE_SYMM {1 if tracker_data.is_symmetric else 0}\n"
@@ -110,25 +104,6 @@ def _compile(device, tracker_data):
         raise RuntimeError(f"Failed to create pipeline for {KERNEL_NAME!r}: {error}")
     logger.info("Metal GPU tracker kernel compiled in %.2f s", time() - start)
     return pipeline
-
-
-def _params_bytes(tracker_data, n_seeds, sl_base):
-    # Must match ProbTrackingParams in kernel.metal: 4 floats, 4 uints, 6 ints.
-    seed = tracker_data.random_seed
-    return struct.pack(
-        "4f4I6i",
-        tracker_data.max_angle,
-        tracker_data.stop_threshold,
-        tracker_data.step_size,
-        tracker_data.pmf_threshold,
-        seed & 0xFFFFFFFF,
-        (seed >> 32) & 0xFFFFFFFF,
-        sl_base & 0xFFFFFFFF,
-        (sl_base >> 32) & 0xFFFFFFFF,
-        int(n_seeds),
-        *tracker_data.shape,
-        tracker_data.max_steps,
-    )
 
 
 def metal_streamline_generator(tracker_data):
@@ -157,9 +132,9 @@ def metal_streamline_generator(tracker_data):
     with _autorelease_pool():
         pipeline = _compile(device, tracker_data)
         static_buffers = [
-            _upload(device, tracker_data.pmf, KERNEL_DTYPE),
-            _upload(device, tracker_data.stop_map, KERNEL_DTYPE),
-            _upload(device, tracker_data.sphere_vertices, KERNEL_DTYPE),
+            _upload(device, tracker_data.pmf, dtype=KERNEL_DTYPE),
+            _upload(device, tracker_data.stop_map, dtype=KERNEL_DTYPE),
+            _upload(device, tracker_data.sphere_vertices, dtype=KERNEL_DTYPE),
         ]
     # outputs are reused from chunk to chunk
     starts_out = _GrowableBuffer(device)
@@ -169,13 +144,6 @@ def metal_streamline_generator(tracker_data):
     def generate_streamlines(seeds, streamline_offsets, peak_dirs, sl_base):
         n_seeds = len(seeds)
         n_streamlines = int(streamline_offsets[-1])
-        if n_seeds == 0 or n_streamlines == 0:
-            return (
-                np.empty((0, 3), dtype=KERNEL_DTYPE),
-                np.zeros(0, dtype=np.int32),
-                np.zeros(0, dtype=np.int32),
-            )
-
         with _autorelease_pool():
             seeds_buf = _upload(device, seeds)
             offsets_buf = _upload(device, streamline_offsets)
@@ -184,7 +152,9 @@ def metal_streamline_generator(tracker_data):
             lengths_buf = lengths_out.get(4 * n_streamlines)
             streamline_buf = streamlines_out.get(4 * 3 * step * n_streamlines)
 
-            params = _params_bytes(tracker_data, n_seeds, sl_base)
+            params = kernel_params(
+                tracker_data, n_seeds=n_seeds, sl_base=sl_base
+            ).tobytes()
             cmd_buf = command_queue.commandBuffer()
             enc = cmd_buf.computeCommandEncoder()
             enc.setComputePipelineState_(pipeline)
@@ -201,7 +171,7 @@ def metal_streamline_generator(tracker_data):
             for idx, buf in enumerate(bufs, start=1):
                 enc.setBuffer_offset_atIndex_(buf, 0, idx)
             enc.dispatchThreadgroups_threadsPerThreadgroup_(
-                Metal.MTLSize(_ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
+                Metal.MTLSize(ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
                 Metal.MTLSize(THREADS_PER_STREAMLINE, STREAMLINES_PER_BLOCK, 1),
             )
             enc.endEncoding()
