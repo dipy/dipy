@@ -46,6 +46,8 @@ import webbrowser
 import numpy as np
 
 from dipy.data import fetch_30_bundle_atlas_hcp842
+from dipy.desktop.environment import launcher_command, missing_viz_requirements
+from dipy.desktop.registration import ensure_app_registered
 from dipy.io.bids import (
     BIDS_ENTITY_ORDER,
     build_entity_name,
@@ -62,7 +64,7 @@ from dipy.io.bids import (
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
-from dipy.workflows import interactive, report, skyline_app, templates
+from dipy.workflows import interactive, report, templates
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.multi_io import _resolve_path_or_pattern, connect_output_paths
 from dipy.workflows.qc import qc_result, run_stage_qc
@@ -3057,9 +3059,7 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         # A lookup, so that no file path is ever built from the request.
         elif (path := report.skyline_files(root=self.directory).get(target)) is None:
             self._reply(403, f"'{target}' is not a file served by this report.")
-        elif self.launcher is None and (
-            missing := skyline_app.missing_viz_requirements()
-        ):
+        elif self.launcher is None and (missing := missing_viz_requirements()):
             self._reply(
                 404,
                 "Skyline needs packages that are not installed: "
@@ -3067,7 +3067,7 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
                 "environment serving this report.",
             )
         else:
-            launcher = self.launcher or skyline_app.launcher_command()
+            launcher = self.launcher or launcher_command()
             subprocess.Popen([*launcher, str(path)], **_DETACHED_PROCESS)
             self._reply(200, f"Skyline launched on {path.name}.")
 
@@ -3321,7 +3321,7 @@ class AutoFlow(Workflow):
         inputs = _classify_inputs(input_files=input_files, bids_mode=bids)
 
         if register_skyline:
-            skyline_app.ensure_app_registered()
+            ensure_app_registered()
 
         if inputs["report"]:
             logger.info(

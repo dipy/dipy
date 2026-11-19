@@ -1,15 +1,16 @@
+from dipy.desktop.environment import missing_viz_requirements
+from dipy.desktop.registration import setup_app, unregister_app
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWire
-from dipy.workflows import skyline_app
 from dipy.workflows.workflow import Workflow
 
 fury_pckg_msg = (
     "Skyline requires FURY version 2.1.0 or higher. "
     "Please install or upgrade FURY using pip install -U fury."
 )
-missing_viewer_packages = skyline_app.missing_viz_requirements()
+missing_viewer_packages = missing_viz_requirements()
 if missing_viewer_packages:
     skyline_from_files = TripWire(
         "Skyline needs packages that are not installed: "
@@ -155,13 +156,13 @@ class SkylineFlow(Workflow):
         if setup and remove_setup:
             raise ValueError("setup and remove_setup cannot be combined")
         if setup:
-            if not skyline_app.setup_app():
+            if not setup_app():
                 raise RuntimeError(
                     "Skyline setup did not finish; see the messages above."
                 )
             return None
         if remove_setup:
-            skyline_app.unregister_app()
+            unregister_app()
             return None
         skyline_input_files = []
         start_gui = not input_files or input_files[0] in (

@@ -25,12 +25,13 @@ import pytest
 import trx.trx_file_memmap as tmm
 
 from dipy.core.gradients import gradient_table
+from dipy.desktop.links import skyline_argument, skyline_target
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.reconst.dti import TensorModel, tensor_prediction
-from dipy.workflows import qc, report, skyline_app
+from dipy.workflows import qc, report
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.combined_workflow import (
     _ReportHandler as ReportHandler,
@@ -316,7 +317,7 @@ def test_output_buttons():
         key, command, url = json.loads(f"[{html.unescape(onclick)}]")
         assert key == "fa.nii.gz"
         assert command == report.skyline_command(path=volume)
-        assert skyline_app.skyline_target(url) == Path(volume)
+        assert skyline_target(url) == Path(volume)
         assert 'href="affine.txt"' in items
         assert items.count("qc-open") == 2
 
@@ -338,7 +339,7 @@ def test_output_buttons_quote_paths(tmp_path):
     key, command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == f"{folder.name}/fa.nii.gz"
     assert command == report.skyline_command(path=volume)
-    assert skyline_app.skyline_target(url) == Path(volume)
+    assert skyline_target(url) == Path(volume)
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
     assert (
         unquote(html.unescape(href)) == Path(os.path.relpath(text, tmp_path)).as_posix()
@@ -357,7 +358,7 @@ def test_skyline_command_loads_exactly_the_file(tmp_path):
     (tmp_path / "sub 0 o'brien").mkdir()
     volume = str(folder / "fa.nii.gz")
 
-    argument = skyline_app.skyline_argument(path=volume)
+    argument = skyline_argument(path=volume)
     assert glob.glob(argument) == [volume]
 
     command = report.skyline_command(path=volume)
@@ -460,7 +461,7 @@ def test_output_buttons_name_files_from_the_served_root(tmp_path):
     key, command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == "dwi/fa.nii.gz"
     assert command == report.skyline_command(path=volume)
-    assert skyline_app.skyline_target(url) == volume
+    assert skyline_target(url) == volume
     assert report.skyline_files(root=out_dir) == {key: volume}
 
 

@@ -18,10 +18,11 @@ import re
 import shlex
 import urllib.parse
 
+from dipy.desktop.constants import SKYLINE_FORMATS
+from dipy.desktop.links import skyline_argument, skyline_url
 from dipy.utils.logging import logger
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.qc import STATUS_LEVELS
-from dipy.workflows.skyline_app import SKYLINE_FORMATS, skyline_argument, skyline_url
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">

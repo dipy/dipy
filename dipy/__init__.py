@@ -14,6 +14,7 @@ Subpackages
  core.meshes   -- Point distributions on the sphere
  data          -- Small testing datasets
  denoise       -- Denoising algorithms
+ desktop       -- Skyline desktop application: launcher and OS registration
  direction     -- Manage peaks and tracking
  io            -- Loading/saving of dpy datasets
  nn            -- Neural networks algorithms
@@ -62,6 +63,7 @@ submodules = [
     "core",
     "data",
     "denoise",
+    "desktop",
     "direction",
     "io",
     "nn",

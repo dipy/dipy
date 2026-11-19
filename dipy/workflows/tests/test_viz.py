@@ -6,14 +6,19 @@ import nibabel as nib
 import numpy as np
 import pytest
 
+from dipy.desktop.environment import missing_viz_requirements
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 
 _, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
-if not has_fury_v2:
-    pytest.skip("Requires fury>=2.1.0", allow_module_level=True)
+missing_viewer_packages = missing_viz_requirements()
+if not has_fury_v2 or missing_viewer_packages:
+    pytest.skip(
+        "Requires fury>=2.1.0 and the Skyline viewer packages",
+        allow_module_level=True,
+    )
 else:
     from PIL import Image
 
