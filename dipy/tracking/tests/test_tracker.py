@@ -16,6 +16,7 @@ from dipy.tracking.accel import (
     ACCEL_BACKENDS,
     accel_backend_available,
     select_accel_backend,
+    webgpu,
 )
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
@@ -212,6 +213,17 @@ def test_accel_pam_odf_sphere(backend):
         )
     )
     npt.assert_(len(streamlines) > 0)
+
+
+def test_webgpu_requires_kernel_subgroup_size():
+    if not webgpu.have_wgpu:
+        pytest.skip("wgpu not installed")
+    adapter = webgpu.wgpu.gpu.request_adapter_sync(power_preference="high-performance")
+    if adapter is None or "subgroup" not in adapter.features:
+        pytest.skip("no WebGPU adapter with subgroup support")
+    device = adapter.request_device_sync(required_features=["subgroup"])
+    size = webgpu._subgroup_size(device)
+    npt.assert_equal(webgpu.webgpu_available(), size == webgpu.THREADS_PER_STREAMLINE)
 
 
 @pytest.mark.parametrize("backend", ["cpu", *ACCEL_BACKENDS])

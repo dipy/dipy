@@ -33,10 +33,10 @@ def webgpu_available():
     if not have_wgpu:
         return False
     try:
-        adapter = wgpu.gpu.request_adapter_sync()
-    except RuntimeError:
+        _request_device()
+    except (RuntimeError, wgpu.GPUError):
         return False
-    return adapter is not None and "subgroup" in adapter.features
+    return True
 
 
 def _data_buffer(device, arr, *, label=""):
@@ -71,7 +71,42 @@ def _empty_buffer(device, nbytes, *, label=""):
     )
 
 
-def _setup_device():
+def _subgroup_size(device):
+    """Subgroup size the device runs at the tracker kernel's workgroup shape.
+
+    Adapters only report a range of subgroup sizes (4 to 128 on Apple GPUs,
+    which run 32), so the size is read back from a one-workgroup probe.
+    """
+    source = f"""
+    @group(0) @binding(0) var<storage, read_write> out: array<u32>;
+
+    @compute @workgroup_size({THREADS_PER_STREAMLINE}, {STREAMLINES_PER_BLOCK}, 1)
+    fn main(@builtin(subgroup_size) size: u32,
+            @builtin(local_invocation_index) idx: u32) {{
+        if (idx == 0u) {{
+            out[0] = size;
+        }}
+    }}
+    """
+    pipeline = device.create_compute_pipeline(
+        layout="auto",
+        compute={
+            "module": device.create_shader_module(code=source),
+            "entry_point": "main",
+        },
+    )
+    out = _empty_buffer(device, 4, label="subgroup_size")
+    encoder = device.create_command_encoder()
+    cpass = encoder.begin_compute_pass()
+    cpass.set_pipeline(pipeline)
+    cpass.set_bind_group(0, _bind_group(device, pipeline, 0, {0: out}))
+    cpass.dispatch_workgroups(1, 1, 1)
+    cpass.end()
+    device.queue.submit([encoder.finish()])
+    return int(np.frombuffer(device.queue.read_buffer(out), dtype=np.uint32)[0])
+
+
+def _request_device():
     adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
     if adapter is None:
         raise RuntimeError("No WebGPU adapter found")
@@ -94,6 +129,18 @@ def _setup_device():
             ],
         },
     )
+    size = _subgroup_size(device)
+    if size != THREADS_PER_STREAMLINE:
+        raise RuntimeError(
+            f"WebGPU adapter {getattr(adapter.info, 'device', 'unknown')!r} runs "
+            f"subgroups of {size} threads, but the GPU tracker kernel needs "
+            f"{THREADS_PER_STREAMLINE}. Use another backend."
+        )
+    return adapter, device
+
+
+def _setup_device():
+    adapter, device = _request_device()
     info = adapter.info
     logger.info(
         "WebGPU GPU tracker on %s (%s)",
