@@ -2,7 +2,8 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 # cython: wraparound=False
-"""CPU inference of the Synb0 3D UNet, without any deep learning framework.
+"""CPU inference of the DeepN4 and Synb0 3D UNet, without any deep learning
+framework.
 
 Activations are stored channel-last in volumes zero padded by one voxel on
 each side, shape (D + 2, H + 2, W + 2, C). In the flattened padded volume,
@@ -269,12 +270,12 @@ def _weight(state, name, shape):
 
 
 def pack_unet3d_weights(state):
-    """Pack the PyTorch weights of the Synb0 UNet3D for ``unet3d_forward_cpu``.
+    """Pack the PyTorch weights of a UNet3D for ``unet3d_forward_cpu``.
 
     Parameters
     ----------
     state : dict
-        State dict of ``dipy.nn.torch.deepn4.UNet3D``, parameter names mapped to
+        State dict of ``dipy.nn.torch.unet3d.UNet3D``, parameter names mapped to
         arrays.
 
     Returns
@@ -499,10 +500,11 @@ def _pointwise(src, kernel):
 
 
 def unet3d_forward_cpu(volume, weights, *, num_threads=None):
-    """Run the Synb0 3D UNet on the CPU.
+    """Run the DeepN4 and Synb0 3D UNet on the CPU.
 
-    Same network as ``dipy.nn.torch.deepn4.UNet3D`` :footcite:p:`Schilling2019`:
-    three levels of two 3x3x3 convolutions and a 2x2x2 max pooling, two
+    Same network as ``dipy.nn.torch.unet3d.UNet3D`` :footcite:p:`Kanakaraj2024`,
+    also used by Synb0 :footcite:p:`Schilling2019`: three levels of two
+    3x3x3 convolutions and a 2x2x2 max pooling, two
     3x3x3 convolutions and a 1x1x1 convolution at the bottom, then three
     levels of a 2x2x2 transposed convolution with stride 2 and two 3x3x3
     transposed convolutions taking the skip connection, and two 1x1x1

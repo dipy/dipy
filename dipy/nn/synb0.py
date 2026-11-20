@@ -7,15 +7,19 @@ framework, or with PyTorch on a GPU.
 import numpy as np
 
 from dipy.data import get_fnames
-from dipy.nn.torch.deepn4 import UNet3D
-from dipy.nn.unet3d import pack_unet3d_weights, unet3d_forward_cpu
-from dipy.nn.utils import load_state_dict, normalize, set_logger_level, unnormalize
+from dipy.nn.utils import (
+    UNET3D_DEVICES,
+    load_state_dict,
+    load_unet3d,
+    normalize,
+    run_unet3d,
+    set_logger_level,
+    torch_gpu_device,
+    unnormalize,
+)
 from dipy.utils.logging import get_logger
-from dipy.utils.optpkg import optional_package
 
 logger = get_logger(name="dipy.nn")
-
-torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
 
 _SYNB0_INPUT_SHAPE = (77, 91, 77)
@@ -25,7 +29,6 @@ _SYNB0_FROM_NETWORK = (0, 1, 3, 4, 2)
 _SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
 _SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
 N_FOLDS = 5
-DEVICES = ("auto", "cpu", "cuda")
 
 
 class Synb0:
@@ -79,25 +82,21 @@ class Synb0:
             possible). 0 raises an error. The matrix products use the threads
             of the BLAS library.
         """
-        if device not in DEVICES:
-            raise ValueError(f"device should be one of {DEVICES}, got {device!r}")
+        if device not in UNET3D_DEVICES:
+            raise ValueError(
+                f"device should be one of {UNET3D_DEVICES}, got {device!r}"
+            )
         log_level = "INFO" if verbose else "CRITICAL"
         set_logger_level(log_level, logger)
 
         self.num_threads = num_threads
-        self.torch_device = None
-        if device in ("auto", "cuda") and have_torch:
-            if torch.cuda.is_available():
-                self.torch_device = torch.device("cuda")
-            elif device == "cuda" and torch.backends.mps.is_available():
-                self.torch_device = torch.device("mps")
+        self.torch_device = torch_gpu_device(device)
         if self.torch_device is None and device == "cuda":
             logger.warning("No GPU found by PyTorch, switching to CPU")
         self.device = "cpu" if self.torch_device is None else self.torch_device.type
         logger.info(f"Synb0 runs on {self.device}")
 
-        self.model = None
-        self.weights = None
+        self.network = None
         self._default_states = {}
 
     def fetch_default_weights(self, idx):
@@ -116,7 +115,9 @@ class Synb0:
             weights_path = get_fnames(name="synb0_default_torch_weights")[idx]
             logger.info(f"fetched {weights_path}")
             self._default_states[idx] = load_state_dict(weights_path)
-        self._set_weights(self._default_states[idx])
+        self.network = load_unet3d(
+            self._default_states[idx], torch_device=self.torch_device
+        )
 
     def load_model_weights(self, weights_path):
         r"""
@@ -134,56 +135,7 @@ class Synb0:
                 "Expected input for the provided model weights "
                 "do not match the declared model"
             ) from e
-        self._set_weights(state)
-
-    def _set_weights(self, state):
-        """Use a state dict of the network for the predictions.
-
-        Parameters
-        ----------
-        state : dict
-            PyTorch state dict of the network, as NumPy arrays.
-        """
-        try:
-            weights = pack_unet3d_weights(state)
-        except ValueError as e:
-            raise ValueError(
-                "Expected input for the provided model weights "
-                "do not match the declared model"
-            ) from e
-        if self.torch_device is None:
-            self.weights = weights
-            return
-
-        self.model = UNet3D(n_in=2, n_out=1)
-        self.model.load_state_dict({k: torch.from_numpy(v) for k, v in state.items()})
-        self.model.to(self.torch_device).eval()
-
-    def _predict(self, x_test):
-        r"""
-        Internal prediction function.
-
-        Parameters
-        ----------
-        x_test : np.ndarray (batch, 2, 80, 80, 96)
-            Image should match the required shape of the model, with the
-            axes ordered (z, x, y).
-
-        Returns
-        -------
-        np.ndarray (batch, 1, 80, 80, 96)
-            Reconstructed b-inf image(s), with the axes ordered (z, x, y).
-        """
-        if self.model is not None:
-            with torch.no_grad():
-                x_test = torch.from_numpy(x_test).float().to(self.torch_device)
-                return self.model(x_test).cpu().numpy()
-        return np.stack(
-            [
-                unet3d_forward_cpu(x, self.weights, num_threads=self.num_threads)
-                for x in x_test
-            ]
-        )
+        self.network = load_unet3d(state, torch_device=self.torch_device)
 
     def predict(self, b0, T1, *, batch_size=None, average=True):
         r"""
@@ -276,9 +228,9 @@ class Synb0:
         if average:
             mean_pred = np.zeros(shape, dtype=np.float32)
 
-        if not average and self.model is None and self.weights is None:
+        if not average and self.network is None:
             self.fetch_default_weights(0)
-        loaded = (self.model, self.weights)
+        loaded = self.network
 
         for model_idx in range(N_FOLDS if average else 1):
             if average:
@@ -286,7 +238,11 @@ class Synb0:
 
             for start in range(0, shape[0], batch_size):
                 stop = min(start + batch_size, shape[0])
-                prediction[start:stop] = self._predict(input_data[start:stop])
+                prediction[start:stop] = run_unet3d(
+                    self.network,
+                    input_data[start:stop],
+                    num_threads=self.num_threads,
+                )
 
             unpadded = prediction.transpose(_SYNB0_FROM_NETWORK)[_SYNB0_UNPAD]
             for j in range(shape[0]):
@@ -296,7 +252,7 @@ class Synb0:
                 mean_pred += unpadded
 
         if average:
-            self.model, self.weights = loaded
+            self.network = loaded
         prediction = mean_pred / N_FOLDS if average else unpadded
 
         if dim == 3:

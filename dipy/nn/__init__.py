@@ -6,6 +6,8 @@ Deep learning models and utilities for diffusion MRI processing.
 import os
 import sys
 
+import dipy.nn.deepn4 as deepn4_module
+import dipy.nn.synb0 as synb0_module
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -13,26 +15,24 @@ from dipy.utils.optpkg import optional_package
 def _load_backend():
     """Dynamically load the preferred backend based on the environment variable.
 
-    Synb0 needs no backend, its TensorFlow version stays in ``dipy.nn.tf``.
+    DeepN4 and Synb0 need no backend, their TensorFlow versions stay in
+    ``dipy.nn.tf``.
     """
     preferred_backend = os.getenv("DIPY_NN_BACKEND", "torch").lower()
     tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
     torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
     __all__ = []
-    import dipy.nn.synb0 as synb0_module
 
     if (have_torch and (preferred_backend == "torch" or not have_tf)) or (
         not have_tf and not have_torch
     ):
-        import dipy.nn.torch.deepn4 as deepn4_module
         import dipy.nn.torch.evac as evac_module
         import dipy.nn.torch.histo_resdnn as histo_resdnn_module
         import dipy.nn.torch.synthseg as synthseg_module
 
         sys.modules["dipy.nn.evac"] = evac_module
         sys.modules["dipy.nn.histo_resdnn"] = histo_resdnn_module
-        sys.modules["dipy.nn.deepn4"] = deepn4_module
         sys.modules["dipy.nn.synthseg"] = synthseg_module
 
         globals().update(
@@ -49,14 +49,12 @@ def _load_backend():
 
     elif have_tf:
         import dipy.nn.tf.cnn_1d_denoising as cnn_1d_denoising_module
-        import dipy.nn.tf.deepn4 as deepn4_module
         import dipy.nn.tf.evac as evac_module
         import dipy.nn.tf.histo_resdnn as histo_resdnn_module
         import dipy.nn.tf.model as model_module
 
         sys.modules["dipy.nn.evac"] = evac_module
         sys.modules["dipy.nn.histo_resdnn"] = histo_resdnn_module
-        sys.modules["dipy.nn.deepn4"] = deepn4_module
         sys.modules["dipy.nn.cnn_1d_denoising"] = cnn_1d_denoising_module
         sys.modules["dipy.nn.model"] = model_module
         globals().update(

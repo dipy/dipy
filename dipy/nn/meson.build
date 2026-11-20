@@ -28,6 +28,7 @@ py3.extension_module('unet3d',
 
 python_sources = [
   '__init__.py',
+  'deepn4.py',
   'meshnet_webgpu.py',
   'mindgrab.py',
   'synb0.py',

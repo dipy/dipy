@@ -6,7 +6,15 @@ import zipfile
 import numpy as np
 from scipy.ndimage import affine_transform, map_coordinates
 
+from dipy.nn.unet3d import pack_unet3d_weights, unet3d_forward_cpu
 from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.optpkg import lazy_import
+
+# Lazy, so that running on the CPU never imports PyTorch.
+torch_unet3d = lazy_import("dipy.nn.torch.unet3d")
+torch_utils = lazy_import("dipy.nn.torch.utils")
+
+UNET3D_DEVICES = ("auto", "cpu", "cuda")
 
 
 @warning_for_keywords()
@@ -583,3 +591,83 @@ def load_state_dict(fname):
     if not isinstance(state, dict):
         raise ValueError(f"{fname} is not a PyTorch state dict")
     return dict(state)
+
+
+def torch_gpu_device(device):
+    """Find the PyTorch GPU to run a network on.
+
+    Parameters
+    ----------
+    device : str
+        Requested device. Only 'auto' and 'cuda' look for a GPU: 'auto'
+        looks for CUDA, 'cuda' for CUDA then the Apple MPS GPU.
+
+    Returns
+    -------
+    torch.device or None
+        The GPU, or None if PyTorch is missing or finds none.
+    """
+    if device not in ("auto", "cuda"):
+        return None
+    return torch_utils.gpu_device(mps=device == "cuda")
+
+
+def load_unet3d(state, *, torch_device=None):
+    """Prepare the weights of the DeepN4 and Synb0 UNet for ``run_unet3d``.
+
+    Parameters
+    ----------
+    state : dict
+        PyTorch state dict of the network, as NumPy arrays.
+    torch_device : torch.device, optional
+        Device to run the network on with PyTorch. If None, the network runs
+        on the CPU without PyTorch.
+
+    Returns
+    -------
+    dict or dipy.nn.torch.unet3d.UNet3D
+        Weights packed for ``unet3d_forward_cpu``, or the PyTorch network on
+        ``torch_device``.
+    """
+    try:
+        weights = pack_unet3d_weights(state)
+    except ValueError as e:
+        raise ValueError(
+            "Expected input for the provided model weights "
+            "do not match the declared model"
+        ) from e
+    if torch_device is None:
+        return weights
+    n_in = state["ec0.0.weight"].shape[1]
+    n_out = state["dl.bias"].shape[0]
+    return torch_utils.load_torch_model(
+        torch_unet3d.UNet3D(n_in, n_out), state, torch_device
+    )
+
+
+def run_unet3d(network, x, *, num_threads=None):
+    """Run the DeepN4 and Synb0 UNet prepared by ``load_unet3d``.
+
+    Parameters
+    ----------
+    network : dict or dipy.nn.torch.unet3d.UNet3D
+        Output of ``load_unet3d``.
+    x : np.ndarray (batch, n_in, D, H, W)
+        Input volumes. D, H and W should be multiples of 8.
+    num_threads : int, optional
+        Number of threads to use on the CPU. If None, the value of the
+        ``OMP_NUM_THREADS`` environment variable is used if set, otherwise
+        all available cores. If < 0, the maximal number of threads minus
+        $|num_threads + 1|$ is used (enter -1 to use as many threads as
+        possible). 0 raises an error. Ignored with PyTorch.
+
+    Returns
+    -------
+    np.ndarray (batch, n_out, D, H, W)
+        Network output, as float32.
+    """
+    if isinstance(network, dict):
+        return np.stack(
+            [unet3d_forward_cpu(v, network, num_threads=num_threads) for v in x]
+        )
+    return torch_utils.run_torch_model(network, x)

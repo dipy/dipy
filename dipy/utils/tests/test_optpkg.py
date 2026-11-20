@@ -5,7 +5,7 @@ import pytest
 
 from dipy import __version__ as dipy_version
 from dipy.testing import assert_false, assert_true
-from dipy.utils.optpkg import optional_package
+from dipy.utils.optpkg import lazy_import, optional_package
 from dipy.utils.tripwire import TripWireError
 
 
@@ -92,3 +92,31 @@ def test_optional_package(tmp_path):
 
     sys.modules.pop("fake_package", None)
     sys.path = old_sys_path
+
+
+def test_lazy_import(tmp_path):
+    fake_pkg = tmp_path / "fake_lazy_package"
+    fake_pkg.mkdir()
+    (fake_pkg / "__init__.py").touch()
+    marker = tmp_path / "executed"
+    (fake_pkg / "sub.py").write_text(
+        f"from pathlib import Path\n\nPath({str(marker)!r}).touch()\nvalue = 1\n"
+    )
+    old_sys_path = list(sys.path)
+    sys.path.insert(0, str(tmp_path))
+    try:
+        module = lazy_import("fake_lazy_package.sub")
+        assert_false(marker.exists())
+        assert_true(lazy_import("fake_lazy_package.sub") is module)
+        assert_true(sys.modules["fake_lazy_package"].sub is module)
+        assert_true(module.value == 1)
+        assert_true(marker.exists())
+    finally:
+        sys.modules.pop("fake_lazy_package.sub", None)
+        sys.modules.pop("fake_lazy_package", None)
+        sys.path = old_sys_path
+
+    with pytest.raises(ImportError):
+        lazy_import("not_a_package")
+    with pytest.raises(ImportError):
+        lazy_import("not_a_package.sub")
