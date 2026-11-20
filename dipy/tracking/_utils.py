@@ -75,3 +75,11 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
     if inds.min().round(decimals=6) < 0:
         raise IndexError("streamline has points that map to negative voxel indices")
     return inds.astype(np.intp)
+
+
+def _iter_chunk(points, lengths, seeds):
+    """Yield the streamlines (and seeds) of a chunk one at a time."""
+    ends = np.cumsum(lengths)
+    for i, end in enumerate(ends):
+        sl = points[end - lengths[i] : end]
+        yield sl if seeds is None else (sl, seeds[i])

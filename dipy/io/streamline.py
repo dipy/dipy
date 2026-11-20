@@ -6,6 +6,7 @@ import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
+from tqdm import tqdm
 import trx.trx_file_memmap as tmm
 
 from dipy.io.dpy import Dpy
@@ -163,6 +164,153 @@ def load_vtk_streamlines(filename, *, to_lps=True):
         return transform_streamlines(lines, to_lps)
 
     return lines
+
+
+def save_trx_from_generator(
+    sl_generator,
+    reference,
+    *,
+    filename=None,
+    chunked=False,
+    nb_streamlines_estimate=None,
+    nb_vertices_estimate=None,
+    offset_dtype=np.uint64,
+    data_dtype=np.float32,
+    batch_size=10000,
+):
+    """
+    Build a TRX file on disk from a streamline generator, without ever
+    holding the whole tractogram in memory.
+
+    Parameters
+    ----------
+    sl_generator : iterable
+        Output of a DIPY tracking function (streamlines in world space): one
+        streamline ``(N, 3)`` (or ``(streamline, seed)``) at a time, or, with
+        ``chunked=True``, chunks ``(points, lengths)`` /
+        ``(points, lengths, seeds)``. Chunks are written in bulk and are much
+        faster.
+    reference : Nifti1Image, str, Path or dict
+        Reference for the TRX header (e.g. the seeding or stopping image).
+    filename : str or Path, optional
+        If given, write the ``.trx`` file there.
+    chunked : bool, optional
+        True if ``sl_generator`` yields chunks (tracking functions called
+        with ``chunked=True``).
+    nb_streamlines_estimate : int, optional
+        Estimated total number of streamlines, used to preallocate the TRX
+        file on disk.
+    nb_vertices_estimate : int, optional
+        Estimated total number of vertices, used to preallocate the TRX
+        file on disk. If None, ``nb_streamlines_estimate * 100`` is used.
+    offset_dtype : data-type, optional
+        Data type for the offsets array in the TRX file.
+    data_dtype : data-type, optional
+        Data type for the data array in the TRX file. ``np.float16`` halves
+        the file size but rounds world coordinates to about 0.06 mm at
+        100 mm from the origin.
+    batch_size : int, optional
+        Number of single streamlines to buffer before writing them.
+
+    Returns
+    -------
+    trx_file : trx.trx_file_memmap.TrxFile
+        The (resized) TRX object, with seeds in ``data_per_streamline["seeds"]``
+        when the generator provides them. It is backed by a temporary folder
+        as large as the tractogram: call ``trx_file.close()`` when done.
+    """
+    if nb_streamlines_estimate is None:
+        nb_streamlines_estimate = int(1e6)
+    if nb_vertices_estimate is None:
+        nb_vertices_estimate = nb_streamlines_estimate * 100
+    if isinstance(reference, Path):
+        reference = str(reference)
+
+    trx_reference = tmm.TrxFile(reference=reference)
+    trx_reference.streamlines._data = trx_reference.streamlines._data.astype(data_dtype)
+    trx_reference.streamlines._offsets = trx_reference.streamlines._offsets.astype(
+        offset_dtype
+    )
+    trx_file = tmm.TrxFile(
+        nb_streamlines=nb_streamlines_estimate,
+        nb_vertices=nb_vertices_estimate,
+        init_as=trx_reference,
+    )
+    trx_reference.close()
+
+    chunks = sl_generator if chunked else _batch_streamlines(sl_generator, batch_size)
+    sl_idx = 0
+    data_idx = 0
+    seeds = []
+    try:
+        with tqdm(total=nb_streamlines_estimate) as pbar:
+            for chunk in chunks:
+                points, lengths = chunk[0], np.asarray(chunk[1])
+                n_sl = len(lengths)
+                n_pts = len(points)
+                if (
+                    sl_idx + n_sl > trx_file.header["NB_STREAMLINES"]
+                    or data_idx + n_pts > trx_file.header["NB_VERTICES"]
+                ):
+                    logger.info("TRX resizing...")
+                    trx_file.resize(
+                        nb_streamlines=(sl_idx + n_sl) * 2,
+                        nb_vertices=(data_idx + n_pts) * 2,
+                    )
+                trx_file.streamlines._data[data_idx : data_idx + n_pts] = points
+                trx_file.streamlines._offsets[sl_idx : sl_idx + n_sl] = (
+                    data_idx + np.cumsum(lengths) - lengths
+                )
+                trx_file.streamlines._lengths[sl_idx : sl_idx + n_sl] = lengths
+                if len(chunk) > 2 and chunk[2] is not None:
+                    seeds.append(np.asarray(chunk[2], dtype=np.float32))
+                sl_idx += n_sl
+                data_idx += n_pts
+                pbar.update(n_sl)
+
+        trx_file.resize(nb_streamlines=sl_idx, nb_vertices=data_idx)
+        if seeds:
+            trx_file.data_per_streamline["seeds"] = np.concatenate(seeds)
+        if filename is not None:
+            tmm.save(trx_file, str(filename))
+    except BaseException:
+        trx_file.close()
+        raise
+    return trx_file
+
+
+def _batch_streamlines(sl_generator, batch_size):
+    """Group single streamlines into ``(points, lengths, seeds)`` chunks.
+
+    Parameters
+    ----------
+    sl_generator : iterable
+        Yields streamlines ``(N, 3)`` or ``(streamline, seed)`` pairs.
+    batch_size : int
+        Number of streamlines per chunk.
+
+    Yields
+    ------
+    chunk : tuple
+        ``(points, lengths, seeds)``, with ``seeds`` None when the generator
+        yields bare streamlines.
+    """
+    sls, seeds = [], []
+    for item in sl_generator:
+        if isinstance(item, tuple):
+            seeds.append(item[1])
+            item = item[0]
+        sls.append(np.asarray(item))
+        if len(sls) >= batch_size:
+            yield _flush_streamlines(sls, seeds)
+            sls, seeds = [], []
+    if sls:
+        yield _flush_streamlines(sls, seeds)
+
+
+def _flush_streamlines(sls, seeds):
+    lengths = np.array([len(sl) for sl in sls])
+    return np.concatenate(sls), lengths, (np.array(seeds) if seeds else None)
 
 
 @warning_for_keywords()

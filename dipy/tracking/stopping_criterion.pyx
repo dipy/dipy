@@ -7,7 +7,7 @@ cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
 from dipy.utils.fast_numpy cimport random, RNGState, random_float
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate3d_c
 
 import numpy as np
 
@@ -71,7 +71,7 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
             int err
             double interp_out_double[1]
 
-        err = trilinear_interpolate4d_c(self.metric_map[..., None],
+        err = trilinear_interpolate3d_c(self.metric_map,
                                         point,
                                         &interp_out_double[0])
         if err == -1:
@@ -139,7 +139,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         cdef:
             double interp_out_double[1]
 
-        exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
+        exclude_err = trilinear_interpolate3d_c(self.exclude_map,
                                                 point,
                                                 &interp_out_double[0])
         if exclude_err != 0:
@@ -156,7 +156,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         cdef:
             double interp_out_double[1]
 
-        include_err = trilinear_interpolate4d_c(self.include_map[..., None],
+        include_err = trilinear_interpolate3d_c(self.include_map,
                                                 point,
                                                 &interp_out_double[0])
         if include_err != 0:
@@ -192,12 +192,12 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
             int include_err, exclude_err
             double interp_out_double[1]
 
-        include_err = trilinear_interpolate4d_c(self.include_map[..., None],
+        include_err = trilinear_interpolate3d_c(self.include_map,
                                                 point,
                                                 &interp_out_double[0])
         include_result = interp_out_double[0]
 
-        exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
+        exclude_err = trilinear_interpolate3d_c(self.exclude_map,
                                                 point,
                                                 &interp_out_double[0])
         exclude_result = interp_out_double[0]
@@ -253,12 +253,12 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             double p
             double interp_out_double[1]
 
-        include_err = trilinear_interpolate4d_c(self.include_map[..., None],
+        include_err = trilinear_interpolate3d_c(self.include_map,
                                                 point,
                                                 &interp_out_double[0])
         include_result = interp_out_double[0]
 
-        exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
+        exclude_err = trilinear_interpolate3d_c(self.exclude_map,
                                                 point,
                                                 &interp_out_double[0])
         exclude_result = interp_out_double[0]
