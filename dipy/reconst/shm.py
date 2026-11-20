@@ -20,7 +20,7 @@ where data is Y.T and sh_coef is x.T.
 """
 
 from functools import cache
-from warnings import warn
+from warnings import catch_warnings, simplefilter, warn
 
 import numpy as np
 from numpy.random import randint
@@ -28,7 +28,7 @@ import scipy.special as sps
 
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
-from dipy.core.sphere import hemi_icosahedron
+from dipy.core.sphere import hemi_icosahedron, unit_icosahedron
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.recspeed import fmls_afd
@@ -1817,6 +1817,11 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
     legacy-descoteaux.
 
     This can be used to convert SH representations between DIPY and MRtrix3.
+    Note that this only changes the basis: it does not account for the fact
+    that MRtrix3 expresses directions in scanner (world) space whereas DIPY
+    expresses them in the voxel frame of the image. Unless the image axes are
+    aligned with the RAS world axes, use :func:`convert_sh_mrtrix_to_dipy` or
+    :func:`convert_sh_dipy_to_mrtrix` instead.
 
     See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2019` for the
     origin of these SH bases.
@@ -1853,3 +1858,261 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
         for i in range(len(basis_indices))
     ]
     return sh_coeffs[..., permutation]
+
+
+def _rotation_from_affine(affine):
+    """Return the orthogonal part of the linear part of an affine.
+
+    The columns of an affine's linear part are the voxel axes expressed in
+    world (scanner) coordinates, scaled by the voxel sizes. The returned matrix
+    maps a direction expressed in the voxel frame to the same direction
+    expressed in world coordinates. It may be an improper rotation
+    (determinant -1), which is the case for most images stored in radiological
+    (e.g. LAS) order.
+
+    If the affine contains shear, the voxel axes are not orthogonal and the
+    voxel frame is not well defined. In that case the nearest orthogonal
+    matrix (polar decomposition) is used and a warning is raised.
+    """
+    affine = np.asarray(affine, dtype=float)
+    if affine.shape not in ((3, 3), (4, 4)):
+        raise ValueError(
+            f"affine must have shape (4, 4) or (3, 3), got {affine.shape}."
+        )
+    linear = affine[:3, :3]
+    u, s, vt = np.linalg.svd(linear)
+    if s[-1] <= 1e-8 * s[0]:
+        raise ValueError("The affine is singular.")
+    rotation = u @ vt
+    unit_axes = linear / np.linalg.norm(linear, axis=0)
+    if not np.allclose(unit_axes, rotation, atol=1e-4):
+        warn(
+            "The affine contains shear: the voxel axes are not orthogonal. Its "
+            "nearest rotation is used to reorient the spherical harmonics.",
+            UserWarning,
+            stacklevel=3,
+        )
+    return rotation
+
+
+def _sh_change_of_frame_matrix(
+    sh_order_max,
+    rotation,
+    *,
+    in_basis_type,
+    in_legacy,
+    out_basis_type,
+    out_legacy,
+    full_basis=False,
+):
+    """Matrix mapping SH coefficients between bases and orientation frames.
+
+    Returns ``M`` such that ``out_coeffs = in_coeffs @ M.T`` represents the
+    function ``f_out(v) = f_in(rotation @ v)``, with ``f_in`` expressed in the
+    input basis and ``f_out`` in the output basis.
+
+    Rotations and reflections map each SH degree onto itself, so the matrix
+    is exact. It is found by least squares on a set of directions that
+    over-determines the problem, and the fit is checked to be exact.
+    """
+    in_basis = sph_harm_lookup.get(in_basis_type)
+    out_basis = sph_harm_lookup.get(out_basis_type)
+    if in_basis is None or out_basis is None:
+        raise ValueError("Invalid basis name.")
+
+    m_values, _ = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
+    sphere = unit_icosahedron
+    while sphere.vertices.shape[0] < 2 * m_values.size:
+        sphere = sphere.subdivide(n=1)
+
+    v = sphere.vertices
+    u = v @ np.asarray(rotation, dtype=float).T
+    u /= np.linalg.norm(u, axis=1, keepdims=True)
+    _, theta_v, phi_v = cart2sphere(*v.T)
+    _, theta_u, phi_u = cart2sphere(*u.T)
+
+    with catch_warnings():
+        # The legacy bases raise PendingDeprecationWarnings when evaluated;
+        # the caller already chose them explicitly.
+        simplefilter("ignore", PendingDeprecationWarning)
+        b_in = in_basis(
+            sh_order_max, theta_u, phi_u, full_basis=full_basis, legacy=in_legacy
+        )[0]
+        b_out = out_basis(
+            sh_order_max, theta_v, phi_v, full_basis=full_basis, legacy=out_legacy
+        )[0]
+
+    mat = np.linalg.lstsq(b_out, b_in, rcond=None)[0]
+    residual = np.linalg.norm(b_out @ mat - b_in) / np.linalg.norm(b_in)
+    if residual > 1e-6:
+        raise RuntimeError(
+            "Could not compute an exact SH change of frame "
+            f"(relative residual {residual:.2e})."
+        )
+    return mat
+
+
+def _apply_sh_matrix(sh_coeffs, mat):
+    sh_coeffs = np.asarray(sh_coeffs)
+    if np.issubdtype(sh_coeffs.dtype, np.floating):
+        return sh_coeffs @ mat.T.astype(sh_coeffs.dtype)
+    return sh_coeffs @ mat.T
+
+
+def rotate_sh(sh_coeffs, rotation, *, basis_type=None, legacy=True, full_basis=False):
+    """Rotate spherical functions represented by SH coefficients.
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the SH coefficients.
+    rotation : ndarray (3, 3)
+        Orthogonal matrix. Improper rotations (reflections, determinant -1)
+        are allowed. A function with a lobe along direction ``d`` is mapped to
+        a function with a lobe along ``rotation @ d``.
+    basis_type : {None, 'tournier07', 'descoteaux07'}, optional
+        SH basis of ``sh_coeffs`` (``None`` defaults to ``descoteaux07``).
+    legacy : bool, optional
+        True if ``sh_coeffs`` use the legacy definition of ``basis_type``.
+    full_basis : bool, optional
+        True if ``sh_coeffs`` include odd order SH functions.
+
+    Returns
+    -------
+    rotated_coeffs : ndarray
+        The coefficients, in the same basis, of the rotated functions. That
+        is, ``g(rotation @ u) = f(u)`` for every direction ``u``.
+    """
+    rotation = np.asarray(rotation, dtype=float)
+    if rotation.shape != (3, 3) or not np.allclose(
+        rotation.T @ rotation, np.eye(3), atol=1e-6
+    ):
+        raise ValueError("rotation must be an orthogonal (3, 3) matrix.")
+    sh_order_max = calculate_max_order(np.shape(sh_coeffs)[-1], full_basis=full_basis)
+    mat = _sh_change_of_frame_matrix(
+        sh_order_max,
+        rotation.T,
+        in_basis_type=basis_type,
+        in_legacy=legacy,
+        out_basis_type=basis_type,
+        out_legacy=legacy,
+        full_basis=full_basis,
+    )
+    return _apply_sh_matrix(sh_coeffs, mat)
+
+
+def convert_sh_mrtrix_to_dipy(
+    sh_coeffs, affine, *, basis_type="descoteaux07", legacy=True, mrtrix_legacy=False
+):
+    """Convert SH coefficients from MRtrix3 to DIPY, including orientation.
+
+    MRtrix3 stores SH coefficients (e.g. the FODs from ``dwi2fod``) in the
+    ``tournier07`` basis, with directions expressed in scanner (world, RAS)
+    space :footcite:p:`Tournier2019`. DIPY expresses directions in the voxel
+    frame of the image (the image axes, in mm). This function changes the
+    basis and reorients the functions from scanner space to the voxel frame,
+    so the result can be used with DIPY's peak extraction and tractography.
+
+    Unlike :func:`convert_sh_descoteaux_tournier`, which only changes the
+    basis, this is correct for images of any orientation, including oblique
+    acquisitions and images stored in radiological (e.g. LAS) order.
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the MRtrix SH coefficients.
+        Only symmetric (even order) bases are supported, as in MRtrix3.
+    affine : ndarray (4, 4)
+        The voxel-to-world affine of the image that ``sh_coeffs`` were read
+        from, as returned by :func:`dipy.io.image.load_nifti`. It must
+        describe the same voxel grid that will be used in DIPY.
+    basis_type : {'descoteaux07', 'tournier07'}, optional
+        DIPY SH basis of the output.
+    legacy : bool, optional
+        True to use the legacy definition of ``basis_type`` for the output
+        (DIPY's default).
+    mrtrix_legacy : bool, optional
+        True if ``sh_coeffs`` come from MRtrix 0.2 rather than MRtrix3.
+
+    Returns
+    -------
+    out_sh_coeffs : ndarray
+        SH coefficients in the requested DIPY basis, in the voxel frame.
+
+    See Also
+    --------
+    convert_sh_dipy_to_mrtrix
+
+    Notes
+    -----
+    If the affine contains shear, the voxel axes are not orthogonal and only
+    the rotational part of the affine is used; a warning is raised.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    rotation = _rotation_from_affine(affine)
+    sh_order_max = calculate_max_order(np.shape(sh_coeffs)[-1])
+    mat = _sh_change_of_frame_matrix(
+        sh_order_max,
+        rotation,
+        in_basis_type="tournier07",
+        in_legacy=mrtrix_legacy,
+        out_basis_type=basis_type,
+        out_legacy=legacy,
+    )
+    return _apply_sh_matrix(sh_coeffs, mat)
+
+
+def convert_sh_dipy_to_mrtrix(
+    sh_coeffs, affine, *, basis_type="descoteaux07", legacy=True, mrtrix_legacy=False
+):
+    """Convert SH coefficients from DIPY to MRtrix3, including orientation.
+
+    This is the inverse of :func:`convert_sh_mrtrix_to_dipy`: the functions
+    are reoriented from the voxel frame of the image (DIPY) to scanner space
+    and expressed in the ``tournier07`` basis used by MRtrix3
+    :footcite:p:`Tournier2019`, so the result can be used with MRtrix3
+    commands such as ``sh2peaks`` or ``tckgen``.
+
+    Parameters
+    ----------
+    sh_coeffs : ndarray
+        A ndarray where the last dimension is the DIPY SH coefficients.
+        Only symmetric (even order) bases are supported.
+    affine : ndarray (4, 4)
+        The voxel-to-world affine of the image that ``sh_coeffs`` belong to.
+        Save the output with this same affine.
+    basis_type : {'descoteaux07', 'tournier07'}, optional
+        DIPY SH basis of ``sh_coeffs``.
+    legacy : bool, optional
+        True if ``sh_coeffs`` use the legacy definition of ``basis_type``
+        (DIPY's default).
+    mrtrix_legacy : bool, optional
+        True to output the MRtrix 0.2 basis rather than the MRtrix3 one.
+
+    Returns
+    -------
+    out_sh_coeffs : ndarray
+        SH coefficients in the MRtrix basis, in scanner space.
+
+    See Also
+    --------
+    convert_sh_mrtrix_to_dipy
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    rotation = _rotation_from_affine(affine)
+    sh_order_max = calculate_max_order(np.shape(sh_coeffs)[-1])
+    mat = _sh_change_of_frame_matrix(
+        sh_order_max,
+        rotation.T,
+        in_basis_type=basis_type,
+        in_legacy=legacy,
+        out_basis_type="tournier07",
+        out_legacy=mrtrix_legacy,
+    )
+    return _apply_sh_matrix(sh_coeffs, mat)
