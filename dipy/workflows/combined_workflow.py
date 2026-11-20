@@ -63,6 +63,7 @@ from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows import interactive, report, skyline_app, templates
+from dipy.workflows.align import ResliceFlow
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.multi_io import _resolve_path_or_pattern, connect_output_paths
 from dipy.workflows.qc import qc_result, run_stage_qc
@@ -2166,7 +2167,19 @@ def execute_semantic_pipeline(
     # =====================================================================
 
     user_mask_stages = set()
-    if io_config.get("mask"):
+    user_mask = io_config.get("mask")
+    reslice = next((s for s in pipeline_stages if s.get("cli") == "dipy_reslice"), {})
+    if user_mask and reslice:  # the DWI is resliced: reslice the user mask alike
+        flow = ResliceFlow(force=True)
+        flow.run(
+            user_mask,
+            new_vox_size=reslice.get("new_vox_size"),
+            order=0,
+            out_dir=out_dir,
+            out_resliced="user_mask_resliced.nii.gz",
+        )
+        user_mask = str(flow.last_generated_outputs["out_resliced"])
+    if user_mask:
         for stage in pipeline_stages:
             cli_name = stage.get("cli", "")
             if not cli_name:
@@ -2177,11 +2190,10 @@ def execute_semantic_pipeline(
                 continue
             if "out_mask" in stage_outputs:
                 sname = stage["name"]
-                resolved_outputs.setdefault(sname, {})["out_mask"] = io_config["mask"]
+                resolved_outputs.setdefault(sname, {})["out_mask"] = user_mask
                 user_mask_stages.add(sname)
                 logger.info(
-                    f"Skipping stage '{sname}' — using user-provided mask: "
-                    f"{io_config['mask']}"
+                    f"Skipping stage '{sname}' — using user-provided mask: {user_mask}"
                 )
 
     executed = set()
