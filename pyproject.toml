@@ -257,7 +257,9 @@ filterwarnings = [
     "ignore:.*np.find_common_type is deprecated.*:DeprecationWarning:scipy",
     "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py",
     # DIPY's own TensorFlow backend, imported when collecting its doctests
-    "ignore:`dipy.nn.tf` module uses TensorFlow.*:DeprecationWarning"
+    "ignore:`dipy.nn.tf` module uses TensorFlow.*:DeprecationWarning",
+    # Deprecated DeepN4 location, imported when collecting its doctests
+    "ignore:`dipy.nn.torch.deepn4` is deprecated.*:DeprecationWarning"
 ]
 
 [tool.cython-lint]
