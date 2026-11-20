@@ -5,6 +5,8 @@
 
 from dipy.utils.deprecator import deprecate_with_version
 
+from libc.string cimport memcpy
+
 cimport numpy as cnp
 
 
@@ -274,7 +276,9 @@ cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil:
 
 cdef inline cnp.npy_uint32 _float_bits(double x) noexcept nogil:
     cdef float f = <float>x
-    return (<cnp.npy_uint32*>&f)[0]
+    cdef cnp.npy_uint32 bits
+    memcpy(&bits, &f, sizeof(float))
+    return bits
 
 
 cdef void seed_philox_streamline(RNGState* rng_state, cnp.npy_uint64 seed,
