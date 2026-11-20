@@ -46,7 +46,6 @@ from dipy.reconst.dti import (
     geodesic_anisotropy,
     lower_triangular,
     mean_diffusivity,
-    mode as get_mode,
     radial_diffusivity,
 )
 from dipy.reconst.forecast import ForecastModel
@@ -743,7 +742,7 @@ class ReconstDtiFlow(Workflow):
                 save_nifti(orad, RD.astype(np.float32), affine)
 
             if "mode" in save_metrics:
-                MODE = get_mode(tenfit.quadratic_form)
+                MODE = tenfit.mode
                 save_nifti(omode, MODE.astype(np.float32), affine)
 
             if "evec" in save_metrics:
@@ -1861,7 +1860,7 @@ class ReconstDkiFlow(Workflow):
                 save_nifti(orad, RD.astype(np.float32), affine)
 
             if "mode" in save_metrics:
-                MODE = get_mode(dkfit.quadratic_form)
+                MODE = dkfit.mode
                 save_nifti(omode, MODE.astype(np.float32), affine)
 
             if "evec" in save_metrics:
@@ -3427,7 +3426,7 @@ class ReconstFwdtiFlow(Workflow):
                 save_nifti(orad, RD.astype(np.float32), affine)
 
             if "mode" in save_metrics:
-                MODE = get_mode(fwdti_fit.quadratic_form)
+                MODE = fwdti_fit.mode
                 save_nifti(omode, MODE.astype(np.float32), affine)
 
             if "evec" in save_metrics:
