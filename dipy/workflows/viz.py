@@ -41,7 +41,7 @@ class SkylineFlow(Workflow):
         odfs=None,
         sh_basis="descoteaux07",
         cluster=False,
-        performance_version=False,
+        streamlines_as_tubes=False,
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
@@ -87,10 +87,9 @@ class SkylineFlow(Workflow):
             Unsupported values are logged and use latest Descoteaux07.
         cluster : bool, optional
             Whether to cluster the tractograms.
-        performance_version : bool, optional
-            Whether to use the performance version of the tractogram rendering.
-            This will render tractograms as lines instead of tubes,
-            which can improve performance for large tractograms.
+        streamlines_as_tubes : bool, optional
+            Render tractograms as tubes instead of lines. Lines are the
+            default because tubes can be slow for large tractograms.
         glass_brain : bool, optional
             Whether to use glass brain mode. This will overwrite the background color
             to white if not explicitly set by the user.
@@ -192,7 +191,7 @@ class SkylineFlow(Workflow):
             shm_coeffs=odfs,
             sh_basis=sh_basis,
             is_cluster=cluster,
-            is_light_version=performance_version,
+            is_light_version=not streamlines_as_tubes,
             glass_brain=glass_brain,
             bg_color=bg_color,
             tract_colors=tract_colors,
