@@ -255,10 +255,10 @@ color, or three numbers between 0 and 1 for a single RGB color. ::
 
 The color picker in the tractogram controls changes the color afterwards.
 
-**Lines or tubes.** Streamlines are drawn as tubes by default. For large
-tractograms, ``--performance_version`` draws them as lines, which is much
-faster. The *Line Type* switch in the tractogram controls changes this at
-any time, and *Opacity* and *Thickness* adjust the lines.
+**Lines or tubes.** Streamlines are drawn as lines by default, which stays
+fast even for large tractograms. ``--streamlines_as_tubes`` draws them as
+tubes instead. The *Line Type* switch in the tractogram controls changes this
+at any time, and *Opacity* and *Thickness* adjust the lines.
 
 **Tractograms with anatomy.** The atlas is in MNI space, so it lines up with
 the MNI template. ::

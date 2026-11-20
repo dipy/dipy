@@ -61,11 +61,9 @@ def test_skyline_flow_captures_offscreen(tmp_path, stealth, dipy_value):
 
 
 @pytest.mark.parametrize(
-    "performance_version, line_type", [(False, "Tube"), (True, "Line")]
+    "streamlines_as_tubes, line_type", [(False, "Line"), (True, "Tube")]
 )
-def test_skyline_flow_performance_version_renders_lines(
-    tmp_path, performance_version, line_type
-):
+def test_skyline_flow_default_renders_lines(tmp_path, streamlines_as_tubes, line_type):
     reference = nib.Nifti1Image(np.zeros((4, 4, 4), dtype=np.float32), np.eye(4))
     streamlines = [
         np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]),
@@ -80,7 +78,7 @@ def test_skyline_flow_performance_version_renders_lines(
 
     viewer = SkylineFlow().run(
         [str(tract_path)],
-        performance_version=performance_version,
+        streamlines_as_tubes=streamlines_as_tubes,
         stealth=True,
         out_dir=str(tmp_path),
         out_stealth_png="tracts.png",

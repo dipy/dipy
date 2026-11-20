@@ -230,7 +230,7 @@ should provide the available options ::
 
     usage: dipy_skyline [-h] [--rois [str ...]] [--peaks [str ...]]
                         [--odfs [str ...]] [--sh_basis str] [--cluster]
-                        [--performance_version] [--glass_brain]
+                        [--streamlines_as_tubes] [--glass_brain]
                         [--bg_color [float ...]] [--tract_colors str]
                         [--cluster_thr float] [--cluster_size_thr int]
                         [--cluster_length_thr float] [--buan_pvals [str ...]]
