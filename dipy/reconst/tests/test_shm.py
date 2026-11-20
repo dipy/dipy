@@ -29,7 +29,9 @@ from dipy.reconst.shm import (
     bootstrap_data_voxel,
     calculate_max_order,
     convert_sh_descoteaux_tournier,
+    convert_sh_dipy_to_mrtrix,
     convert_sh_from_legacy,
+    convert_sh_mrtrix_to_dipy,
     convert_sh_to_full_basis,
     convert_sh_to_legacy,
     descoteaux07_legacy_msg,
@@ -43,6 +45,7 @@ from dipy.reconst.shm import (
     real_sh_tournier,
     real_sym_sh_basis,
     real_sym_sh_mrtrix,
+    rotate_sh,
     sf_to_sh,
     sh_to_sf,
     sh_to_sf_matrix,
@@ -1403,3 +1406,182 @@ def test_convert_sh_descoteaux_tournier():
                 ]
             )
             assert_array_equal(converted_coeffs, expected_coeffs)
+
+
+def _random_rotation(rng):
+    q, r = npl.qr(rng.standard_normal((3, 3)))
+    return q * np.sign(np.diag(r))
+
+
+def _random_sh(rng, sh_order_max, shape=(), full_basis=False):
+    _, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
+    return rng.standard_normal(shape + (l_values.size,))
+
+
+def _sample(sh, directions, basis_type, legacy, sh_order_max, full_basis=False):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PendingDeprecationWarning)
+        return sh_to_sf(
+            sh,
+            Sphere(xyz=directions),
+            sh_order_max=sh_order_max,
+            basis_type=basis_type,
+            legacy=legacy,
+            full_basis=full_basis,
+        )
+
+
+@set_random_number_generator(1234)
+def test_convert_sh_mrtrix_to_dipy(rng=None):
+    directions = hemi_icosahedron.subdivide(n=3).vertices
+    rot = _random_rotation(rng)
+    # oblique, radiological (det < 0), anisotropic voxels
+    affines = {
+        "identity": np.eye(4),
+        "LAS": np.diag([-2.0, 2.0, 2.0, 1.0]),
+        "oblique": np.eye(4),
+        "oblique_LAS": np.eye(4),
+    }
+    affines["oblique"][:3, :3] = rot @ np.diag([1.5, 1.5, 3.0])
+    affines["oblique_LAS"][:3, :3] = rot @ np.diag([-1.5, 1.5, 3.0])
+    affines["oblique_LAS"][:3, 3] = [10.0, -20.0, 5.0]
+
+    for sh_order_max in (0, 2, 8, 12):
+        sh_mrtrix = _random_sh(rng, sh_order_max, shape=(2, 3))
+        for name, affine in affines.items():
+            for basis_type, legacy in (
+                ("descoteaux07", True),
+                ("descoteaux07", False),
+                ("tournier07", False),
+            ):
+                sh_dipy = convert_sh_mrtrix_to_dipy(
+                    sh_mrtrix, affine, basis_type=basis_type, legacy=legacy
+                )
+                # The DIPY function in voxel direction v must equal the MRtrix
+                # function in the same direction expressed in scanner space.
+                linear = affine[:3, :3]
+                world = directions @ (linear / npl.norm(linear, axis=0)).T
+                expected = _sample(sh_mrtrix, world, "tournier07", False, sh_order_max)
+                result = _sample(sh_dipy, directions, basis_type, legacy, sh_order_max)
+                assert_array_almost_equal(result, expected, err_msg=name)
+
+                back = convert_sh_dipy_to_mrtrix(
+                    sh_dipy, affine, basis_type=basis_type, legacy=legacy
+                )
+                assert_array_almost_equal(back, sh_mrtrix, err_msg=name)
+
+
+@set_random_number_generator(1234)
+def test_convert_sh_mrtrix_dipy_consistency(rng=None):
+    sh = _random_sh(rng, 8, shape=(4,))
+    # With RAS-aligned axes there is no reorientation, so this reduces to the
+    # basis-only conversion.
+    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    assert_array_almost_equal(
+        convert_sh_mrtrix_to_dipy(sh, affine), convert_sh_descoteaux_tournier(sh)
+    )
+    assert_array_almost_equal(
+        convert_sh_dipy_to_mrtrix(sh, affine), convert_sh_descoteaux_tournier(sh)
+    )
+    # ... but not for an image stored in LAS order.
+    affine = np.diag([-2.0, 2.0, 2.0, 1.0])
+    npt.assert_(
+        not np.allclose(
+            convert_sh_mrtrix_to_dipy(sh, affine), convert_sh_descoteaux_tournier(sh)
+        )
+    )
+
+    # MRtrix 0.2 (legacy tournier07) input.
+    affine[:3, :3] = _random_rotation(rng)
+    legacy_sh = convert_sh_to_legacy(sh, "tournier07")
+    assert_array_almost_equal(
+        convert_sh_mrtrix_to_dipy(legacy_sh, affine, mrtrix_legacy=True),
+        convert_sh_mrtrix_to_dipy(sh, affine),
+    )
+    assert_array_almost_equal(
+        convert_sh_dipy_to_mrtrix(sh, affine, mrtrix_legacy=True),
+        convert_sh_to_legacy(convert_sh_dipy_to_mrtrix(sh, affine), "tournier07"),
+    )
+
+    # dtype is preserved
+    out = convert_sh_mrtrix_to_dipy(sh.astype(np.float32), affine)
+    assert_equal(out.dtype, np.float32)
+
+
+@set_random_number_generator(1234)
+def test_convert_sh_mrtrix_to_dipy_errors(rng=None):
+    sh = _random_sh(rng, 4)
+    affine = np.eye(4)
+    affine[:3, :3] = _random_rotation(rng) @ np.array(
+        [[2.0, 0.2, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 2.0]]
+    )
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        out = convert_sh_mrtrix_to_dipy(sh, affine)
+    npt.assert_(any("shear" in str(x.message) for x in w))
+    u, _, vt = npl.svd(affine[:3, :3])
+    rigid = np.eye(4)
+    rigid[:3, :3] = u @ vt
+    assert_array_almost_equal(out, convert_sh_mrtrix_to_dipy(sh, rigid))
+
+    assert_raises(ValueError, convert_sh_mrtrix_to_dipy, sh, np.zeros((4, 4)))
+    assert_raises(ValueError, convert_sh_mrtrix_to_dipy, sh, np.eye(2))
+    assert_raises(ValueError, convert_sh_mrtrix_to_dipy, sh[:-1], np.eye(4))
+    assert_raises(
+        ValueError, convert_sh_mrtrix_to_dipy, sh, np.eye(4), basis_type="foo"
+    )
+
+
+@set_random_number_generator(1234)
+def test_rotate_sh(rng=None):
+    directions = hemi_icosahedron.subdivide(n=3).vertices
+    unit_sphere = directions
+    for full_basis in (False, True):
+        sh_order_max = 7 if full_basis else 8
+        if full_basis:
+            unit_sphere = np.concatenate([directions, -directions])
+        sh = _random_sh(rng, sh_order_max, shape=(3,), full_basis=full_basis)
+        r1, r2 = _random_rotation(rng), _random_rotation(rng)
+        r1[:, 0] *= -1  # include an improper rotation
+        for basis_type, legacy in (
+            (None, True),
+            ("descoteaux07", False),
+            ("tournier07", False),
+        ):
+            kw = {"basis_type": basis_type, "legacy": legacy, "full_basis": full_basis}
+            rotated = rotate_sh(sh, r1, **kw)
+            # g(R u) = f(u)
+            assert_array_almost_equal(
+                _sample(
+                    rotated,
+                    unit_sphere @ r1.T,
+                    basis_type,
+                    legacy,
+                    sh_order_max,
+                    full_basis,
+                ),
+                _sample(sh, unit_sphere, basis_type, legacy, sh_order_max, full_basis),
+            )
+            # composition and inverse
+            assert_array_almost_equal(
+                rotate_sh(rotated, r2, **kw), rotate_sh(sh, r2 @ r1, **kw)
+            )
+            assert_array_almost_equal(rotate_sh(rotated, r1.T, **kw), sh)
+
+    # A single fibre ODF peaks along the rotated direction.
+    sphere = hemi_icosahedron.subdivide(n=4)
+    fibre = np.array([0.0, 0.0, 1.0])
+    odf = multi_tensor_odf(
+        sphere.vertices, np.array([[0.0015, 0.0003, 0.0003]]), [(0, 0)], [100]
+    )
+    sh = sf_to_sh(odf, sphere, sh_order_max=8, basis_type="descoteaux07", legacy=False)
+    rot = _random_rotation(rng)
+    rotated = rotate_sh(sh, rot, basis_type="descoteaux07", legacy=False)
+    sf = sh_to_sf(
+        rotated, sphere, sh_order_max=8, basis_type="descoteaux07", legacy=False
+    )
+    peak = sphere.vertices[np.argmax(sf)]
+    npt.assert_(np.abs(peak @ (rot @ fibre)) > np.cos(np.deg2rad(3)))
+
+    assert_raises(ValueError, rotate_sh, sh, 2 * np.eye(3))
+    assert_raises(ValueError, rotate_sh, sh, np.eye(4))
