@@ -1,6 +1,7 @@
-from nibabel.affines import voxel_sizes
+from nibabel.affines import apply_affine, voxel_sizes
 import numpy as np
 
+from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.direction import (
     BootDirectionGetter,
@@ -53,6 +54,98 @@ def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
     return True
 
 
+def _has_peaks(pam):
+    """Whether ``pam`` holds the peak indices and values tracked from a pam."""
+    return (
+        getattr(pam, "peak_indices", None) is not None
+        and getattr(pam, "peak_values", None) is not None
+    )
+
+
+def _pam_odf_vertices(pam, sphere):
+    """Sphere vertices that ``pam.peak_indices`` index into.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Peaks.
+    sphere : Sphere
+        Fallback sphere when ``pam`` has no ``odf_vertices``.
+
+    Returns
+    -------
+    odf_vertices : ndarray, shape (N, 3)
+    """
+    odf_vertices = getattr(pam, "odf_vertices", None)
+    return sphere.vertices if odf_vertices is None else odf_vertices
+
+
+def _pam_seed_directions(pam, seed_positions, *, affine, odf_vertices, max_cross):
+    """Seed positions and directions from the peaks of the seed voxels.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Peaks.
+    seed_positions : ndarray, shape (N, 3)
+        Seed positions in world space.
+    affine : ndarray, shape (4, 4)
+        Voxel-to-world affine.
+    odf_vertices : ndarray, shape (M, 3)
+        Sphere vertices that ``pam.peak_indices`` index into.
+    max_cross : int or None
+        Maximum number of peaks tracked per seed.
+
+    Returns
+    -------
+    seed_positions, seed_directions : ndarray
+        See :func:`dipy.tracking.utils.seeds_directions_pairs`.
+    """
+    seed_voxels = np.round(apply_affine(np.linalg.inv(affine), seed_positions))
+    seed_voxels = np.clip(
+        seed_voxels.astype(int), 0, np.array(pam.peak_indices.shape[:3]) - 1
+    )
+    x, y, z = seed_voxels.T
+    seed_peak_indices = np.clip(
+        pam.peak_indices[x, y, z].astype(int), 0, len(odf_vertices) - 1
+    )
+    return seeds_directions_pairs(
+        seed_positions,
+        np.asarray(odf_vertices)[seed_peak_indices],
+        max_cross=max_cross,
+        peak_values=pam.peak_values[x, y, z],
+    )
+
+
+def _peaks_to_sf(peak_indices, peak_values, nb_vertices):
+    """Sparse spherical function whose interpolation is the pmf of peaks.
+
+    ``SimplePeakGen`` adds ``weight * peak_value`` at ``peak_index`` for each
+    of the 8 interpolation neighbours, which is the trilinear interpolation
+    of this volume: GPU backends then track the same pmf as the CPU.
+
+    Parameters
+    ----------
+    peak_indices : ndarray, shape (X, Y, Z, npeaks)
+        Sphere vertex index of each peak (negative when there is no peak).
+    peak_values : ndarray, shape (X, Y, Z, npeaks)
+        Value of each peak.
+    nb_vertices : int
+        Number of sphere vertices.
+
+    Returns
+    -------
+    sf : ndarray of float32, shape (X, Y, Z, nb_vertices)
+    """
+    peak_indices = np.asarray(peak_indices)
+    peak_values = np.asarray(peak_values)
+    sf = np.zeros(peak_indices.shape[:3] + (nb_vertices,), dtype=np.float32)
+    valid = (peak_indices >= 0) & (peak_indices < nb_vertices) & (peak_values > 0)
+    x, y, z, _ = np.nonzero(valid)
+    np.add.at(sf, (x, y, z, peak_indices[valid]), peak_values[valid])
+    return sf
+
+
 def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size):
     """Why the GPU backends cannot run this tracking, or None if they can.
 
@@ -63,7 +156,7 @@ def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size):
     sf, sh : ndarray or None
         Spherical function or SH coefficients.
     pam : PeaksAndMetrics or None
-        Peaks, possibly with an ODF.
+        Peaks.
     voxel_size : ndarray, shape (3,)
         Voxel size.
 
@@ -71,8 +164,8 @@ def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size):
     -------
     reason : str or None
     """
-    if sf is None and sh is None and getattr(pam, "odf", None) is None:
-        return "they need sf, sh or a pam with odf"
+    if sf is None and sh is None and not _has_peaks(pam):
+        return "they need sf, sh or a pam with peak_indices and peak_values"
     if not isinstance(sc, ThresholdStoppingCriterion):
         return "they need a ThresholdStoppingCriterion"
     if not np.allclose(voxel_size, voxel_size[0]):
@@ -167,18 +260,13 @@ def generic_tracking(
 
     if selected_pmf["name"] == "pam":
         peak_data = selected_pmf["value"]
-        if not hasattr(peak_data, "peak_indices") or not hasattr(
-            peak_data, "peak_values"
-        ):
+        if not _has_peaks(peak_data):
             raise ValueError(
                 "pam must be a PeaksAndMetrics object with "
                 "peak_indices and peak_values attributes"
             )
 
-        if hasattr(peak_data, "odf_vertices") and peak_data.odf_vertices is not None:
-            odf_vertices = peak_data.odf_vertices
-        else:
-            odf_vertices = sphere.vertices
+        odf_vertices = _pam_odf_vertices(peak_data, sphere)
 
         pmf_gen = selected_pmf["cls"](
             # Peak indices are integer sphere vertex ids.
@@ -212,38 +300,12 @@ def generic_tracking(
             )
     else:
         if selected_pmf["name"] == "pam":
-            # Compute seed voxel coordinates
-            inv_affine = np.linalg.inv(affine)
-            seed_voxels = np.dot(seed_positions, inv_affine[:3, :3].T)
-            seed_voxels += inv_affine[:3, 3]
-            seed_voxels = np.round(seed_voxels).astype(int)
-
-            seed_voxels[:, 0] = np.clip(
-                seed_voxels[:, 0], 0, peak_data.peak_indices.shape[0] - 1
-            )
-            seed_voxels[:, 1] = np.clip(
-                seed_voxels[:, 1], 0, peak_data.peak_indices.shape[1] - 1
-            )
-            seed_voxels[:, 2] = np.clip(
-                seed_voxels[:, 2], 0, peak_data.peak_indices.shape[2] - 1
-            )
-
-            seed_peak_indices = peak_data.peak_indices[
-                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
-            ].astype(int)
-
-            seed_peak_values = peak_data.peak_values[
-                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
-            ]
-
-            seed_peak_indices = np.clip(seed_peak_indices, 0, len(odf_vertices) - 1)
-            peak_dirs_at_seeds = odf_vertices[seed_peak_indices]
-
-            seed_positions, seed_directions = seeds_directions_pairs(
+            seed_positions, seed_directions = _pam_seed_directions(
+                peak_data,
                 seed_positions,
-                peak_dirs_at_seeds,
+                affine=affine,
+                odf_vertices=odf_vertices,
                 max_cross=max_cross,
-                peak_values=seed_peak_values,
             )
 
     return generate_tractogram(
@@ -374,11 +436,12 @@ def probabilistic_tracking(
         backend in that order (Metal, CUDA, WebGPU) when the inputs allow
         it, and the CPU otherwise. GPU backends (see
         :mod:`dipy.tracking.accel`) assume:
-        (1) the entire SF fits in memory (sf, sh or a pam with odf);
+        (1) the entire SF fits in memory (sf, sh or a pam);
         (2) isotropic voxels;
         (3) a ThresholdStoppingCriterion.
-        Given a ``pam``, the CPU tracks its peaks while GPU backends track
-        its ODF (``pam.odf`` on ``pam.sphere``).
+        Every backend tracks the peaks of a ``pam``; GPU backends expand them
+        into a sparse SF of shape (X, Y, Z, nb_vertices). To track the ODF of
+        a ``pam`` instead, pass ``sf=pam.odf, sphere=pam.sphere``.
     is_symmetric : bool or None, optional
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions). If None, it is
@@ -428,9 +491,23 @@ def probabilistic_tracking(
                 legacy=legacy,
             )
         else:
-            pmf_field = pam.odf
-            if getattr(pam, "sphere", None) is not None:
-                sphere = pam.sphere
+            # Track the peaks, as on the CPU (SimplePeakGen), not pam.odf.
+            odf_vertices = np.asarray(
+                _pam_odf_vertices(pam, sphere), dtype=float, order="C"
+            )
+            if not np.array_equal(sphere.vertices, odf_vertices):
+                sphere = Sphere(xyz=odf_vertices)
+            pmf_field = _peaks_to_sf(
+                pam.peak_indices, pam.peak_values, odf_vertices.shape[0]
+            )
+            if seed_directions is None:
+                seed_positions, seed_directions = _pam_seed_directions(
+                    pam,
+                    seed_positions,
+                    affine=affine,
+                    odf_vertices=odf_vertices,
+                    max_cross=max_cross,
+                )
         if random_seed <= 0:
             random_seed = int(np.random.default_rng().integers(1, 2**63))
         tracker_data = prepare_gpu_tracker_data(

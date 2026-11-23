@@ -106,10 +106,31 @@ def _subgroup_size(device):
     return int(np.frombuffer(device.queue.read_buffer(out), dtype=np.uint32)[0])
 
 
+def _is_software_adapter(adapter):
+    """Whether ``adapter`` emulates a GPU on the CPU (lavapipe, SwiftShader, WARP).
+
+    Parameters
+    ----------
+    adapter : wgpu.GPUAdapter
+        WebGPU adapter.
+
+    Returns
+    -------
+    software : bool
+    """
+    adapter_type = str(adapter.info.get("adapter_type", "")).lower()
+    return adapter_type in ("cpu", "software")
+
+
 def _request_device():
     adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
     if adapter is None:
         raise RuntimeError("No WebGPU adapter found")
+    if _is_software_adapter(adapter):
+        raise RuntimeError(
+            f"WebGPU adapter {adapter.info.get('device', 'unknown')!r} is a "
+            "software (CPU) implementation; the Cython tracker is faster."
+        )
     if "subgroup" not in adapter.features:
         raise RuntimeError(
             "WebGPU adapter does not support subgroup operations, which the "

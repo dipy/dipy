@@ -8,7 +8,9 @@ import pytest
 from dipy.core.geometry import cart2sphere
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
+from dipy.direction import peak_directions
 from dipy.direction.peaks import PeaksAndMetrics
+from dipy.direction.pmf import SimplePeakGen, SimplePmfGen
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.tracking import tracker
@@ -197,22 +199,90 @@ def test_accel_matches_cpu(backend, return_all):
     npt.assert_(np.mean(same) >= 0.9, f"only {np.mean(same):.0%} of streamlines match")
 
 
-@pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
-def test_accel_pam_odf_sphere(backend):
-    if not accel_backend_available(backend):
-        pytest.skip(f"{backend} GPU tracker backend not available")
+def _synthetic_pam(npeaks=3):
     pmf, stop_map, sphere, seeds = _synthetic_pmf()
     pam = PeaksAndMetrics()
-    pam.odf = pmf
     pam.sphere = sphere
-    sc = ThresholdStoppingCriterion(stop_map, 0.5)
-    # the default sphere has another number of vertices: pam.sphere is used
-    streamlines = list(
-        tracker.probabilistic_tracking(
-            seeds, sc, np.eye(4), pam=pam, random_seed=1, backend=backend
-        )
+    pam.odf_vertices = sphere.vertices
+    pam.peak_indices = np.full(pmf.shape[:3] + (npeaks,), -1, dtype=np.int32)
+    pam.peak_values = np.zeros(pmf.shape[:3] + (npeaks,))
+    for idx in np.ndindex(pmf.shape[:3]):
+        _, values, indices = peak_directions(pmf[idx], sphere)
+        n = min(npeaks, len(indices))
+        pam.peak_indices[idx][:n] = indices[:n]
+        pam.peak_values[idx][:n] = values[:n]
+    # GPU backends must track the peaks, not this ODF
+    pam.odf = np.ones_like(pmf)
+    # SimplePeakGen has no pmf within one voxel of the border, where the
+    # interpolation of the sparse SF of the GPU backends still has one: stop
+    # the streamlines before they reach it.
+    stop_map = stop_map.copy()
+    stop_map[..., [0, -1]] = 0
+    seeds = np.ascontiguousarray(np.argwhere(stop_map > 0.7)[::3] + 0.25)
+    return pam, stop_map, sphere, seeds
+
+
+def test_peaks_to_sf_matches_simple_peak_gen():
+    pam, _, sphere, _ = _synthetic_pam()
+    peak_gen = SimplePeakGen(
+        pam.peak_indices, pam.peak_values, pam.odf_vertices, sphere
     )
-    npt.assert_(len(streamlines) > 0)
+    sf = tracker._peaks_to_sf(pam.peak_indices, pam.peak_values, len(sphere.vertices))
+    sf_gen = SimplePmfGen(sf.astype(float), sphere)
+    rng = np.random.default_rng(0)
+    # interior points: SimplePeakGen returns 0 when a neighbour is outside
+    points = rng.uniform(0, np.array(sf.shape[:3]) - 1.001, size=(50, 3))
+    for point in points:
+        point = np.ascontiguousarray(point)
+        npt.assert_allclose(
+            np.asarray(sf_gen.get_pmf(point)).copy(),
+            np.asarray(peak_gen.get_pmf(point)).copy(),
+            rtol=1e-6,
+            atol=1e-7,
+        )
+
+
+@pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
+def test_accel_pam_matches_cpu(backend):
+    if not accel_backend_available(backend):
+        pytest.skip(f"{backend} GPU tracker backend not available")
+    pam, stop_map, sphere, seeds = _synthetic_pam()
+    sc = ThresholdStoppingCriterion(stop_map, 0.5)
+    params = {
+        "pam": pam,
+        "sphere": sphere,
+        "step_size": 0.5,
+        "max_angle": 30,
+        "max_len": 60,
+        "random_seed": 3,
+        "save_seeds": True,
+    }
+    cpu = list(
+        tracker.probabilistic_tracking(seeds, sc, np.eye(4), backend="cpu", **params)
+    )
+    gpu = list(
+        tracker.probabilistic_tracking(seeds, sc, np.eye(4), backend=backend, **params)
+    )
+    npt.assert_(len(cpu) > 0)
+    npt.assert_(abs(len(gpu) - len(cpu)) <= 0.05 * len(cpu))
+
+    # one streamline per peak: key by seed and rank among its streamlines
+    def by_seed_and_peak(result):
+        keyed, rank = {}, {}
+        for sl, seed in result:
+            seed = tuple(seed)
+            rank[seed] = rank.get(seed, -1) + 1
+            keyed[seed, rank[seed]] = sl
+        return keyed
+
+    cpu_by_key, gpu_by_key = by_seed_and_peak(cpu), by_seed_and_peak(gpu)
+    same = [
+        key in gpu_by_key
+        and len(sl) == len(gpu_by_key[key])
+        and np.allclose(sl, gpu_by_key[key], atol=1e-4)
+        for key, sl in cpu_by_key.items()
+    ]
+    npt.assert_(np.mean(same) >= 0.9, f"only {np.mean(same):.0%} of streamlines match")
 
 
 def test_webgpu_requires_kernel_subgroup_size():
@@ -224,6 +294,22 @@ def test_webgpu_requires_kernel_subgroup_size():
     device = adapter.request_device_sync(required_features=["subgroup"])
     size = webgpu._subgroup_size(device)
     npt.assert_equal(webgpu.webgpu_available(), size == webgpu.THREADS_PER_STREAMLINE)
+
+
+def test_webgpu_rejects_software_adapter():
+    if not webgpu.have_wgpu:
+        pytest.skip("wgpu not installed")
+    try:
+        fallback = webgpu.wgpu.gpu.request_adapter_sync(force_fallback_adapter=True)
+    except RuntimeError:
+        fallback = None
+    if fallback is not None:
+        npt.assert_(webgpu._is_software_adapter(fallback))
+    adapter = webgpu.wgpu.gpu.request_adapter_sync(power_preference="high-performance")
+    if adapter is None:
+        pytest.skip("no WebGPU adapter")
+    if webgpu._is_software_adapter(adapter):
+        npt.assert_(not webgpu.webgpu_available())
 
 
 @pytest.mark.parametrize("backend", ["cpu", *ACCEL_BACKENDS])
@@ -275,10 +361,23 @@ def test_select_backend():
         tracker._select_backend("auto", sc=threshold, voxel_size=iso, **inputs),
         expected,
     )
+    # a pam is tracked from its peaks: they are enough for the GPU
+    peaks = PeaksAndMetrics()
+    peaks.peak_indices = np.zeros((4, 4, 4, 1), dtype=np.int32)
+    peaks.peak_values = np.ones((4, 4, 4, 1))
+    npt.assert_equal(
+        tracker._select_backend(
+            "auto", sc=threshold, voxel_size=iso, sf=None, sh=None, pam=peaks
+        ),
+        expected,
+    )
+    odf_only = PeaksAndMetrics()
+    odf_only.odf = np.ones((4, 4, 4, 5))
     for sc, voxel_size, kw in [
         (binary, iso, inputs),
         (threshold, aniso, inputs),
         (threshold, iso, {"sf": None, "sh": None, "pam": None}),
+        (threshold, iso, {"sf": None, "sh": None, "pam": odf_only}),
     ]:
         npt.assert_equal(
             tracker._select_backend("auto", sc=sc, voxel_size=voxel_size, **kw),
