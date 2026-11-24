@@ -1,9 +1,12 @@
 import inspect
+import logging
 from pathlib import Path
 import sys
 
 import numpy.testing as npt
 
+from dipy.utils.deprecator import ExpiredDeprecationError, deprecated_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.base import (
     IntrospectiveArgumentParser,
@@ -14,6 +17,7 @@ from dipy.workflows.base import (
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.docstring_parser import NumpyDocString
 from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.reconst import ReconstQBallBaseFlow, ReconstRUMBAFlow
 from dipy.workflows.tests.workflow_tests_utils import (
     DummyCombinedWorkflow,
     DummyFlow,
@@ -405,3 +409,212 @@ def test_boolean_optional_action_tri_state():
     parser.add_workflow(TriStateFlow())
     parsed = parser.get_flow_args(["dummy.txt", "--flag"])
     assert parsed["flag"] is True
+
+
+def test_deprecated_param_cli_alias(caplog):
+    """A renamed parameter keeps its old command line name, hidden from help."""
+
+    class RenamedParamFlow(Workflow):
+        @deprecated_params("out_extension", new_name="extension", since="1.13")
+        def run(self, input_file, *, extension="trx"):
+            """Test a renamed parameter.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            extension : str, optional
+                Extension of the result.
+            """
+            return extension
+
+    flow = RenamedParamFlow()
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    parsed = parser.get_flow_args(["dummy.txt", "--extension", "trk"])
+    npt.assert_equal(parsed["extension"], "trk")
+    assert "out_extension" not in parsed
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--out_extension", "trk"])
+    npt.assert_equal(parsed["extension"], "trk")
+    assert "out_extension" not in parsed
+    assert '"--out_extension" was deprecated' in caplog.text
+    assert 'Use argument "--extension" instead' in caplog.text
+    npt.assert_equal(flow.run(**parsed), "trk")
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    assert "--extension" in parser.format_help()
+    assert "out_extension" not in parser.format_help()
+
+
+def test_deprecated_param_cli_alias_store_true(caplog):
+    """A renamed boolean flag reaches ``run`` under the new name only."""
+
+    class RenamedFlagFlow(Workflow):
+        @deprecated_params("out_report", new_name="report", since="1.13")
+        def run(self, input_file, *, report=False):
+            """Test a renamed boolean parameter.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            report : bool, optional
+                Whether to write a report.
+            """
+            return report
+
+    flow = RenamedFlagFlow()
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--out_report"])
+    npt.assert_equal(parsed["report"], True)
+    assert "out_report" not in parsed
+    assert '"--out_report" was deprecated' in caplog.text
+    npt.assert_equal(flow.run(**parsed), True)
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    parsed = parser.get_flow_args(["dummy.txt"])
+    npt.assert_equal(parsed["report"], False)
+    npt.assert_equal(flow.run(**parsed), False)
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    assert "--report" in parser.format_help()
+    assert "out_report" not in parser.format_help()
+
+
+def test_deprecated_param_cli_alias_boolean_optional(caplog):
+    """A renamed tri-state boolean keeps both the --flag and --no-flag forms."""
+
+    class RenamedTriStateFlow(Workflow):
+        @deprecated_params("out_overwrite", new_name="overwrite", since="1.13")
+        def run(self, input_file, *, overwrite=None):
+            """Test a renamed tri-state boolean parameter.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            overwrite : bool, optional
+                Whether to overwrite existing results.
+            """
+            return overwrite
+
+    flow = RenamedTriStateFlow()
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--out_overwrite"])
+    npt.assert_equal(parsed["overwrite"], True)
+    assert "out_overwrite" not in parsed
+    assert '"--out_overwrite" was deprecated' in caplog.text
+    npt.assert_equal(flow.run(**parsed), True)
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--no-out_overwrite"])
+    npt.assert_equal(parsed["overwrite"], False)
+    assert '"--no-out_overwrite" was deprecated' in caplog.text
+    assert 'Use argument "--no-overwrite" instead' in caplog.text
+    npt.assert_equal(flow.run(**parsed), False)
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    usage = parser.format_usage()
+    assert "--overwrite | --no-overwrite" in usage
+    assert "out_overwrite" not in usage
+    assert "out_overwrite" not in parser.format_help()
+
+
+def _renamed_extension_flow(until):
+    class RenamedParamFlow(Workflow):
+        @deprecated_params(
+            "out_extension", new_name="extension", since="1.0", until=until
+        )
+        def run(self, input_file, *, extension="trx"):
+            """Test a renamed parameter.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            extension : str, optional
+                Extension of the result.
+            """
+            return extension
+
+    return RenamedParamFlow()
+
+
+def test_deprecated_param_cli_alias_spellings(caplog):
+    """``--old=value`` warns, the new name does not."""
+    flow = _renamed_extension_flow(until="")
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--out_extension=trk"])
+    npt.assert_equal(parsed["extension"], "trk")
+    assert '"--out_extension" was deprecated' in caplog.text
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parsed = parser.get_flow_args(["dummy.txt", "--extension", "trk"])
+    npt.assert_equal(parsed["extension"], "trk")
+    assert "deprecated" not in caplog.text
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        parser.get_flow_args(["--", "--out_extension"])
+    assert "deprecated" not in caplog.text
+
+
+def test_deprecated_param_cli_alias_expired():
+    """Past ``until``, the old option raises like the Python argument does."""
+    flow = _renamed_extension_flow(until="1.1")
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    with npt.assert_raises(ExpiredDeprecationError):
+        parser.get_flow_args(["dummy.txt", "--out_extension", "trk"])
+    with npt.assert_raises(ExpiredDeprecationError):
+        flow.run("dummy.txt", out_extension="trk")
+
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(flow)
+    npt.assert_equal(
+        parser.get_flow_args(["dummy.txt", "--extension", "trk"])["extension"], "trk"
+    )
+
+
+def test_deprecated_param_cli_alias_reconst_sh_order(caplog):
+    """The existing sh_order -> sh_order_max renames work on the command line."""
+    for flow in (ReconstQBallBaseFlow(), ReconstRUMBAFlow()):
+        parser = IntrospectiveArgumentParser()
+        parser.add_workflow(flow)
+        argv = ["dwi.nii.gz", "dwi.bval", "dwi.bvec", "mask.nii.gz"]
+        argv += ["--sh_order", "6"]
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger=logger.name):
+            parsed = parser.get_flow_args(argv)
+        npt.assert_equal(parsed["sh_order_max"], 6)
+        assert "sh_order" not in parsed
+        assert '"--sh_order" was deprecated' in caplog.text
+        assert 'Use argument "--sh_order_max" instead' in caplog.text
+        assert "--sh_order " not in parser.format_help()
