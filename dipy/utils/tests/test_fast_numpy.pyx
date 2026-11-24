@@ -10,7 +10,7 @@ from numpy.testing import (
     assert_array_equal,
     assert_array_almost_equal,
 )
-from dipy.utils.fast_numpy import random, seed
+from dipy.utils.fast_numpy import philox4x32_10_block, random, seed
 from dipy.utils.fast_numpy cimport (
     cross,
     dot,
@@ -148,3 +148,18 @@ def test_take():
     cdef double[:] values_out = np.zeros(n_indices, dtype=float)
     take(&odf[0], &indices[0], n_indices, &values_out[0])
     assert_array_equal(values_out, np.take(odf, indices))
+
+
+def test_philox4x32_10_known_answers():
+    # Random123 known-answer vectors for Philox4x32-10
+    kat = [
+        ([0, 0, 0, 0], [0, 0],
+         [0x6627e8d5, 0xe169c58d, 0xbc57ac4c, 0x9b00dbd8]),
+        ([0xffffffff] * 4, [0xffffffff] * 2,
+         [0x408f276d, 0x41c83b0e, 0xa20bc7c6, 0x6d5451fd]),
+        ([0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344],
+         [0xa4093822, 0x299f31d0],
+         [0xd16cfe09, 0x94fdcceb, 0x5001e420, 0x24126ea1]),
+    ]
+    for ctr, key, expected in kat:
+        assert_array_equal(philox4x32_10_block(ctr, key), expected)

@@ -4,6 +4,7 @@ from urllib.error import HTTPError, URLError
 import numpy as np
 import numpy.testing as npt
 import pytest
+import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -13,6 +14,7 @@ from dipy.io.streamline import (
     load_vtk_streamlines,
     save_tractogram,
     save_trk,
+    save_trx_from_generator,
     save_vtk_streamlines,
 )
 from dipy.io.utils import Origin, Space, create_nifti_header
@@ -373,3 +375,51 @@ def test_io_trk_save(tmp_path):
         not trk_saver(tmp_path, FILEPATH_DIX["gs_streamlines.dpy"]),
         msg="trk_saver should not be able to save a dpy",
     )
+
+
+@pytest.mark.parametrize("chunked", [True, False])
+@pytest.mark.parametrize("with_seeds", [True, False])
+def test_save_trx_from_generator(tmp_path, chunked, with_seeds):
+    rng = np.random.default_rng(0)
+    lengths = rng.integers(2, 20, size=50)
+    sls = [rng.random((n, 3)) * 50 for n in lengths]
+    seeds = rng.random((50, 3))
+
+    def gen():
+        if chunked:
+            for start in range(0, 50, 16):
+                stop = min(start + 16, 50)
+                chunk = (np.concatenate(sls[start:stop]), lengths[start:stop])
+                yield chunk + (seeds[start:stop],) if with_seeds else chunk
+        else:
+            for sl, seed in zip(sls, seeds):
+                yield (sl, seed) if with_seeds else sl
+
+    fname = tmp_path / "out.trx"
+    reference = create_nifti_header(np.eye(4), (10, 10, 10), (1, 1, 1))
+    trx = save_trx_from_generator(
+        gen(),
+        reference,
+        filename=fname,
+        chunked=chunked,
+        nb_streamlines_estimate=20,
+        batch_size=7,
+    )
+    try:
+        npt.assert_equal(trx.header["NB_STREAMLINES"], 50)
+        npt.assert_equal(trx.streamlines._data.dtype, np.float32)
+        npt.assert_equal("seeds" in trx.data_per_streamline, with_seeds)
+    finally:
+        trx.close()
+
+    loaded = tmm.load(str(fname))
+    try:
+        npt.assert_equal(len(loaded.streamlines), 50)
+        for a, b in zip(loaded.streamlines, sls):
+            npt.assert_allclose(a, b, rtol=1e-6, atol=1e-5)
+        if with_seeds:
+            npt.assert_allclose(loaded.data_per_streamline["seeds"], seeds, atol=1e-6)
+        else:
+            npt.assert_equal("seeds" in loaded.data_per_streamline, False)
+    finally:
+        loaded.close()

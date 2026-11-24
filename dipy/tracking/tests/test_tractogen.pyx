@@ -1,3 +1,5 @@
+import warnings
+
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
@@ -9,7 +11,7 @@ from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SimplePmfGen
 from dipy.reconst.shm import sh_to_sf
-from dipy.tracking.tractogen import generate_tractogram
+from dipy.tracking.tractogen import generate_tractogram, seed_batches
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
@@ -289,8 +291,8 @@ def test_max_min_length():
     npt.assert_(np.sum(errors) == 0)
 
 
-def test_buffer_frac():
-    """This tests that the buffer fraction for generate tractogram plays well.
+def test_chunk_size():
+    """This tests that the chunk size for generate tractogram plays well.
     """
     fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
@@ -326,15 +328,77 @@ def test_buffer_frac():
                                               params,
                                               pmf_gen,
                                               affine=affine,
-                                              buffer_frac=1.0))
+                                              chunk_size=500))
 
-    # test the results are identical with various buffer fractions
-    for frac in [0.01, 0.1, 0.5]:
+    # test the results are identical with various chunk sizes
+    for frac in [5, 50, 250]:
         frac_streams = Streamlines(generate_tractogram(seeds,
                                                        directions,
                                                        sc,
                                                        params,
                                                        pmf_gen,
                                                        affine=affine,
-                                                       buffer_frac=frac))
+                                                       chunk_size=frac))
         npt.assert_equal(len(frac_streams), len(streams))
+
+
+def test_seed_batches():
+    offsets = np.array([0, 2, 2, 5, 6, 10])
+    npt.assert_equal(list(seed_batches(offsets, 3)),
+                     [(0, 2), (2, 3), (3, 4), (4, 5)])
+    # a seed with more streamlines than the cap gets its own batch
+    npt.assert_equal(list(seed_batches(offsets, 1)),
+                     [(0, 1), (2, 3), (3, 4), (4, 5)])
+    npt.assert_equal(list(seed_batches(offsets, 100, max_seeds=2)),
+                     [(0, 2), (2, 4), (4, 5)])
+    npt.assert_equal(list(seed_batches(np.zeros(4, dtype=int), 10)), [])
+
+
+def test_batched_sline_buffer():
+    """Streamlines are tracked in batches when their buffer would be large."""
+    fnames = get_fnames(name="disco1", include_optional=True)
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+    sh = nib.load(fnames[20]).get_fdata()
+    fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type="tournier07",
+                     legacy=False)
+    fODFs[fODFs < 0] = 0
+    pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
+    mask = nib.load(fnames[25]).get_fdata()
+    sc = BinaryStoppingCriterion(mask)
+    affine = nib.load(fnames[25]).affine
+    seeds = np.ascontiguousarray(random_seeds_from_mask(
+        mask, affine, seeds_count=200, seed_count_per_voxel=False,
+        random_seed=1))
+    directions = np.random.default_rng(0).random(seeds.shape)
+    directions = np.ascontiguousarray(
+        directions / np.linalg.norm(directions, axis=1)[:, None])
+
+    # 2 * 100000 points per streamline: ~27 streamlines per 256 MB batch
+    params = generate_tracking_parameters("prob", max_len=50000, min_len=0,
+                                          step_size=0.5, voxel_size=np.ones(3),
+                                          max_angle=30, random_seed=3)
+    chunks = list(generate_tractogram(seeds, directions, sc, params, pmf_gen,
+                                      affine=affine, chunked=True))
+    npt.assert_(len(chunks) > 1)
+    single = Streamlines(generate_tractogram(seeds, directions, sc, params,
+                                             pmf_gen, affine=affine,
+                                             chunk_size=10))
+    npt.assert_equal(sum(len(c[1]) for c in chunks), len(single))
+    npt.assert_array_equal(np.concatenate([c[0] for c in chunks]),
+                           single.get_data())
+
+
+def test_buffer_frac_deprecated():
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion100"))
+    pmf_gen = SimplePmfGen(np.ones((3, 3, 3, len(sphere.vertices))), sphere)
+    sc = BinaryStoppingCriterion(np.ones((3, 3, 3)))
+    params = generate_tracking_parameters("prob", max_len=5, step_size=0.5,
+                                          voxel_size=np.ones(3), max_angle=30)
+    seeds = np.ones((2, 3))
+    dirs = np.array([[1.0, 0, 0], [0, 1.0, 0]])
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        list(generate_tractogram(seeds, dirs, sc, params, pmf_gen,
+                                 affine=np.eye(4), buffer_frac=0.5))
+    npt.assert_(any(issubclass(w.category, DeprecationWarning)
+                    and "buffer_frac" in str(w.message) for w in record))

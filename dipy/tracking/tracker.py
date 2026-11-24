@@ -1,20 +1,211 @@
-from nibabel.affines import voxel_sizes
+from nibabel.affines import apply_affine, voxel_sizes
 import numpy as np
 
+from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.direction import (
     BootDirectionGetter,
     ClosestPeakDirectionGetter,
     ProbabilisticDirectionGetter,
 )
-from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
+from dipy.direction.pmf import (
+    SHCoeffPmfGen,
+    SimplePeakGen,
+    SimplePmfGen,
+    _sh_order_from_ncoef,
+)
+from dipy.reconst.shm import sh_to_sf
+from dipy.tracking.accel import (
+    gpu_streamline_generator,
+    prepare_gpu_tracker_data,
+    select_accel_backend,
+)
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
+from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 
 
+def _resolve_is_symmetric(is_symmetric, *, sh, full_basis):
+    """Resolve the ``is_symmetric`` tracking option.
+
+    Parameters
+    ----------
+    is_symmetric : bool or None
+        User choice. None infers it from ``sh``.
+    sh : ndarray or None
+        Spherical harmonic coefficients. A full (odd and even order) basis
+        describes an asymmetric ODF.
+    full_basis : bool or None
+        Whether ``sh`` uses a full basis. None infers it from the number of
+        coefficients.
+
+    Returns
+    -------
+    is_symmetric : bool
+    """
+    if is_symmetric is not None:
+        return bool(is_symmetric)
+    if sh is not None:
+        return not _sh_order_from_ncoef(sh.shape[-1], full_basis)[1]
+    return True
+
+
+def _has_peaks(pam):
+    """Whether ``pam`` holds the peak indices and values tracked from a pam."""
+    return (
+        getattr(pam, "peak_indices", None) is not None
+        and getattr(pam, "peak_values", None) is not None
+    )
+
+
+def _pam_odf_vertices(pam, sphere):
+    """Sphere vertices that ``pam.peak_indices`` index into.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Peaks.
+    sphere : Sphere
+        Fallback sphere when ``pam`` has no ``odf_vertices``.
+
+    Returns
+    -------
+    odf_vertices : ndarray, shape (N, 3)
+    """
+    odf_vertices = getattr(pam, "odf_vertices", None)
+    return sphere.vertices if odf_vertices is None else odf_vertices
+
+
+def _pam_seed_directions(pam, seed_positions, *, affine, odf_vertices, max_cross):
+    """Seed positions and directions from the peaks of the seed voxels.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Peaks.
+    seed_positions : ndarray, shape (N, 3)
+        Seed positions in world space.
+    affine : ndarray, shape (4, 4)
+        Voxel-to-world affine.
+    odf_vertices : ndarray, shape (M, 3)
+        Sphere vertices that ``pam.peak_indices`` index into.
+    max_cross : int or None
+        Maximum number of peaks tracked per seed.
+
+    Returns
+    -------
+    seed_positions, seed_directions : ndarray
+        See :func:`dipy.tracking.utils.seeds_directions_pairs`.
+    """
+    seed_voxels = np.round(apply_affine(np.linalg.inv(affine), seed_positions))
+    seed_voxels = np.clip(
+        seed_voxels.astype(int), 0, np.array(pam.peak_indices.shape[:3]) - 1
+    )
+    x, y, z = seed_voxels.T
+    seed_peak_indices = np.clip(
+        pam.peak_indices[x, y, z].astype(int), 0, len(odf_vertices) - 1
+    )
+    return seeds_directions_pairs(
+        seed_positions,
+        np.asarray(odf_vertices)[seed_peak_indices],
+        max_cross=max_cross,
+        peak_values=pam.peak_values[x, y, z],
+    )
+
+
+def _peaks_to_sf(peak_indices, peak_values, nb_vertices):
+    """Sparse spherical function whose interpolation is the pmf of peaks.
+
+    ``SimplePeakGen`` adds ``weight * peak_value`` at ``peak_index`` for each
+    of the 8 interpolation neighbours, which is the trilinear interpolation
+    of this volume: GPU backends then track the same pmf as the CPU.
+
+    Parameters
+    ----------
+    peak_indices : ndarray, shape (X, Y, Z, npeaks)
+        Sphere vertex index of each peak (negative when there is no peak).
+    peak_values : ndarray, shape (X, Y, Z, npeaks)
+        Value of each peak.
+    nb_vertices : int
+        Number of sphere vertices.
+
+    Returns
+    -------
+    sf : ndarray of float32, shape (X, Y, Z, nb_vertices)
+    """
+    peak_indices = np.asarray(peak_indices)
+    peak_values = np.asarray(peak_values)
+    sf = np.zeros(peak_indices.shape[:3] + (nb_vertices,), dtype=np.float32)
+    valid = (peak_indices >= 0) & (peak_indices < nb_vertices) & (peak_values > 0)
+    x, y, z, _ = np.nonzero(valid)
+    np.add.at(sf, (x, y, z, peak_indices[valid]), peak_values[valid])
+    return sf
+
+
+def _gpu_unsupported(*, sc, sf, sh, pam, voxel_size):
+    """Why the GPU backends cannot run this tracking, or None if they can.
+
+    Parameters
+    ----------
+    sc : StoppingCriterion
+        Stopping criterion.
+    sf, sh : ndarray or None
+        Spherical function or SH coefficients.
+    pam : PeaksAndMetrics or None
+        Peaks.
+    voxel_size : ndarray, shape (3,)
+        Voxel size.
+
+    Returns
+    -------
+    reason : str or None
+    """
+    if sf is None and sh is None and not _has_peaks(pam):
+        return "they need sf, sh or a pam with peak_indices and peak_values"
+    if not isinstance(sc, ThresholdStoppingCriterion):
+        return "they need a ThresholdStoppingCriterion"
+    if not np.allclose(voxel_size, voxel_size[0]):
+        return "they need isotropic voxels"
+    return None
+
+
+def _select_backend(backend, **inputs):
+    """Resolve ``backend="auto"`` to the best backend able to run the tracking.
+
+    Parameters
+    ----------
+    backend : str
+        "auto", "cpu", "metal", "cuda" or "webgpu".
+    **inputs : dict
+        Arguments of :func:`_gpu_unsupported`.
+
+    Returns
+    -------
+    backend : str
+        ``backend`` itself unless it is "auto": then the first available GPU
+        backend (Metal, CUDA, WebGPU) if the inputs allow it, else "cpu".
+    """
+    if backend != "auto":
+        return backend
+    reason = _gpu_unsupported(**inputs)
+    if reason is not None:
+        logger.info(f"Tracking on the CPU: GPU backends cannot be used ({reason}).")
+        return "cpu"
+    selected = select_accel_backend()
+    if selected is None:
+        logger.info("Tracking on the CPU: no GPU backend available.")
+        return "cpu"
+    logger.info(f"Tracking with the {selected} GPU backend.")
+    return selected
+
+
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def generic_tracking(
     seed_positions,
     seed_directions,
@@ -28,9 +219,12 @@ def generic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     max_cross=None,
     nbr_threads=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
+    chunked=False,
     save_seeds=False,
 ):
     affine = affine if affine is not None else np.eye(4)
@@ -66,18 +260,13 @@ def generic_tracking(
 
     if selected_pmf["name"] == "pam":
         peak_data = selected_pmf["value"]
-        if not hasattr(peak_data, "peak_indices") or not hasattr(
-            peak_data, "peak_values"
-        ):
+        if not _has_peaks(peak_data):
             raise ValueError(
                 "pam must be a PeaksAndMetrics object with "
                 "peak_indices and peak_values attributes"
             )
 
-        if hasattr(peak_data, "odf_vertices") and peak_data.odf_vertices is not None:
-            odf_vertices = peak_data.odf_vertices
-        else:
-            odf_vertices = sphere.vertices
+        odf_vertices = _pam_odf_vertices(peak_data, sphere)
 
         pmf_gen = selected_pmf["cls"](
             # Peak indices are integer sphere vertex ids.
@@ -92,6 +281,7 @@ def generic_tracking(
             sphere,
             basis_type=basis_type,
             legacy=legacy,
+            full_basis=full_basis,
         )
     else:
         pmf_gen = selected_pmf["cls"](
@@ -110,45 +300,12 @@ def generic_tracking(
             )
     else:
         if selected_pmf["name"] == "pam":
-            # Compute seed voxel coordinates
-            inv_affine = np.linalg.inv(affine)
-            seed_voxels = np.dot(seed_positions, inv_affine[:3, :3].T)
-            seed_voxels += inv_affine[:3, 3]
-            seed_voxels = np.round(seed_voxels).astype(int)
-
-            seed_voxels[:, 0] = np.clip(
-                seed_voxels[:, 0], 0, peak_data.peak_indices.shape[0] - 1
-            )
-            seed_voxels[:, 1] = np.clip(
-                seed_voxels[:, 1], 0, peak_data.peak_indices.shape[1] - 1
-            )
-            seed_voxels[:, 2] = np.clip(
-                seed_voxels[:, 2], 0, peak_data.peak_indices.shape[2] - 1
-            )
-
-            seed_peak_indices = peak_data.peak_indices[
-                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
-            ].astype(int)
-
-            seed_peak_values = peak_data.peak_values[
-                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
-            ]
-
-            seed_peak_indices = np.clip(seed_peak_indices, 0, len(odf_vertices) - 1)
-            peak_dirs_at_seeds = odf_vertices[seed_peak_indices]
-
-            seed_positions, seed_directions = seeds_directions_pairs(
+            seed_positions, seed_directions = _pam_seed_directions(
+                peak_data,
                 seed_positions,
-                peak_dirs_at_seeds,
+                affine=affine,
+                odf_vertices=odf_vertices,
                 max_cross=max_cross,
-                peak_values=seed_peak_values,
-            )
-        else:
-            peaks_obj = peaks_from_positions(
-                seed_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
-            )
-            seed_positions, seed_directions = seeds_directions_pairs(
-                seed_positions, peaks_obj, max_cross=max_cross
             )
 
     return generate_tractogram(
@@ -159,11 +316,16 @@ def generic_tracking(
         pmf_gen,
         affine=affine,
         nbr_threads=nbr_threads,
-        buffer_frac=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
+        max_cross=1 if max_cross is None else max_cross,
+        chunked=chunked,
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def probabilistic_tracking(
     seed_positions,
     sc,
@@ -182,11 +344,17 @@ def probabilistic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
+    chunked=False,
     return_all=True,
     save_seeds=False,
+    max_cross=None,
+    backend="auto",
+    is_symmetric=None,
 ):
     """Probabilistic tracking algorithm.
 
@@ -226,23 +394,58 @@ def probabilistic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size``,
+        ``nbr_threads`` or ``backend``: every backend draws the same random
+        numbers (Philox4x32-10, one stream per seed and direction). CPU
+        (float64) and GPU (float32) arithmetic differ slightly, so a few
+        streamlines can still diverge between a CPU and a GPU run. A value of
+        0 may produce various streamline trajectories for a given seed
         coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
     save_seeds: bool, optional
         True to return the seeds with the associated streamline.
+    max_cross : int or None, optional
+        Maximum number of peaks tracked from each seed when
+        ``seed_directions`` is None. None tracks the largest peak only; a
+        value <= 0 tracks every peak.
+    backend : str, optional
+        "auto", "cpu", "metal" (Apple Silicon, requires ``dipy[metal]``),
+        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``) or "webgpu"
+        (requires ``dipy[webgpu]``). "auto" picks the first available GPU
+        backend in that order (Metal, CUDA, WebGPU) when the inputs allow
+        it, and the CPU otherwise. GPU backends (see
+        :mod:`dipy.tracking.accel`) assume:
+        (1) the entire SF fits in memory (sf, sh or a pam);
+        (2) isotropic voxels;
+        (3) a ThresholdStoppingCriterion.
+        Every backend tracks the peaks of a ``pam``; GPU backends expand them
+        into a sparse SF of shape (X, Y, Z, nb_vertices). To track the ODF of
+        a ``pam`` instead, pass ``sf=pam.odf, sphere=pam.sphere``.
+    is_symmetric : bool or None, optional
+        If False, the pmf is treated as an asymmetric spherical function
+        (no antipodal folding when selecting directions). If None, it is
+        False for a full-basis ``sh`` and True otherwise.
 
     Returns
     -------
@@ -250,6 +453,15 @@ def probabilistic_tracking(
 
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
+
+    backend = _select_backend(
+        backend, sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size
+    )
+    if backend != "cpu":
+        reason = _gpu_unsupported(sc=sc, sf=sf, sh=sh, pam=pam, voxel_size=voxel_size)
+        if reason is not None:
+            raise ValueError(f"GPU backends cannot be used: {reason}.")
+    is_symmetric = _resolve_is_symmetric(is_symmetric, sh=sh, full_basis=full_basis)
 
     params = generate_tracking_parameters(
         "prob",
@@ -261,7 +473,71 @@ def probabilistic_tracking(
         pmf_threshold=pmf_threshold,
         random_seed=random_seed,
         return_all=return_all,
+        is_symmetric=is_symmetric,
     )
+
+    if backend != "cpu":
+        sphere = sphere if sphere is not None else default_sphere
+        if sf is not None:
+            pmf_field = sf
+        elif sh is not None:
+            sh_order_max, full_basis = _sh_order_from_ncoef(sh.shape[-1], full_basis)
+            pmf_field = sh_to_sf(
+                sh,
+                sphere,
+                sh_order_max=sh_order_max,
+                basis_type=basis_type,
+                full_basis=full_basis,
+                legacy=legacy,
+            )
+        else:
+            # Track the peaks, as on the CPU (SimplePeakGen), not pam.odf.
+            odf_vertices = np.asarray(
+                _pam_odf_vertices(pam, sphere), dtype=float, order="C"
+            )
+            if not np.array_equal(sphere.vertices, odf_vertices):
+                sphere = Sphere(xyz=odf_vertices)
+            pmf_field = _peaks_to_sf(
+                pam.peak_indices, pam.peak_values, odf_vertices.shape[0]
+            )
+            if seed_directions is None:
+                seed_positions, seed_directions = _pam_seed_directions(
+                    pam,
+                    seed_positions,
+                    affine=affine,
+                    odf_vertices=odf_vertices,
+                    max_cross=max_cross,
+                )
+        if random_seed <= 0:
+            random_seed = int(np.random.default_rng().integers(1, 2**63))
+        tracker_data = prepare_gpu_tracker_data(
+            pmf=pmf_field,
+            stop_map=np.asarray(sc.metric_map),
+            stop_threshold=sc.threshold,
+            sphere=sphere,
+            max_angle=params.max_angle,
+            step_size=params.step_size / voxel_size[0],
+            min_steps=params.min_nbr_pts,
+            max_steps=params.max_nbr_pts,
+            pmf_threshold=pmf_threshold,
+            random_seed=random_seed,
+            chunk_size=chunk_size,
+            relative_peak_thresh=0.5,
+            min_separation_angle=np.deg2rad(25),
+            max_cross=1 if max_cross is None else max_cross,
+            is_symmetric=params.is_symmetric,
+        )
+        return gpu_streamline_generator(
+            tracker_data,
+            seed_positions,
+            backend=backend,
+            seed_directions=seed_directions,
+            nbr_threads=nbr_threads,
+            save_seeds=save_seeds,
+            affine=affine,
+            chunked=chunked,
+            return_all=return_all,
+        )
 
     return generic_tracking(
         seed_positions,
@@ -275,12 +551,18 @@ def probabilistic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
+        max_cross=max_cross,
+        chunked=chunked,
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def deterministic_tracking(
     seed_positions,
     sc,
@@ -299,9 +581,12 @@ def deterministic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -343,18 +628,28 @@ def deterministic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -391,12 +686,17 @@ def deterministic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def ptt_tracking(
     seed_positions,
     sc,
@@ -420,9 +720,12 @@ def ptt_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -474,18 +777,28 @@ def ptt_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -526,12 +839,17 @@ def ptt_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def closestpeak_tracking(
     seed_positions,
     sc,
@@ -551,7 +869,8 @@ def closestpeak_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     save_seeds=False,
 ):
@@ -595,14 +914,16 @@ def closestpeak_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -651,6 +972,9 @@ def closestpeak_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def bootstrap_tracking(
     seed_positions,
     sc,
@@ -672,7 +996,8 @@ def bootstrap_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     save_seeds=False,
 ):
@@ -718,14 +1043,16 @@ def bootstrap_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -766,6 +1093,9 @@ def bootstrap_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def eudx_tracking(
     seed_positions,
     sc,
@@ -785,9 +1115,12 @@ def eudx_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -830,18 +1163,28 @@ def eudx_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for parallel processing. Default is 0, which
         uses all available cores.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -884,13 +1227,18 @@ def eudx_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         max_cross=max_cross,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def pft_tracking(
     seed_positions,
     sc,
@@ -912,7 +1260,8 @@ def pft_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
@@ -965,14 +1314,16 @@ def pft_tracking(
         Number of threads to use for the processing. By default, all available threads
         will be used.
     random_seed: int, optional
-        Seed for the random number generator, must be >= 0. A value of greater than 0
-        will all produce the same streamline trajectory for a given seed coordinate.
-        A value of 0 may produces various streamline tracjectories for a given seed
-        coordinate.
+        Seed for the random number generator, must be >= 0. A value greater than 0
+        produces the same streamline trajectory for a given seed coordinate and
+        initial direction, whatever the seed order, ``chunk_size`` or
+        ``nbr_threads``. A value of 0 may produce various streamline trajectories
+        for a given seed coordinate.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.

@@ -290,7 +290,7 @@ cdef long local_maxima_c(
     memcpy(&out_indices[0], wpeak, count * sizeof(cnp.npy_intp))
     take(&odf[0], &out_indices[0], <int>count, &out_values[0])
 
-    _cosort(out_values, out_indices)
+    _cosort(out_values[:count], out_indices[:count])
 
     free(wpeak)
 
