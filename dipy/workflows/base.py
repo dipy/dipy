@@ -1,9 +1,12 @@
 import argparse
+import contextlib
 import inspect
 import re
 import shutil
+import sys
 import textwrap
 
+from dipy.utils.deprecator import check_deprecated_param
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
 
@@ -146,31 +149,6 @@ def none_or_dtype(dtype):
     return inner
 
 
-def _warn_deprecated_option(option_string, new_name):
-    """Warn that a command line option was renamed."""
-    logger.warning(
-        "%s is deprecated and will be removed in a future release. Use --%s instead.",
-        option_string,
-        new_name,
-    )
-
-
-class _DeprecatedAlias(argparse.Action):
-    """Store a renamed option under its new name, warning about the old one."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        _warn_deprecated_option(option_string, self.dest)
-        setattr(namespace, self.dest, self.const if self.nargs == 0 else values)
-
-
-class _DeprecatedBooleanOptionalAlias(argparse.BooleanOptionalAction):
-    """``BooleanOptionalAction`` for a renamed option, warning on use."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        _warn_deprecated_option(option_string, self.dest)
-        super().__call__(parser, namespace, values, option_string)
-
-
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
     def __init__(
         self,
@@ -240,6 +218,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         )
 
         self.doc = None
+        self._deprecated_options = {}
 
     def add_workflow(self, workflow):
         """Take a workflow object and use introspection to extract the
@@ -313,10 +292,10 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 f"same order.\n{mismatches}"
             )
 
-        deprecated_aliases = {}
-        for old_name, new_name in getattr(workflow.run, "__deprecated_params__", ()):
-            if new_name is not None:
-                deprecated_aliases.setdefault(new_name, []).append(old_name)
+        renamed_params = {}
+        for param in getattr(workflow.run, "__deprecated_params__", ()):
+            if param.new_name is not None:
+                renamed_params.setdefault(param.new_name, []).append(param)
 
         for i, arg in enumerate(args):
             prefix = ""
@@ -330,6 +309,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
+
+            renamed = renamed_params.get(arg, []) if is_optional else []
+            _args += [f"--{param.old_name}" for param in renamed]
 
             if is_optional:
                 default_idx = i - (len_args - len_defaults)
@@ -361,31 +343,23 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                     nb_positional_variable += 1
 
             if "out_" in arg:
-                output_args.add_argument(*_args, **_kwargs)
+                action = output_args.add_argument(*_args, **_kwargs)
             else:
                 if _kwargs["action"] not in (
                     "store_true",
                     argparse.BooleanOptionalAction,
                 ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
-                self.add_argument(*_args, **_kwargs)
+                action = self.add_argument(*_args, **_kwargs)
 
-            if is_optional:
-                for old_name in deprecated_aliases.get(arg, []):
-                    alias_kwargs = {
-                        **_kwargs,
-                        "dest": arg,
-                        "default": argparse.SUPPRESS,
-                        "help": argparse.SUPPRESS,
-                    }
-                    if _kwargs["action"] is argparse.BooleanOptionalAction:
-                        alias_kwargs["action"] = _DeprecatedBooleanOptionalAlias
-                    else:
-                        alias_kwargs["action"] = _DeprecatedAlias
-                        if _kwargs["action"] == "store_true":
-                            alias_kwargs["nargs"] = 0
-                            alias_kwargs["const"] = True
-                    self.add_argument(f"--{old_name}", **alias_kwargs)
+            for param in renamed:
+                for dashes in ("--", "--no-"):
+                    old_option = f"{dashes}{param.old_name}"
+                    if old_option in action.option_strings:
+                        self._deprecated_options[old_option] = (
+                            param,
+                            f"{dashes}{param.new_name}",
+                        )
 
         if nb_positional_variable > 1:
             raise ValueError(
@@ -517,13 +491,55 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         """
 
         ns_args = self.parse_args(args, namespace)
+        self._log_deprecated_options(sys.argv[1:] if args is None else args)
         dct = vars(ns_args)
         res = {k: v for k, v in dct.items() if v is not None}
         res.update({k: None for k, v in res.items() if v == "None"})
         return res
 
+    def _log_deprecated_options(self, args):
+        """Log the deprecation of each old option name used in ``args``.
+
+        Raises the deprecation error instead once the option has expired.
+        """
+        for token in args:
+            if token == "--":
+                break
+            if not token.startswith("--"):
+                continue
+            option = token.split("=", 1)[0]
+            if option in self._deprecated_options:
+                param, new_option = self._deprecated_options[option]
+                logger.warning(
+                    check_deprecated_param(
+                        param, old_label=option, new_label=new_option
+                    )
+                )
+
+    @contextlib.contextmanager
+    def _hide_deprecated_options(self):
+        """Leave the old names of renamed parameters out of usage and help."""
+        saved = [(action, action.option_strings) for action in self._actions]
+        for action in self._actions:
+            action.option_strings = [
+                o for o in action.option_strings if o not in self._deprecated_options
+            ]
+        try:
+            yield
+        finally:
+            for action, option_strings in saved:
+                action.option_strings = option_strings
+
+    def format_usage(self):
+        with self._hide_deprecated_options():
+            return super().format_usage()
+
     def format_help(self):
         """Generate help message with table-formatted argument sections."""
+        with self._hide_deprecated_options():
+            return self._format_help()
+
+    def _format_help(self):
         parts = [self.format_usage()]
 
         if self.description:

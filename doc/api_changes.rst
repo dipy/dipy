@@ -63,7 +63,7 @@ DIPY 1.13.0 changes
   parameter that is not a path must not use it. Consequently, ``out_extension``
   of ``ConcatenateTractogramFlow.run`` (``dipy_concatenate_tractograms
   --out_extension``) is renamed to ``extension``. The old name keeps working
-  until 1.15.0: called from Python it raises ``ArgsDeprecationWarning``, and on
+  until 1.15.0: called from Python it warns with ``ArgsDeprecationWarning``, and on
   the command line it logs a deprecation warning to the console naming the new
   option::
 

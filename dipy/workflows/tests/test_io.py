@@ -1,3 +1,4 @@
+import contextlib
 import importlib
 from inspect import getmembers, isfunction
 import logging
@@ -526,11 +527,10 @@ def test_concatenate_flow_rejects_invalid_extensions(tmp_path, extension):
     assert_true(not out_dir.exists())
 
 
-def test_concatenate_flow_default_out_dir(tmp_path, monkeypatch):
+def test_concatenate_flow_default_out_dir(tmp_path):
     inputs = _gold_standard_tractograms()
-    monkeypatch.chdir(tmp_path)
-    concatenate_flow = ConcatenateTractogramFlow()
-    concatenate_flow.run(inputs)
+    with contextlib.chdir(tmp_path):
+        ConcatenateTractogramFlow().run(inputs)
 
     npt.assert_equal(
         sorted(path.name for path in tmp_path.iterdir()),

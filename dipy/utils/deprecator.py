@@ -8,9 +8,11 @@ the Nibabel package for the copyright and license terms.
 
 """
 
+from collections.abc import Callable
 import functools
 from inspect import Parameter, signature
 import re
+from typing import NamedTuple
 import warnings
 
 from packaging.version import parse as version_cmp
@@ -413,6 +415,77 @@ def deprecate_with_version(
     return deprecator
 
 
+class DeprecatedParam(NamedTuple):
+    """A parameter deprecated with :func:`deprecated_params`.
+
+    Every decorated function stores one record per deprecated parameter in its
+    ``__deprecated_params__`` attribute, so that other interfaces to the
+    function, such as the workflow command line, can apply the same
+    deprecation.
+    """
+
+    old_name: str
+    new_name: str | None
+    since: str
+    until: str
+    alternative: str
+    version_comparator: Callable[[str], int]
+    error_class: type[Exception]
+
+
+def check_deprecated_param(param, *, old_label=None, new_label=None):
+    """Build the message for a deprecated parameter, or raise once it expired.
+
+    Parameters
+    ----------
+    param : DeprecatedParam
+        The deprecated parameter.
+    old_label : str, optional
+        How the old parameter is named in the message. Defaults to
+        ``param.old_name``.
+    new_label : str, optional
+        How the new parameter is named in the message. Defaults to
+        ``param.new_name``.
+
+    Returns
+    -------
+    message : str
+        The deprecation message to show.
+
+    Raises
+    ------
+    param.error_class
+        If the current version is at or past ``param.until``.
+    """
+    old_label = param.old_name if old_label is None else old_label
+    new_label = param.new_name if new_label is None else new_label
+    expired = bool(param.until) and is_bad_version(
+        param.until, version_comparator=param.version_comparator
+    )
+
+    messages = [f'"{old_label}" was deprecated']
+    if (param.since, param.until) != ("", ""):
+        messages.append("")
+    if param.since:
+        messages.append(f"* deprecated from version: {param.since}")
+    if param.until:
+        raise_will_raise = "Raises" if expired else "Will raise"
+        messages.append(
+            f"* {raise_will_raise} {param.error_class} as of version: {param.until}"
+        )
+    messages.append("")
+    message = "\n".join(messages)
+
+    if new_label is not None:
+        message += f'* Use argument "{new_label}" instead.'
+    elif param.alternative:
+        message += f"* Use {param.alternative} instead."
+
+    if expired:
+        raise param.error_class(message)
+    return message
+
+
 @warning_for_keywords()
 def deprecated_params(
     old_name,
@@ -580,26 +653,24 @@ def deprecated_params(
                 msg += f"of kind {param.kind!r}."
                 raise TypeError(msg)
 
+        params = tuple(
+            DeprecatedParam(
+                o_name,
+                n_name,
+                since_i,
+                until_i,
+                alternative,
+                version_comparator,
+                error_class,
+            )
+            for o_name, n_name, since_i, until_i in zip(
+                old_name, new_name, since, until
+            )
+        )
+
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             for i, (o_name, n_name) in enumerate(zip(old_name, new_name)):
-                messages = [
-                    f'"{o_name}" was deprecated',
-                ]
-                if (since[i], until[i]) != ("", ""):
-                    messages.append("")
-                if since[i]:
-                    messages.append(f"* deprecated from version: {since[i]}")
-                if until[i]:
-                    raise_will_raise = (
-                        "Raises" if is_bad_version(until[i]) else "Will raise"
-                    )
-                    messages.append(
-                        f"* {raise_will_raise} {error_class} as of version: {until[i]}"
-                    )
-                messages.append("")
-                message = "\n".join(messages)
-
                 # The only way to have oldkeyword inside the function is
                 # that it is passed as kwarg because the oldkeyword
                 # parameter was renamed to newkeyword.
@@ -622,34 +693,20 @@ def deprecated_params(
                     key = n_name or o_name
                     kwargs[key] = value
 
-                    if n_name is not None:
-                        message += f'* Use argument "{n_name}" instead.'
-                    elif alternative:
-                        message += f"* Use {alternative} instead."
-
-                    if until[i] and is_bad_version(
-                        until[i], version_comparator=version_comparator
-                    ):
-                        raise error_class(message)
+                    message = check_deprecated_param(params[i])
                     warnings.warn(message, warn_class, stacklevel=2)
 
                 # Deprecated keyword without replacement is given as
                 # positional argument.
                 elif not n_name and positions[i] and len(args) > positions[i]:
-                    if alternative:
-                        message += f"* Use {alternative} instead."
-                    if until[i] and is_bad_version(
-                        until[i], version_comparator=version_comparator
-                    ):
-                        raise error_class(message)
-
+                    message = check_deprecated_param(params[i])
                     warnings.warn(message, warn_class, stacklevel=2)
 
             return function(*args, **kwargs)
 
-        wrapper.__deprecated_params__ = tuple(
-            getattr(function, "__deprecated_params__", ())
-        ) + tuple(zip(old_name, new_name))
+        wrapper.__deprecated_params__ = (
+            tuple(getattr(function, "__deprecated_params__", ())) + params
+        )
 
         return wrapper
 
