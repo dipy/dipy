@@ -24,11 +24,12 @@ from warnings import warn
 
 import numpy as np
 from numpy.random import randint
+from scipy.linalg import polar
 import scipy.special as sps
 
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
-from dipy.core.sphere import hemi_icosahedron
+from dipy.core.sphere import Sphere, hemi_icosahedron, unit_icosahedron
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.recspeed import fmls_afd
@@ -1807,16 +1808,24 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, *, full_basis=False):
     return out_sh_coeffs
 
 
-def convert_sh_descoteaux_tournier(sh_coeffs):
-    """Convert SH coefficients between legacy-descoteaux07 and tournier07.
+def convert_sh_descoteaux_tournier(
+    sh_coeffs, *, affine=None, to_mrtrix=None, legacy=True, full_basis=False
+):
+    """Convert SH coefficients between descoteaux07 and tournier07.
 
-    Convert SH coefficients between the legacy ``descoteaux07`` SH basis and
-    the non-legacy ``tournier07`` SH basis. Because this conversion is equal to
-    its own inverse, it can be used to convert in either direction:
+    Convert SH coefficients between the ``descoteaux07`` SH basis (legacy by
+    default) and the non-legacy ``tournier07`` SH basis. For the legacy
+    ``descoteaux07`` basis and without ``affine``, this conversion is equal to
+    its own inverse, so it can be used to convert in either direction:
     legacy-descoteaux to non-legacy-tournier or non-legacy-tournier to
-    legacy-descoteaux.
+    legacy-descoteaux. Otherwise, ``to_mrtrix`` sets the direction.
 
     This can be used to convert SH representations between DIPY and MRtrix3.
+    However, MRtrix3 expresses directions in world (scanner) space, whereas
+    DIPY expresses them in the voxel frame of the image. Unless the image axes
+    are aligned with the world (RAS) axes, e.g., for oblique acquisitions or
+    images stored in radiological (LAS) order, pass the image ``affine`` to
+    also reorient the functions.
 
     See :footcite:p:`Descoteaux2007` and :footcite:p:`Tournier2019` for the
     origin of these SH bases.
@@ -1829,13 +1838,27 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
     sh_coeffs: ndarray
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
+    affine : ndarray (4, 4), optional
+        Voxel-to-world affine of the image, as returned by
+        :func:`dipy.io.image.load_nifti`. If given, the functions are also
+        reoriented between world space and the voxel frame, using the
+        rotational part of the affine.
+    to_mrtrix : bool, optional
+        True to convert from DIPY (``descoteaux07``, voxel frame) to MRtrix3
+        (``tournier07``, world space), False for the reverse. Required if
+        ``affine`` is given or ``legacy`` is False.
+    legacy : bool, optional
+        True if the ``descoteaux07`` coefficients use the legacy definition.
+    full_basis : bool, optional
+        True if the coefficients include odd order SH functions.
 
     Returns
     -------
     out_sh_coeffs: ndarray
         The array of coefficients expressed in the "other" SH basis. If the
-        input was in the legacy-descoteaux basis then the output will be in the
-        non-legacy-tournier basis, and vice versa.
+        input was in the descoteaux basis then the output will be in the
+        non-legacy-tournier basis, and vice versa. If ``affine`` is given, the
+        output is also expressed in the other frame.
 
     References
     ----------
@@ -1844,12 +1867,42 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
     .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
     """
 
-    sh_order_max = calculate_max_order(sh_coeffs.shape[-1])
-    m_values, l_values = sph_harm_ind_list(sh_order_max)
+    if to_mrtrix is None and (affine is not None or not legacy):
+        raise ValueError("to_mrtrix is required if affine is given or not legacy.")
+    sh_order_max = calculate_max_order(sh_coeffs.shape[-1], full_basis=full_basis)
+    m_values, l_values = sph_harm_ind_list(sh_order_max, full_basis=full_basis)
     basis_indices = list(zip(l_values, m_values))  # dipy basis ordering
     basis_indices_permuted = list(zip(l_values, -m_values))  # mrtrix basis ordering
     permutation = [
         basis_indices.index(basis_indices_permuted[i])
         for i in range(len(basis_indices))
     ]
-    return sh_coeffs[..., permutation]
+    if to_mrtrix and not legacy:
+        sh_coeffs = convert_sh_to_legacy(
+            sh_coeffs, "descoteaux07", full_basis=full_basis
+        )
+    sh_coeffs = sh_coeffs[..., permutation]
+
+    if affine is not None:
+        # A unit vector v of the voxel frame points along rot @ v in world space.
+        # Sample the change of frame to find its matrix in the tournier07 basis.
+        rot = polar(affine[:3, :3])[0]
+        sphere = unit_icosahedron.subdivide(n=4)
+        moved = Sphere(xyz=sphere.vertices @ (rot if to_mrtrix else rot.T))
+        kwargs = {
+            "sh_order_max": sh_order_max,
+            "basis_type": "tournier07",
+            "legacy": False,
+            "full_basis": full_basis,
+        }
+        mat = sh_to_sf_matrix(moved, return_inv=False, **kwargs)
+        mat = mat @ sh_to_sf_matrix(sphere, **kwargs)[1]
+        if not to_mrtrix:  # the output is in the descoteaux07 basis
+            mat = mat[np.ix_(permutation, permutation)]
+        sh_coeffs = sh_coeffs @ mat.astype(sh_coeffs.dtype)
+
+    if not (to_mrtrix or legacy):
+        sh_coeffs = convert_sh_from_legacy(
+            sh_coeffs, "descoteaux07", full_basis=full_basis
+        )
+    return sh_coeffs
