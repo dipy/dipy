@@ -15,6 +15,7 @@ from dipy.nn.utils import (
     load_state_dict,
     normalize,
     recover_img,
+    torch_gpu_device,
     transform_img,
     unnormalize,
 )
@@ -149,3 +150,11 @@ def test_load_state_dict_wrong_files(tmp_path):
         legacy = tmp_path / f"legacy_{name}.pth"
         legacy.write_bytes(b"".join(pickle.dumps(o, protocol=2) for o in objects))
         npt.assert_raises(ValueError, load_state_dict, legacy)
+
+
+def test_torch_gpu_device():
+    npt.assert_equal(torch_gpu_device("cpu"), None)
+    npt.assert_equal(torch_gpu_device("webgpu"), None)
+    if not have_torch:
+        npt.assert_equal(torch_gpu_device("auto"), None)
+        npt.assert_equal(torch_gpu_device("cuda"), None)

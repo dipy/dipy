@@ -1,6 +1,8 @@
 """Routines to support optional packages"""
 
 import importlib
+import importlib.util
+import sys
 
 from packaging.version import Version
 
@@ -137,3 +139,52 @@ def optional_package(name, *, trip_msg=None, min_version=None, max_version=None)
             pytest.mark.skip(f"No {name} for these tests")
 
     return pkg, False, setup_module
+
+
+def lazy_import(name):
+    """Return a module that is only executed when one of its attributes is used.
+
+    Parameters
+    ----------
+    name : str
+        Module name.
+
+    Returns
+    -------
+    module : module
+        The module. If it was not imported yet, its code runs the first time
+        one of its attributes is used, and only then are errors raised by
+        that code reported.
+
+    Raises
+    ------
+    ImportError
+        If the module cannot be found.
+
+    Notes
+    -----
+    Meant for DIPY modules that import costly optional packages. Some packages
+    do not support lazy loading, e.g. PyTorch modifies its own module while
+    it is executed, so they should be imported by such a DIPY module instead.
+
+    Examples
+    --------
+    >>> from dipy.utils.optpkg import lazy_import
+    >>> ndimage = lazy_import("scipy.ndimage")
+    >>> callable(ndimage.gaussian_filter)
+    True
+    """
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.find_spec(name)
+    if spec is None:
+        raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+    loader = importlib.util.LazyLoader(spec.loader)
+    spec.loader = loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    loader.exec_module(module)
+    parent, _, child = name.rpartition(".")
+    if parent:
+        setattr(sys.modules[parent], child, module)
+    return module

@@ -15,11 +15,13 @@ from scipy.special import expit
 from dipy.data import get_fnames
 from dipy.nn.meshnet import meshnet_forward_cpu
 from dipy.nn.meshnet_webgpu import meshnet_forward_webgpu, webgpu_device, wgpu
+from dipy.nn.torch.utils import load_torch_model, run_torch_model
 from dipy.nn.utils import (
     load_state_dict,
     normalize,
     recover_img,
     set_logger_level,
+    torch_gpu_device,
     transform_img,
 )
 from dipy.segment.utils import remove_holes_and_islands
@@ -218,11 +220,8 @@ class MindGrab:
         self.webgpu_device = None
         if device in ("auto", "webgpu"):
             self.webgpu_device = webgpu_device()
-        if self.webgpu_device is None and device in ("auto", "cuda") and have_torch:
-            if torch.cuda.is_available():
-                self.torch_device = torch.device("cuda")
-            elif device == "cuda" and torch.backends.mps.is_available():
-                self.torch_device = torch.device("mps")
+        if self.webgpu_device is None:
+            self.torch_device = torch_gpu_device(device)
         if self.torch_device is None and device == "cuda":
             self.webgpu_device = webgpu_device()
             if self.webgpu_device is not None:
@@ -269,9 +268,7 @@ class MindGrab:
         state = {f"model.{i}.0.weight": kernel for i, kernel in enumerate(kernels)}
         state[f"model.{len(kernels)}.weight"] = classifier[..., None, None, None]
         state[f"model.{len(kernels)}.bias"] = bias
-        self.model = MeshNet()
-        self.model.load_state_dict({k: torch.from_numpy(v) for k, v in state.items()})
-        self.model.to(self.torch_device).eval()
+        self.model = load_torch_model(MeshNet(), state, self.torch_device)
 
     def _predict_volume(self, volume):
         """Compute the brain probability of a conformed volume.
@@ -288,9 +285,7 @@ class MindGrab:
         """
         logits = None
         if self.model is not None:
-            x = torch.from_numpy(np.ascontiguousarray(volume)[None, None])
-            with torch.no_grad():
-                logits = self.model(x.to(self.torch_device))[0].cpu().numpy()
+            logits = run_torch_model(self.model, volume[None, None])[0]
         elif self.webgpu_device is not None:
             logits = self._predict_webgpu(volume)
         if logits is None:

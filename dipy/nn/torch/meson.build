@@ -1,9 +1,11 @@
 python_sources = [
   '__init__.py',
+  'deepn4.py',
   'evac.py',
   'histo_resdnn.py',
-  'deepn4.py',
   'synthseg.py',
+  'unet3d.py',
+  'utils.py',
   ]
 
 

@@ -355,8 +355,7 @@ def synb0_syn(
         corrected DWI data.
     apply_deepn4 : bool, optional
         If True, apply DeepN4 bias field correction to the T1 image
-        before the first affine registration. DeepN4 requires PyTorch or
-        TensorFlow.
+        before the first affine registration.
     apply_skull_strip : bool, optional
         If True, apply MindGrab skull stripping to both the T1 and DWI b0
         images before registration. The resulting masks are used as

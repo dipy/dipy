@@ -4,27 +4,28 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.nn.synb0 import UNet3D
+from dipy.nn.torch.unet3d import UNet3D
 from dipy.nn.unet3d import pack_unet3d_weights, unet3d_forward_cpu
+from dipy.nn.utils import load_unet3d, run_unet3d
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
-ENCODER = ((32, 2), (64, 32), (64, 64), (128, 64), (128, 128), (256, 128))
+ENCODER = ((64, 32), (64, 64), (128, 64), (128, 128), (256, 128))
 ENCODER += ((256, 256), (512, 256))
 
 
-def random_state(rng):
-    """Random weights with the shapes of the Synb0 UNet3D state dict."""
+def random_state(rng, *, n_in=2):
+    """Random weights with the shapes of a UNet3D state dict."""
 
     def weight(*shape):
         fan_in = np.prod(shape[1:])
         return (rng.standard_normal(shape) / np.sqrt(fan_in)).astype(np.float32)
 
-    state = {
-        f"ec{i}.0.weight": weight(o, c, 3, 3, 3) for i, (o, c) in enumerate(ENCODER)
-    }
+    state = {"ec0.0.weight": weight(32, n_in, 3, 3, 3)}
+    for i, (o, c) in enumerate(ENCODER, start=1):
+        state[f"ec{i}.0.weight"] = weight(o, c, 3, 3, 3)
     state["el.weight"] = weight(512, 512, 1, 1, 1)
     state["el.bias"] = weight(512, 1)[:, 0]
     for up, conv, width in ((9, 8, 256), (6, 5, 128), (3, 2, 64)):
@@ -96,10 +97,11 @@ def reference_unet3d(volume, state):
     return x + state["dl.bias"][:, None, None, None]
 
 
+@pytest.mark.parametrize("n_in", [1, 2])
 @set_random_number_generator()
-def test_unet3d_forward_cpu(rng=None):
-    state = random_state(rng)
-    volume = rng.standard_normal((2, 16, 24, 16)).astype(np.float32)
+def test_unet3d_forward_cpu(n_in, rng=None):
+    state = random_state(rng, n_in=n_in)
+    volume = rng.standard_normal((n_in, 16, 24, 16)).astype(np.float32)
 
     expected = reference_unet3d(volume, state)
     result = unet3d_forward_cpu(volume, state, num_threads=1)
@@ -146,3 +148,20 @@ def test_torch_matches_cpu(rng=None):
     npt.assert_allclose(
         unet3d_forward_cpu(volume, state), expected, rtol=1e-4, atol=1e-4
     )
+
+    network = load_unet3d(state, torch_device=torch.device("cpu"))
+    npt.assert_allclose(run_unet3d(network, volume[None])[0], expected, atol=1e-6)
+
+
+@set_random_number_generator()
+def test_run_unet3d(rng=None):
+    state = random_state(rng)
+    volume = rng.standard_normal((2, 2, 16, 8, 16)).astype(np.float32)
+    network = load_unet3d(state)
+    result = run_unet3d(network, volume, num_threads=1)
+    npt.assert_equal(result.shape, (2, 1, 16, 8, 16))
+    for x, y in zip(volume, result):
+        npt.assert_array_equal(y, unet3d_forward_cpu(x, network, num_threads=1))
+
+    wrong = dict(state, **{"dc8.0.weight": state["dc8.0.weight"][:, :128]})
+    npt.assert_raises(ValueError, load_unet3d, wrong)
