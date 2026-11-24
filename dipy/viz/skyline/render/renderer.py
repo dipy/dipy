@@ -381,6 +381,35 @@ class Visualization:
         return self.name
 
 
+def _keep_drawing(show_m):
+    """Draw continuously and skip re-entrant draws (stopgap until FURY re-arms draws).
+
+    "continuous" survives frames cancelled by wgpu (``DrawCancelled``, e.g. macOS
+    occlusion); the guard stops a native file dialog's nested event loop from
+    starting a second ImGui frame inside the first.
+
+    Parameters
+    ----------
+    show_m : ShowManager
+        Manager modified in place.
+    """
+    show_m.window.set_update_mode("continuous")
+    draw_function = show_m._draw_function
+    drawing = False
+
+    def draw_once():
+        nonlocal drawing
+        if drawing:
+            return
+        drawing = True
+        try:
+            draw_function()
+        finally:
+            drawing = False
+
+    show_m._draw_function = draw_once
+
+
 def create_window(
     *,
     visualizer_type="standalone",
@@ -425,6 +454,9 @@ def create_window(
     Successful window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth
     or removes the key otherwise. Direct callers must restore their own
     previous environment value or absence.
+
+    Non-stealth windows use the "continuous" update mode so a frame cancelled by the GPU
+    surface (for example while occluded on macOS) cannot stop redraws.
     """
     if visualizer_type == "standalone":
         window_type = "default"
@@ -451,6 +483,8 @@ def create_window(
             imgui=True,
             imgui_draw_function=lambda: None,
         )
+        # This is until the next FURY release, which will rearm the draw automatically on cancelled frames.
+        _keep_drawing(show_m)
         if window_type == "default":
             with Image.open(LOGO_SMALL) as img:
                 img = img.convert("RGBA")
