@@ -394,11 +394,18 @@ def test_clustered_tractograms_build_cluster_visualizations(make_skyline):
     assert isinstance(viewer._tractogram_visualizations[0], ClusterStreamline3D)
 
 
-def test_light_version_renders_streamlines_as_lines(make_skyline):
-    viewer = make_skyline(tractograms=[_tractogram_input()], is_light_version=True)
+@pytest.mark.parametrize(
+    "kwargs, line_type",
+    [
+        ({}, "Line"),
+        ({"is_light_version": True}, "Line"),
+        ({"is_light_version": False}, "Tube"),
+    ],
+)
+def test_tractograms_render_as_lines_by_default(make_skyline, kwargs, line_type):
+    viewer = make_skyline(tractograms=[_tractogram_input()], **kwargs)
 
-    assert viewer._is_light_version is True
-    assert viewer._tractogram_visualizations[0]._line_type == "Line"
+    assert viewer._tractogram_visualizations[0]._line_type == line_type
 
 
 @pytest.mark.parametrize("sh_coeffs", [None, []])
