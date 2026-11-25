@@ -18,10 +18,11 @@ import re
 import shlex
 import urllib.parse
 
+from dipy.desktop.constants import SKYLINE_FORMATS
+from dipy.desktop.links import skyline_argument, skyline_url
 from dipy.utils.logging import logger
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.qc import STATUS_LEVELS
-from dipy.workflows.skyline_app import SKYLINE_FORMATS, skyline_argument, skyline_url
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -736,16 +737,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 }}
             }}, 2000);
         }}
-        function qcOpen(path, command, url) {{
+        function qcOpen(paths, command, url) {{
             // The server adds this tag to the pages it serves, never to files.
             var token = document.querySelector('meta[name="dipy-qc-token"]');
             if (!token) {{
                 qcLaunchApp(url, command);
                 return;
             }}
+            var body = new URLSearchParams();
+            body.append('token', token.content);
+            paths.forEach(function (p) {{ body.append('path', p); }});
             fetch('/qc-open', {{
                 method: 'POST',
-                body: new URLSearchParams({{path: path, token: token.content}})
+                body: body
             }})
                 .then(function (r) {{
                     if (!r.ok) {{
@@ -763,6 +767,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 # =============================================================================
 # Shared building blocks
 # =============================================================================
+
+
+_STAGE_PAGE = re.compile(r"\d{2,}_[A-Za-z0-9_-]+\.html")
+_PIPELINE_PAGE = re.compile(r"(\d{8}_\d{6}_)?pipeline_report\.html")
 
 
 def stage_basename(*, index, stage_name):
@@ -871,32 +879,34 @@ def _format_value(*, value, unit):
     return html.escape(f"{text} {unit}".strip())
 
 
-def skyline_command(*, path):
-    """Shell command that opens ``path`` in Skyline.
+def skyline_command(*, paths):
+    """Shell command that opens ``paths`` in Skyline.
 
     Parameters
     ----------
-    path : str
-        File to display.
+    paths : sequence of str or Path
+        Files to display.
 
     Returns
     -------
     str
-        ``dipy_skyline`` followed by the escaped path, quoted for the shell
+        ``dipy_skyline`` followed by the escaped paths, quoted for the shell
         of the current platform so that it can be pasted as is.
 
     Notes
     -----
-    On Windows the path is double-quoted, which both ``cmd.exe`` and PowerShell
-    read literally except for ``%``, ``$``, the backtick and the curly double
-    quotes that PowerShell accepts. Those are replaced by the glob wildcard
-    ``?``, which Skyline expands.
+    On Windows each path is double-quoted, which both ``cmd.exe`` and
+    PowerShell read literally except for ``%``, ``$``, the backtick and the
+    curly double quotes that PowerShell accepts. Those are replaced by the
+    glob wildcard ``?``, which Skyline expands.
     """
-    argument = skyline_argument(path=path)
+    arguments = [skyline_argument(path=path) for path in paths]
     if os.name == "nt":
-        argument = re.sub("[%$`\u201c\u201d\u201e]", "?", argument)
-        return f'dipy_skyline "{argument}"'
-    return f"dipy_skyline {shlex.quote(argument)}"
+        arguments = [re.sub("[%$`\u201c\u201d\u201e]", "?", a) for a in arguments]
+        quoted = [f'"{argument}"' for argument in arguments]
+    else:
+        quoted = [shlex.quote(argument) for argument in arguments]
+    return " ".join(["dipy_skyline", *quoted])
 
 
 def served_root(*, page_dir):
@@ -941,6 +951,42 @@ def skyline_key(*, path, page_dir):
         return path.relative_to(served_root(page_dir=page_dir)).as_posix()
     except ValueError:
         return path.as_posix()
+
+
+def is_report_page(*, root, page):
+    """Tell whether a file is a page that a pipeline report writes.
+
+    Parameters
+    ----------
+    root : str or Path
+        Directory the report is served from.
+    page : str or Path
+        File to check.
+
+    Returns
+    -------
+    bool
+        True for the ``pipeline_report.html`` of a run, with or without its
+        timestamp prefix, and for ``index.html`` and the stage pages
+        ``NN_stage.html`` in a ``reports`` folder, all at any depth under
+        ``root``, as the runs of a BIDS batch have; False for any other file,
+        such as an HTML file somebody placed in the folder.
+
+    Notes
+    -----
+    The names are not a proof of origin: whoever can write to the folder, or
+    to a ``reports`` folder, can make a page that passes this check.
+    """
+    try:
+        relative = Path(page).resolve().relative_to(Path(root).resolve())
+    except ValueError:
+        return False
+    name = relative.name
+    if _PIPELINE_PAGE.fullmatch(name) is not None:
+        return True
+    if len(relative.parts) < 2 or relative.parts[-2] != "reports":
+        return False
+    return name == "index.html" or _STAGE_PAGE.fullmatch(name) is not None
 
 
 def skyline_files(*, root):
@@ -993,11 +1039,11 @@ def _output_items(*, outputs, page_dir):
         if key == "out_dir" or not Path(path).exists():
             button = ""
         elif path.endswith(SKYLINE_FORMATS):
-            target = skyline_key(path=path, page_dir=page_dir)
-            command = skyline_command(path=Path(path).absolute())
-            url = skyline_url(path=path)
+            targets = [skyline_key(path=path, page_dir=page_dir)]
+            command = skyline_command(paths=[Path(path).absolute()])
+            url = skyline_url(paths=[path])
             arguments = html.escape(
-                f"{json.dumps(target)}, {json.dumps(command)}, {json.dumps(url)}",
+                f"{json.dumps(targets)}, {json.dumps(command)}, {json.dumps(url)}",
                 quote=True,
             )
             button = (
@@ -1006,7 +1052,10 @@ def _output_items(*, outputs, page_dir):
             )
         else:
             href = html.escape(_href(path=path, page_dir=page_dir), quote=True)
-            button = f'<a class="qc-open" href="{href}" target="_blank">Open</a>'
+            button = (
+                f'<a class="qc-open" href="{href}" target="_blank" '
+                'rel="noopener">Open</a>'
+            )
         items += (
             f'<div class="output-item"><strong>{html.escape(key)}</strong>'
             f"<code>{html.escape(path)}</code>{button}</div>"

@@ -3,6 +3,7 @@
 import hashlib
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import tempfile
+import time
 from urllib.error import URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, build_opener
@@ -33,6 +34,8 @@ ASSET_SHA256 = {
 }
 _DOWNLOAD_TIMEOUT = 30
 _CHUNK_SIZE = 1 << 16
+_REPLACE_ATTEMPTS = 20
+_REPLACE_PAUSE = 0.05
 
 
 class _HttpsRedirectHandler(HTTPRedirectHandler):
@@ -106,6 +109,43 @@ def _file_sha256(path):
         return hashlib.file_digest(file, "sha256").hexdigest()
 
 
+def _move_into_place(source, path, sha256):
+    """Replace ``path`` with a verified download, or accept an identical file.
+
+    On Windows, replacing or reading a file that a parallel download is
+    replacing at that moment raises ``PermissionError``; the winner downloaded
+    the same content, so the file is accepted once it reads back correctly.
+
+    Parameters
+    ----------
+    source : Path
+        Temporary file holding the verified content.
+    path : Path
+        Destination file.
+    sha256 : str
+        Expected hexadecimal SHA-256 digest of the content.
+
+    Raises
+    ------
+    PermissionError
+        If ``path`` can be neither replaced nor read with the expected digest
+        within ``_REPLACE_ATTEMPTS`` tries.
+    """
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            source.replace(path)
+            return
+        except PermissionError:
+            try:
+                if path.is_file() and _file_sha256(path) == sha256:
+                    return
+            except PermissionError:
+                pass
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(_REPLACE_PAUSE)
+
+
 def download_verified(url, path, *, sha256):
     """Download a file and keep it only when its SHA-256 digest is the expected one.
 
@@ -147,13 +187,7 @@ def download_verified(url, path, *, sha256):
                 "the download is incomplete or the file was changed."
             )
         partial.close()
-        try:
-            Path(partial.name).replace(path)
-        except PermissionError:
-            # Windows refuses to replace a file that another process just
-            # replaced or has open; the winner downloaded the same content.
-            if not path.is_file() or _file_sha256(path) != sha256:
-                raise
+        _move_into_place(Path(partial.name), path, sha256)
 
 
 def cached_download(url, path, *, sha256):

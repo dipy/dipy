@@ -71,10 +71,19 @@ The icon is downloaded to the ``.dipy-skyline`` folder of your home directory
 with the other Skyline assets, and the log of the application is written to
 ``.dipy-skyline/skyline_app.log``.
 
+Several files can be opened at once, by selecting them in the file manager and
+using *Open with*, with a ``dipy-skyline://`` link that names up to 64 files,
+or from Python with ``dipy.desktop.environment.open_in_skyline``. Launches that
+start together merge into one. When Skyline windows are already open, a dialog
+asks whether the files open in the window you used last, which comes to the
+front, or in a new window; otherwise a new window opens. A window is titled
+with the names of the files it displays.
+
 ``dipy_auto --register_skyline`` registers Skyline without asking anything when
 it runs a pipeline or serves a report. It keeps an existing registration of any
-environment as long as its interpreter still exists and finds DIPY, and
-replaces a missing or broken one with a registration for its own environment.
+environment as long as its interpreter still exists, finds DIPY, and was made
+by a version of DIPY that registers the same way, and replaces a missing,
+broken or outdated one with a registration for its own environment.
 Without the flag, ``dipy_auto`` never changes the registration; the missing
 visualization packages are only reported, and ``dipy_skyline --setup`` installs
 them.

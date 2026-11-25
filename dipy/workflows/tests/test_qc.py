@@ -25,12 +25,14 @@ import pytest
 import trx.trx_file_memmap as tmm
 
 from dipy.core.gradients import gradient_table
+from dipy.desktop.constants import MAX_FILES
+from dipy.desktop.links import skyline_argument, skyline_targets
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.reconst.dti import TensorModel, tensor_prediction
-from dipy.workflows import qc, report, skyline_app
+from dipy.workflows import qc, report
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.combined_workflow import (
     _ReportHandler as ReportHandler,
@@ -313,10 +315,10 @@ def test_output_buttons():
             page_dir=out_dir,
         )
         (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-        key, command, url = json.loads(f"[{html.unescape(onclick)}]")
+        (key,), command, url = json.loads(f"[{html.unescape(onclick)}]")
         assert key == "fa.nii.gz"
-        assert command == report.skyline_command(path=volume)
-        assert skyline_app.skyline_target(url) == Path(volume)
+        assert command == report.skyline_command(paths=[volume])
+        assert skyline_targets(url) == [Path(volume)]
         assert 'href="affine.txt"' in items
         assert items.count("qc-open") == 2
 
@@ -335,10 +337,10 @@ def test_output_buttons_quote_paths(tmp_path):
         outputs={"out_fa": volume, "out_affine": text}, page_dir=str(tmp_path)
     )
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    key, command, url = json.loads(f"[{html.unescape(onclick)}]")
+    (key,), command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == f"{folder.name}/fa.nii.gz"
-    assert command == report.skyline_command(path=volume)
-    assert skyline_app.skyline_target(url) == Path(volume)
+    assert command == report.skyline_command(paths=[volume])
+    assert skyline_targets(url) == [Path(volume)]
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
     assert (
         unquote(html.unescape(href)) == Path(os.path.relpath(text, tmp_path)).as_posix()
@@ -357,26 +359,29 @@ def test_skyline_command_loads_exactly_the_file(tmp_path):
     (tmp_path / "sub 0 o'brien").mkdir()
     volume = str(folder / "fa.nii.gz")
 
-    argument = skyline_app.skyline_argument(path=volume)
+    argument = skyline_argument(path=volume)
     assert glob.glob(argument) == [volume]
 
-    command = report.skyline_command(path=volume)
+    command = report.skyline_command(paths=[volume])
     words = command.split(" ", 1) if os.name == "nt" else shlex.split(command)
     assert words[0] == "dipy_skyline"
     unquoted = words[1].strip('"') if os.name == "nt" else words[1]
     assert unquoted == argument
 
 
-def _serve(*, out_dir, token, launcher=None):
+def _serve(*, out_dir, token, launcher=None, entry=None):
     """Start a report server on a free port; return it and its base URL."""
-    handler = partial(ReportHandler, directory=out_dir, token=token, launcher=launcher)
+    handler = partial(
+        ReportHandler, directory=out_dir, token=token, launcher=launcher, entry=entry
+    )
     httpd = ReportServer(("127.0.0.1", 0), handler)
     Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd, f"http://127.0.0.1:{httpd.server_address[1]}"
 
 
-def _post(url, **fields):
-    return urlopen(Request(url, data=urlencode(fields).encode()))
+def _post(url, pairs=(), **fields):
+    data = urlencode([*pairs, *fields.items()])
+    return urlopen(Request(url, data=data.encode()))
 
 
 def test_report_server_port_cannot_be_taken_by_another_socket():
@@ -440,6 +445,42 @@ def test_report_server_launches_only_files_inside_its_root(tmp_path):
         httpd.server_close()
 
 
+def test_report_server_refuses_whole_request_for_one_bad_file(tmp_path):
+    save_nifti(str(tmp_path / "fa.nii.gz"), np.zeros((2, 2, 2), np.float32), np.eye(4))
+    httpd, base = _serve(out_dir=str(tmp_path), token="secret", launcher=["unused"])
+    try:
+        requests = {
+            "unknown file": ([("path", "fa.nii.gz"), ("path", "/etc/hosts")], 403),
+            "no file": ([], 400),
+            "too many files": (
+                [("path", f"{i}.nii.gz") for i in range(MAX_FILES + 1)],
+                400,
+            ),
+        }
+        for name, (pairs, code) in requests.items():
+            with npt.assert_raises(HTTPError, msg=name) as cm:
+                _post(f"{base}/qc-open", [*pairs, ("token", "secret")])
+            assert cm.exception.code == code, name
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_report_server_reads_the_token_of_a_long_request(tmp_path):
+    save_nifti(str(tmp_path / "fa.nii.gz"), np.zeros((2, 2, 2), np.float32), np.eye(4))
+    httpd, base = _serve(out_dir=str(tmp_path), token="secret", launcher=["unused"])
+    try:
+        names = [f"{'x' * 3000}{i}.nii.gz" for i in range(MAX_FILES)]
+        pairs = [("token", "secret"), *(("path", name) for name in names)]
+        with npt.assert_raises(HTTPError) as cm:
+            _post(f"{base}/qc-open", pairs)
+        assert cm.exception.code == 403
+        assert "is not a file served by this report" in cm.exception.read().decode()
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
 def test_output_buttons_name_files_from_the_served_root(tmp_path):
     # A pipeline run with a relative out_dir records paths relative to where
     # it ran; the server only knows paths relative to the output directory.
@@ -457,10 +498,10 @@ def test_output_buttons_name_files_from_the_served_root(tmp_path):
     finally:
         os.chdir(cwd)
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    key, command, url = json.loads(f"[{html.unescape(onclick)}]")
+    (key,), command, url = json.loads(f"[{html.unescape(onclick)}]")
     assert key == "dwi/fa.nii.gz"
-    assert command == report.skyline_command(path=volume)
-    assert skyline_app.skyline_target(url) == volume
+    assert command == report.skyline_command(paths=[volume])
+    assert skyline_targets(url) == [volume]
     assert report.skyline_files(root=out_dir) == {key: volume}
 
 
@@ -473,7 +514,7 @@ def test_report_server_requires_its_token():
         save_nifti(volume, np.zeros((2, 2, 2), dtype=np.float32), np.eye(4))
 
         for token in ("secret", None):
-            httpd, base = _serve(out_dir=out_dir, token=token)
+            httpd, base = _serve(out_dir=out_dir, token=token, entry=page)
             try:
                 served = urlopen(f"{base}/report.html").read().decode()
                 meta = f'<meta name="dipy-qc-token" content="{token}">'
@@ -506,6 +547,47 @@ def test_report_server_requires_its_token():
             assert "dipy-qc-token" not in f.read()
 
 
+def test_report_server_gives_the_token_only_to_report_pages(tmp_path):
+    page = "<html><head><title>r</title></head><body></body></html>"
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "sub-01" / "dwi" / "reports").mkdir(parents=True)
+    entry = tmp_path / "opened.html"
+    pages = {
+        "opened.html": True,
+        "reports/index.html": True,
+        "reports/01_dti.html": True,
+        "sub-01/dwi/reports/01_dti.html": True,
+        "sub-01/dwi/20260101_000000_pipeline_report.html": True,
+        "reports/evil.html": False,
+        "sub-01/dwi/evil.html": False,
+        "evil.html": False,
+        "index.html": False,
+    }
+    for name in pages:
+        (tmp_path / name).write_text(page, encoding="utf-8")
+    handler = partial(
+        ReportHandler, directory=str(tmp_path), token="secret", entry=entry
+    )
+    httpd = ReportServer(("127.0.0.1", 0), handler)
+    Thread(target=httpd.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    try:
+        for name, carries_token in pages.items():
+            with urlopen(f"{base}/{name}") as response:
+                served = response.read().decode()
+                sandbox = response.headers.get("Content-Security-Policy")
+                sniffing = response.headers.get("X-Content-Type-Options")
+            assert ('name="dipy-qc-token"' in served) is carries_token, name
+            assert "<title>r</title>" in served
+            assert sniffing == "nosniff", name
+            assert sandbox == (
+                "frame-ancestors 'none'" if carries_token else "sandbox allow-scripts"
+            )
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
 def _request(base, *, method, path, headers=None, body=None):
     """Send one request with chosen headers; return the status and the body."""
     connection = http.client.HTTPConnection(base.removeprefix("http://"), timeout=10)
@@ -522,7 +604,7 @@ def test_report_server_answers_only_requests_sent_to_its_own_address():
         page = os.path.join(out_dir, "report.html")
         with open(page, "w", encoding="utf-8") as f:
             f.write("<html><head><title>r</title></head><body></body></html>")
-        httpd, base = _serve(out_dir=out_dir, token="secret")
+        httpd, base = _serve(out_dir=out_dir, token="secret", entry=page)
         try:
             for method in ("GET", "HEAD", "POST"):
                 status, body = _request(
@@ -537,14 +619,51 @@ def test_report_server_answers_only_requests_sent_to_its_own_address():
             status, body = _request(base, method="GET", path="/report.html")
             assert status == 200 and "secret" in body
 
-            localhost = f"localhost:{httpd.server_address[1]}"
+            forwarded = "localhost:9"
             status, body = _request(
-                base, method="GET", path="/report.html", headers={"Host": localhost}
+                base, method="GET", path="/report.html", headers={"Host": forwarded}
             )
             assert status == 200
+
+            status, _ = _request(
+                base,
+                method="GET",
+                path="/report.html",
+                headers={"Host": "evil.example:9"},
+            )
+            assert status == 403
         finally:
             httpd.shutdown()
             httpd.server_close()
+
+
+def test_report_server_refuses_a_launch_sent_by_a_foreign_origin(tmp_path):
+    httpd, base = _serve(out_dir=str(tmp_path), token="secret")
+    body = urlencode({"token": "secret", "path": "missing.nii.gz"})
+    try:
+        for origin in ("http://evil.example", "null", "http://127.0.0.1:1"):
+            status, message = _request(
+                base,
+                method="POST",
+                path="/qc-open",
+                headers={"Origin": origin},
+                body=body,
+            )
+            assert status == 403
+            assert "does not come from a page of this report" in message
+
+        status, message = _request(
+            base,
+            method="POST",
+            path="/qc-open",
+            headers={"Origin": base},
+            body=body,
+        )
+        assert status == 403
+        assert "missing.nii.gz" in message
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_report_server_port_cannot_be_shared_with_another_process():
@@ -598,7 +717,7 @@ def test_skyline_command_keeps_windows_shell_metacharacters_inert(tmp_path):
     volume = folder / "fa.nii.gz"
     volume.write_bytes(b"")
 
-    command = report.skyline_command(path=volume)
+    command = report.skyline_command(paths=[volume])
 
     assert command.startswith('dipy_skyline "') and command.endswith('"')
     assert "%" not in command and "$" not in command

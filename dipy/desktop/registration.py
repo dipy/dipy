@@ -1,27 +1,10 @@
-"""Skyline as a desktop application.
-
-This module opens files in Skyline from ``dipy-skyline://`` links, the
-application icon or "Open with", and registers that application with the
-operating system. A link asks for confirmation, naming the file, before
-Skyline opens it. Links to network paths (UNC paths, ``file:`` URLs with a
-remote host) and to files of other formats are refused. The remaining exposure
-is the file readers (NIfTI, TRK, VTK, ...) parsing a local file that someone
-else placed on the disk, for instance in Downloads; the confirmation dialog,
-which names the file and defaults to cancel, guards against it.
-
-This module must stay light: it never imports numpy, nibabel, FURY or the
-report modules, so that it can run, and explain itself, before the viewer
-packages are installed.
-"""
+"""Registration of Skyline as an application of the operating system."""
 
 import ctypes
-import glob
-import html
 import importlib
-import importlib.metadata
 import importlib.util
 import os
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 import plistlib
 import re
 import shlex
@@ -29,74 +12,27 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
-import urllib.parse
-import urllib.request
 
-from packaging.requirements import Requirement
-from packaging.utils import canonicalize_name
-
-from dipy import __version__ as dipy_version
-from dipy.utils.assets import asset_home, fetch_asset
-from dipy.utils.logging import CustomHandler, file_handler, logger
-from dipy.workflows import cli
+from dipy.desktop.constants import (
+    APP_NAME,
+    ASSET_APP,
+    LAUNCH_BOOTSTRAP,
+    PYTHON_SAFE_PATH,
+    SKYLINE_FORMATS,
+    SKYLINE_URL_SCHEME,
+)
+from dipy.desktop.dialogs import applescript_string
+from dipy.desktop.environment import missing_viz_requirements
+from dipy.utils.assets import fetch_asset
+from dipy.utils.logging import logger
 
 if sys.platform == "win32":
     import winreg
 
-APP_NAME = "DIPY SKYLINE"
-SKYLINE_URL_SCHEME = "dipy-skyline"
-ASSET_APP = "dipy-skyline"
-SKYLINE_HOME = asset_home(ASSET_APP)
-APP_LOG_FILE = SKYLINE_HOME / "skyline_app.log"
 SKYLINE_APP_ICONS = {"win32": "icons/skyline.ico", "darwin": "icons/skyline.icns"}
 SKYLINE_APP_ICON_DEFAULT = "icons/skyline.png"
-
 FILE_PROGID = "DIPY.Skyline.File"
 BUNDLE_ID = "org.dipy.skyline"
-MODULE_NAME = "dipy.workflows.skyline_app"
-SKYLINE_PACKAGES = ("fury", "imgui_bundle")
-_SKYLINE_PACKAGE_NAMES = frozenset(map(canonicalize_name, SKYLINE_PACKAGES))
-
-# Launched from a menu, a link or a report, nothing activated the environment:
-# its folders are missing from PATH, and an editable install cannot find the
-# ``ninja`` it needs to import DIPY. The code holds no double quote or percent
-# sign, so it survives the registry, shortcut and desktop entry quoting.
-LAUNCH_BOOTSTRAP = (
-    "import os,sys,runpy;"
-    "d=os.path.dirname(sys.executable);"
-    "os.environ['PATH']=os.pathsep.join([d,os.path.join(d,'Scripts'),"
-    "os.path.join(d,'Library','bin'),os.environ.get('PATH','')]);"
-    f"runpy.run_module('{MODULE_NAME}',run_name='__main__')"
-)
-
-# Python puts the current folder first on ``sys.path`` when it runs ``-c``, and
-# the folder of a file opened from the file manager may hold a ``runpy.py`` or
-# a ``dipy`` package that someone else planted: ``-P`` keeps it off the path.
-PYTHON_SAFE_PATH = "-P"
-_CONFIRM_LOCK = SKYLINE_HOME / "confirm.lock"
-_CONFIRM_LOCK_SECONDS = 120
-
-# Formats the Skyline viewer can load; anything else opens in the browser.
-SKYLINE_FORMATS = (
-    ".nii",
-    ".nii.gz",
-    ".trx",
-    ".trk",
-    ".tck",
-    ".pam5",
-    ".vtk",
-    ".vtp",
-    ".fib",
-    ".dpy",
-    ".nrrd",
-    ".mgh",
-    ".mgz",
-    ".gii",
-    ".gii.gz",
-    ".pial",
-)
-
 _WINDOWS_CLASSES = r"Software\Classes"
 _WINDOWS_SCHEME_KEY = rf"{_WINDOWS_CLASSES}\{SKYLINE_URL_SCHEME}"
 _WINDOWS_PROGID_KEY = rf"{_WINDOWS_CLASSES}\{FILE_PROGID}"
@@ -116,444 +52,15 @@ _SHORTCUT_SCRIPT = (
 _SHORTCUT_DESCRIPTION_SCRIPT = (
     "(New-Object -ComObject WScript.Shell).CreateShortcut($env:DIPY_LNK).Description"
 )
-
 _LSREGISTER = (
     "/System/Library/Frameworks/CoreServices.framework/Frameworks/"
     "LaunchServices.framework/Support/lsregister"
 )
-
-_LINUX_DIALOGS = (
-    ("zenity", ("--error", "--no-markup", "--title", APP_NAME, "--text")),
-    ("kdialog", ("--title", APP_NAME, "--error")),
-    ("notify-send", (APP_NAME,)),
-)
-
-_LINUX_CONFIRM_DIALOGS = (
-    (
-        "zenity",
-        (
-            "--question",
-            "--no-markup",
-            "--default-cancel",
-            "--title",
-            APP_NAME,
-            "--text",
-        ),
-    ),
-    ("kdialog", ("--title", APP_NAME, "--yesno")),
-)
 _LINUX_ICON_NAME = "dipy-skyline"
 _LINUX_ENTRY_MARKER = f"X-DIPY-Bundle-Identifier={BUNDLE_ID}"
 
-
-def skyline_argument(*, path):
-    """Command-line argument that makes Skyline load exactly ``path``.
-
-    Skyline expands its input files as glob patterns, so the characters
-    ``*``, ``?`` and ``[`` of a real file name are escaped.
-
-    Parameters
-    ----------
-    path : str
-        File to display.
-
-    Returns
-    -------
-    str
-        Glob-escaped path.
-    """
-    return glob.escape(str(path))
-
-
-def skyline_url(*, path):
-    """Link that makes the registered Skyline application open ``path``.
-
-    Parameters
-    ----------
-    path : str or Path
-        File to display.
-
-    Returns
-    -------
-    str
-        ``dipy-skyline://open?path=...`` with the absolute path percent-encoded.
-    """
-    query = urllib.parse.urlencode(
-        {"path": str(Path(path).absolute())}, quote_via=urllib.parse.quote
-    )
-    return f"{SKYLINE_URL_SCHEME}://open?{query}"
-
-
-def _cannot_open(argument, reason):
-    """Build the error raised when Skyline is asked to open something invalid.
-
-    Parameters
-    ----------
-    argument : str
-        What Skyline was asked to open.
-    reason : str
-        Why it cannot be opened.
-
-    Returns
-    -------
-    ValueError
-        Error naming the argument and the reason.
-    """
-    shown = argument if len(argument) <= 200 else f"{argument[:200]}..."
-    return ValueError(f"Skyline cannot open {shown!r}: {reason}")
-
-
-def _is_network_path(location):
-    """Tell whether a path points to a network share, which is never opened.
-
-    Parameters
-    ----------
-    location : str
-        File path as received from a link or a ``file:`` URL.
-
-    Returns
-    -------
-    bool
-        True on Windows for a UNC path (``\\\\server\\share``), False elsewhere.
-    """
-    return sys.platform == "win32" and PureWindowsPath(location).drive.startswith(
-        "\\\\"
-    )
-
-
-def skyline_target(argument):
-    """File Skyline is asked to open by a link, a ``file:`` URL or a path.
-
-    Parameters
-    ----------
-    argument : str
-        ``dipy-skyline://open?path=...`` link, ``file:`` URL or file path.
-
-    Returns
-    -------
-    Path
-        Absolute path of an existing file of a format Skyline can display.
-
-    Raises
-    ------
-    ValueError
-        If the argument is not one of the accepted forms, or does not name an
-        existing file whose name ends with one of ``SKYLINE_FORMATS``.
-    """
-    parts = urllib.parse.urlsplit(argument)
-    if parts.scheme == SKYLINE_URL_SCHEME:
-        if parts.netloc != "open" or parts.path not in ("", "/"):
-            raise _cannot_open(argument, f"not a {SKYLINE_URL_SCHEME}://open link")
-        query = urllib.parse.parse_qs(parts.query, keep_blank_values=True)
-        values = query.get("path", [])
-        if (
-            list(query) != ["path"]
-            or len(values) != 1
-            or not Path(values[0]).is_absolute()
-        ):
-            raise _cannot_open(
-                argument, "the link must carry exactly one absolute path"
-            )
-        if _is_network_path(values[0]):
-            raise _cannot_open(argument, "network paths are not allowed")
-        path = Path(values[0])
-    elif parts.scheme == "file":
-        if parts.netloc not in ("", "localhost"):
-            raise _cannot_open(argument, "network paths are not allowed")
-        location = urllib.request.url2pathname(parts.path)
-        if _is_network_path(location):
-            raise _cannot_open(argument, "network paths are not allowed")
-        path = Path(location)
-    elif "://" in argument:
-        raise _cannot_open(argument, f"not a {SKYLINE_URL_SCHEME}://open link")
-    else:
-        path = Path(argument).absolute()
-
-    if not path.is_file():
-        raise _cannot_open(argument, "no such file")
-    if not path.name.endswith(SKYLINE_FORMATS):
-        raise _cannot_open(argument, "unsupported file type")
-    return path
-
-
-def missing_viz_requirements():
-    """Requirements of the ``viz`` extra that Skyline imports and are missing.
-
-    Only the installed package metadata is read; no viewer package is imported.
-
-    Returns
-    -------
-    list of str
-        Requirement specifiers such as ``"fury>=2.1.0"``. Empty when the extra
-        is satisfied, or when DIPY has no installed metadata to read.
-
-    Notes
-    -----
-    ``optional_package`` is not used here: it imports each package, which
-    would load numpy and the viewer stack in a module that must stay light, and
-    it returns no requirement specifier to hand to the installer. The metadata
-    holds both, so the ``viz`` extra of ``pyproject.toml`` stays the only list.
-    """
-    try:
-        specifiers = importlib.metadata.requires("dipy") or []
-    except importlib.metadata.PackageNotFoundError:
-        return []
-
-    missing = []
-    for specifier in specifiers:
-        requirement = Requirement(specifier)
-        marker = requirement.marker
-        if (
-            canonicalize_name(requirement.name) not in _SKYLINE_PACKAGE_NAMES
-            or marker is None
-            or not marker.evaluate({"extra": "viz"})
-            or marker.evaluate({"extra": ""})
-        ):
-            continue
-        try:
-            installed = importlib.metadata.version(requirement.name)
-        except importlib.metadata.PackageNotFoundError:
-            installed = None
-        if installed is None or not requirement.specifier.contains(
-            installed, prereleases=True
-        ):
-            missing.append(f"{requirement.name}{requirement.specifier}")
-    return missing
-
-
-def launcher_command():
-    """Command prefix that opens a file in Skyline with this interpreter.
-
-    Returns
-    -------
-    list of str
-        Command to which the file to open is appended.
-    """
-    return [sys.executable, PYTHON_SAFE_PATH, "-c", LAUNCH_BOOTSTRAP]
-
-
-def _applescript_string(text):
-    """Quote text as an AppleScript string literal.
-
-    Parameters
-    ----------
-    text : str
-        Text to quote.
-
-    Returns
-    -------
-    str
-        Double-quoted literal with backslashes and double quotes escaped.
-    """
-    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
-
-
-def _linux_dialog_text(name, message):
-    """Prepare a message for the Linux dialog tool ``name``.
-
-    Parameters
-    ----------
-    name : str
-        Dialog tool: ``zenity``, ``kdialog`` or ``notify-send``.
-    message : str
-        Text to show.
-
-    Returns
-    -------
-    str
-        The message itself for ``zenity``, which is run with ``--no-markup``;
-        the message with its markup escaped for ``notify-send``; rich text
-        with the message escaped for ``kdialog``, which may read plain text as
-        markup and expands backslash sequences.
-    """
-    if name == "zenity":
-        return message
-    escaped = html.escape(message, quote=False)
-    if name == "notify-send":
-        return escaped
-    body = escaped.replace("\\", "\\\\").replace("\n", "<br>")
-    return f"<qt>{body}</qt>"
-
-
-def _acquire_confirmation_slot(*, lock=_CONFIRM_LOCK):
-    """Claim the right to show a confirmation dialog, so that links cannot flood.
-
-    Parameters
-    ----------
-    lock : Path, optional
-        Lock file; the caller removes it once the dialog is closed.
-
-    Returns
-    -------
-    bool
-        False when another confirmation started less than
-        ``_CONFIRM_LOCK_SECONDS`` ago and has not finished; True otherwise, with
-        the lock file written.
-    """
-    try:
-        age = time.time() - lock.stat().st_mtime
-    except FileNotFoundError:
-        age = None
-    if age is not None:
-        if age < _CONFIRM_LOCK_SECONDS:
-            return False
-        lock.unlink(missing_ok=True)
-    try:
-        with open(lock, "x", encoding="utf-8") as lock_file:
-            lock_file.write(str(os.getpid()))
-    except FileExistsError:
-        return False
-    return True
-
-
-def _report_error(message):
-    """Log an error and show it in a native dialog.
-
-    Parameters
-    ----------
-    message : str
-        Text of the error.
-    """
-    logger.error(message)
-    if sys.platform == "win32":
-        ctypes.windll.user32.MessageBoxW(None, message, APP_NAME, 0x10)
-    elif sys.platform == "darwin":
-        script = (
-            f"display alert {_applescript_string(APP_NAME)} "
-            f"message {_applescript_string(message)}"
-        )
-        subprocess.run(["osascript", "-e", script], check=False)
-    else:
-        for name, arguments in _LINUX_DIALOGS:
-            tool = shutil.which(name)
-            if tool is not None:
-                text = _linux_dialog_text(name, message)
-                subprocess.run([tool, *arguments, text], check=False)
-                break
-
-
-def _confirm_open(path):
-    """Ask the user to confirm that a link may open a file.
-
-    Parameters
-    ----------
-    path : Path
-        File that the link asks Skyline to open.
-
-    Returns
-    -------
-    bool
-        True when the user agrees to open the file.
-
-    Raises
-    ------
-    RuntimeError
-        On Linux, if neither ``zenity`` nor ``kdialog`` is installed.
-    """
-    resolved = path.resolve()
-    shown = str(path)
-    if os.path.normcase(resolved) != os.path.normcase(path):
-        shown += f"\n(a link to {resolved})"
-    message = f"A link asks {APP_NAME} to open:\n\n{shown}\n\nOpen this file?"
-    if sys.platform == "win32":
-        # MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2: No is the default; 6 is IDYES.
-        return ctypes.windll.user32.MessageBoxW(None, message, APP_NAME, 0x124) == 6
-    if sys.platform == "darwin":
-        script = (
-            f"display dialog {_applescript_string(message)} "
-            f"with title {_applescript_string(APP_NAME)} "
-            'buttons {"Cancel", "Open"} default button "Cancel" '
-            'cancel button "Cancel" with icon caution'
-        )
-        return subprocess.run(["osascript", "-e", script], check=False).returncode == 0
-    for name, arguments in _LINUX_CONFIRM_DIALOGS:
-        tool = shutil.which(name)
-        if tool is not None:
-            text = _linux_dialog_text(name, message)
-            return subprocess.run([tool, *arguments, text], check=False).returncode == 0
-    raise RuntimeError(
-        "Opening files from links needs zenity or kdialog to ask for "
-        f"confirmation; open {path} from the file manager instead."
-    )
-
-
-def main(argv):
-    """Open Skyline, on a file when one is given, reporting problems in a dialog.
-
-    Parameters
-    ----------
-    argv : list of str
-        Command-line arguments: nothing, or one ``dipy-skyline://open`` link,
-        ``file:`` URL or file path.
-
-    Returns
-    -------
-    int
-        Exit code: 0 on success or when the user cancels a link, 1 when Skyline
-        cannot run, 2 for bad arguments.
-    """
-    # The DIPY logger binds ``sys.stdout`` when it is imported, which is None
-    # without a console (``pythonw``): log to the file and drop that handler.
-    if sys.stdout is None or sys.stderr is None:
-        SKYLINE_HOME.mkdir(parents=True, exist_ok=True)
-        log = open(APP_LOG_FILE, "a", buffering=1, encoding="utf-8")  # noqa: SIM115
-        sys.stdout = log if sys.stdout is None else sys.stdout
-        sys.stderr = log if sys.stderr is None else sys.stderr
-        for handler in list(logger.handlers):
-            if isinstance(handler, CustomHandler) and handler.stream is None:
-                logger.removeHandler(handler)
-    SKYLINE_HOME.mkdir(parents=True, exist_ok=True)
-    with file_handler(APP_LOG_FILE):
-        logger.info(f"DIPY {dipy_version} Skyline launcher: {sys.executable}")
-
-        if len(argv) > 1:
-            _report_error("Skyline opens one file at a time.")
-            return 2
-
-        target = None
-        if argv:
-            try:
-                target = skyline_target(argv[0])
-            except ValueError as err:
-                _report_error(str(err))
-                return 2
-
-            if urllib.parse.urlsplit(argv[0]).scheme == SKYLINE_URL_SCHEME:
-                if not _acquire_confirmation_slot():
-                    logger.info("A confirmation is already open; ignored this link.")
-                    return 0
-                try:
-                    confirmed = _confirm_open(target)
-                except RuntimeError as err:
-                    _report_error(str(err))
-                    return 1
-                finally:
-                    _CONFIRM_LOCK.unlink(missing_ok=True)
-                if not confirmed:
-                    logger.info(f"Opening {target} was cancelled.")
-                    return 0
-
-        missing = missing_viz_requirements()
-        if missing:
-            _report_error(
-                f"Skyline needs packages that are not installed in {sys.executable}: "
-                f'{", ".join(missing)}. Run "dipy_skyline --setup" in a terminal '
-                "of this environment."
-            )
-            return 1
-
-        sys.argv = [
-            "dipy_skyline",
-            "run" if target is None else skyline_argument(path=target),
-        ]
-        try:
-            cli.run()
-        except Exception:  # noqa: BLE001
-            logger.exception("Skyline stopped with an error")
-            _report_error(f"Skyline stopped with an error; details in {APP_LOG_FILE}.")
-            return 1
-    return 0
+# Bump whenever the registered command, ``Exec`` line or applet script changes.
+REGISTRATION_VERSION = 2
 
 
 def _app_command():
@@ -918,6 +425,12 @@ def _windows_register(*, icon):
     -------
     list of str
         Registry keys and shortcut files created.
+
+    Notes
+    -----
+    The command ends with ``"%1"``: Explorer starts one launcher for each
+    selected file, and the launchers merge their files into one window
+    (``dipy.desktop.ipc.collect_batch``).
     """
     command = f'{subprocess.list2cmdline(_app_command())} "%1"'
     icon_value = f'"{icon}",0'
@@ -927,6 +440,11 @@ def _windows_register(*, icon):
     _windows_set_value(key_path=rf"{_WINDOWS_SCHEME_KEY}\DefaultIcon", value=icon_value)
     _windows_set_value(
         key_path=rf"{_WINDOWS_SCHEME_KEY}\shell\open\command", value=command
+    )
+    _windows_set_value(
+        key_path=_WINDOWS_SCHEME_KEY,
+        name="DipyRegistration",
+        value=str(REGISTRATION_VERSION),
     )
 
     _windows_set_value(key_path=_WINDOWS_PROGID_KEY, value=f"{APP_NAME} data")
@@ -1294,12 +812,13 @@ def _linux_register(*, icon):
             "Type=Application",
             f"Name={APP_NAME}",
             "Comment=Diffusion MRI and tractography viewer",
-            f"Exec={' '.join(quoted_arguments)} %u",
+            f"Exec={' '.join(quoted_arguments)} %U",
             f"Icon={_LINUX_ICON_NAME}",
             "Terminal=false",
             "Categories=Science;MedicalSoftware;Graphics;",
             "MimeType=" + ";".join(desktop_mime_types) + ";",
             _LINUX_ENTRY_MARKER,
+            f"X-DIPY-Registration={REGISTRATION_VERSION}",
             "",
         ]
     )
@@ -1445,12 +964,12 @@ def _macos_register(*, icon):
         If ``app`` exists and is not a Skyline application, or if
         ``osacompile`` cannot create the application.
     """
-    python = _applescript_string(shlex.quote(sys.executable))
-    module = _applescript_string(
+    python = applescript_string(shlex.quote(sys.executable))
+    module = applescript_string(
         f" {PYTHON_SAFE_PATH} -c {shlex.quote(LAUNCH_BOOTSTRAP)}"
     )
-    background = _applescript_string(" > /dev/null 2>&1 &")
-    space = _applescript_string(" ")
+    background = applescript_string(" > /dev/null 2>&1 &")
+    space = applescript_string(" ")
     start = f"do shell script {python} & {module}"
     script = [
         "on run",
@@ -1460,9 +979,14 @@ def _macos_register(*, icon):
         f"    {start} & {space} & quoted form of theURL & {background}",
         "end open location",
         "on open theFiles",
+        '    set fileArguments to ""',
         "    repeat with f in theFiles",
-        (f"        {start} & {space} & quoted form of POSIX path of f & {background}"),
+        (
+            "        set fileArguments to fileArguments & "
+            f"{space} & quoted form of POSIX path of f"
+        ),
         "    end repeat",
+        f"    {start} & fileArguments & {background}",
         "end open",
     ]
 
@@ -1500,6 +1024,7 @@ def _macos_register(*, icon):
                 "CFBundleIdentifier": BUNDLE_ID,
                 "CFBundleName": APP_NAME,
                 "CFBundleIconFile": "applet",
+                "DipyRegistration": REGISTRATION_VERSION,
                 "CFBundleURLTypes": [
                     {
                         "CFBundleURLName": BUNDLE_ID,
@@ -1750,11 +1275,43 @@ def _interpreter_has_dipy(interpreter):
     return result.returncode == 0
 
 
+def registered_version():
+    """Version of the command stored in the operating system registration.
+
+    Returns
+    -------
+    int or None
+        ``REGISTRATION_VERSION`` the registration was written with, or None
+        when Skyline is not registered or the registration predates versions.
+    """
+    if sys.platform == "win32":
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _WINDOWS_SCHEME_KEY) as key:
+                return int(winreg.QueryValueEx(key, "DipyRegistration")[0])
+        except (OSError, ValueError):
+            return None
+    if sys.platform == "darwin":
+        plist_path = _macos_app_path() / "Contents" / "Info.plist"
+        try:
+            with open(plist_path, "rb") as plist_file:
+                return plistlib.load(plist_file).get("DipyRegistration")
+        except (OSError, plistlib.InvalidFileException):
+            return None
+    _, desktop_file = _linux_files()
+    try:
+        text = desktop_file.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = re.search(r"^X-DIPY-Registration=(\d+)$", text, flags=re.MULTILINE)
+    return None if match is None else int(match.group(1))
+
+
 def ensure_app_registered():
     """Register Skyline as an application unless a working registration exists.
 
     Called by ``dipy_auto --register_skyline``. A registration made by any
-    environment is kept while its interpreter exists and finds DIPY. Nothing is
+    environment is kept while its interpreter exists, finds DIPY, and was
+    written by this ``REGISTRATION_VERSION`` or a later one. Nothing is
     registered on Linux without a graphical session. Nothing is asked and
     nothing is installed; failures are logged, never raised.
 
@@ -1764,7 +1321,11 @@ def ensure_app_registered():
         True when a working registration exists afterwards.
     """
     interpreter = registered_interpreter()
-    if interpreter is not None and _interpreter_has_dipy(interpreter):
+    if (
+        interpreter is not None
+        and _interpreter_has_dipy(interpreter)
+        and (registered_version() or 0) >= REGISTRATION_VERSION
+    ):
         return True
     if not _has_display():
         logger.info(
@@ -1850,7 +1411,3 @@ def setup_app():
             return False
 
     return try_register_app() is not None
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))

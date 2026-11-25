@@ -16,7 +16,6 @@ python_sources = [
     'reconst.py',
     'report.py',
     'segment.py',
-    'skyline_app.py',
     'stage_isolation.py',
     'stats.py',
     'templates.py',
