@@ -22,7 +22,7 @@ from importlib import import_module
 from inspect import getmodule, ismethod
 import os
 import re
-from types import BuiltinFunctionType, FunctionType
+from types import BuiltinFunctionType, FunctionType, ModuleType
 
 # suppress print statements (warnings for empty files)
 DEBUG = True
@@ -286,6 +286,10 @@ class ApiDocWriter:
                         print(n.targets[0])
                         print(str(e))
 
+            is_package = os.path.basename(mod.__file__) == "__init__.py"
+            if is_package and not (functions or classes or constants):
+                functions, classes, constants = self._parse_all(mod, pat)
+
             return functions, classes, constants
         else:
             # find all public objects in the module.
@@ -417,6 +421,51 @@ class ApiDocWriter:
 
         return head, body
 
+    def _parse_all(self, mod, pat):
+        """Classify the names a module re-exports through ``__all__``.
+
+        Used for packages whose ``__init__.py`` only imports from submodules,
+        so that their public API is documented under the name callers import
+        rather than under the private module where the objects are defined.
+
+        Parameters
+        ----------
+        mod : module
+            The imported module.
+        pat : compiled regexp
+            The ``object_skip_patterns`` matcher.
+
+        Returns
+        -------
+        functions : list of str
+        classes : list of str
+        constants : list of str
+
+        """
+        functions = []
+        classes = []
+        constants = []
+        for name in getattr(mod, "__all__", []):
+            if name.startswith("_") or pat.search(name):
+                continue
+            obj = getattr(mod, name, None)
+            if obj is None or isinstance(obj, ModuleType):
+                continue
+            home = getattr(obj, "__module__", None)
+            if (
+                home
+                and home.startswith(f"{self.package_name}.")
+                and self._survives_exclude(home, "module")
+            ):
+                continue
+            if isinstance(obj, type):
+                classes.append(name)
+            elif callable(obj):
+                functions.append(name)
+            else:
+                constants.append(name)
+        return functions, classes, constants
+
     def _survives_exclude(self, matchstr, match_type):
         r"""Return True if *matchstr* does not match patterns.
 
@@ -498,7 +547,11 @@ class ApiDocWriter:
             for subpkg_name in dirnames + filenames:
                 package_uri = ".".join((root_uri, subpkg_name))
                 package_path = self._uri2path(package_uri)
-                if package_path and self._survives_exclude(package_uri, "package"):
+                if (
+                    package_path
+                    and self._survives_exclude(package_uri, "package")
+                    and self._survives_exclude(package_uri, "module")
+                ):
                     modules.append(package_uri)
 
         return sorted(modules)
