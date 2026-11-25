@@ -18,6 +18,7 @@ cli_flows = {
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_classify_tissue": ("dipy.workflows.segment", "ClassifyTissueFlow"),
     "dipy_cluster_streamlines": ("dipy.workflows.segment", "ClusterStreamlinesFlow"),
+    "dipy_correct_bvecs": ("dipy.workflows.io", "CorrectBvecsFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_correct_synb0_syn": ("dipy.workflows.nn", "Synb0SynFlow"),
     "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
