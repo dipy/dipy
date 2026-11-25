@@ -1,4 +1,5 @@
 cython_sources = [
+  '_force_align',
   'dirspeed',
   'dkispeed',
   'eudx_direction_getter',
