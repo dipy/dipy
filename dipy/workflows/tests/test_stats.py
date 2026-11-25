@@ -6,12 +6,19 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
+from scipy import stats
+from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.stats.analysis import SpectraGrid
+from dipy.stats.analysis import (
+    SpectraGrid,
+    estimate_length_scales,
+    fit_grid_lmm,
+    hierarchical_fdr,
+)
 from dipy.testing import assert_true
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import Streamlines, set_number_of_points
@@ -25,6 +32,7 @@ from dipy.workflows.stats import (
     SpectraHFDRExternalFlow,
     SpectraLMMFlow,
     SpectraProfileFlow,
+    _alpha_name,
     buan_bundle_profiles,
 )
 
@@ -478,13 +486,18 @@ def test_spectra_profile_flow(tmp_path):
         )
 
 
+def test_spectra_alpha_name():
+    assert _alpha_name(0.05) == "ac05"
+    assert _alpha_name(0.15) == "ac15"
+    # int(0.29 * 100) would give 28
+    assert _alpha_name(0.29) == "ac29"
+
+
 def _spectra_study(tmp_path, *, n_subjects=90, seed=2):
     """Model bundle, profiles and metadata of a simulated SPECTRA study.
 
     The cases (AD) have a lower FA in the first 5 segments of the bundle.
     """
-    from scipy.ndimage import gaussian_filter
-
     reference = tmp_path / "ref.nii.gz"
     save_nifti(reference, np.zeros((90, 60, 60)), np.eye(4))
     (tmp_path / "model").mkdir()
@@ -602,14 +615,6 @@ def test_spectra_lmm_and_fdr_flows(tmp_path):
     reason="Requires pandas and statsmodels",
 )
 def test_spectra_hfdr_external_flow(tmp_path):
-    from scipy import stats
-
-    from dipy.stats.analysis import (
-        estimate_length_scales,
-        fit_grid_lmm,
-        hierarchical_fdr,
-    )
-
     grid = _spectra_study(tmp_path)
     metadata = pd.read_csv(tmp_path / "metadata.csv").iloc[:90]
     profiles = np.array(

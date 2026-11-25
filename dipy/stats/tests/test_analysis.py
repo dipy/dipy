@@ -678,6 +678,7 @@ def test_fit_grid_lmm():
     npt.assert_array_equal(res["n_subjects"], 60)
     # 60 subjects, 3 fixed effects (intercept, group, age)
     npt.assert_array_equal(res["dof"], 57)
+    assert res["n_failed"] == 0
     assert res["residuals"].shape == (12, 4, 60)
     assert res["residuals_reduced"].shape == (12, 4, 60)
 
@@ -705,6 +706,16 @@ def test_fit_grid_lmm_without_groups_is_ols():
     design = np.column_stack([np.ones(60), x])
     beta = np.linalg.lstsq(design, y, rcond=None)[0][1]
     npt.assert_allclose(res["beta"][3, 2], beta, rtol=1e-6)
+
+
+@needs_statsmodels
+def test_fit_grid_lmm_counts_failed_cells():
+    # A cell with the same value for every subject cannot be fitted
+    profiles, data = _simulate_study(seed=5)
+    profiles[:, 3, 2] = 0.5
+    res = fit_grid_lmm(profiles, data, "age")
+    assert res["n_failed"] == 1
+    assert np.isnan(res["t"][3, 2])
 
 
 @needs_statsmodels
@@ -909,6 +920,7 @@ def test_length_scales_with_missing_values():
     assert l_r_zero < 0.8 * l_r
 
 
+@needs_statsmodels
 def test_fdr_correction():
     p = np.array([0.01, 0.04, 0.03, 0.005])
     npt.assert_allclose(fdr_correction(p), [0.02, 0.04, 0.04, 0.02])
@@ -922,6 +934,7 @@ def test_fdr_correction():
     assert np.isnan(fdr_correction([np.nan])).all()
 
 
+@needs_statsmodels
 def test_fdr_correction_adaptive():
     rng = np.random.default_rng(1)
     p = np.concatenate([rng.uniform(size=300), rng.uniform(0, 1e-3, size=100)])
@@ -965,6 +978,13 @@ def test_conditional_pvalue():
     assert 2 * stats.norm.sf(2) < p <= 1.0
     npt.assert_almost_equal(conditional_pvalue(-2.0, 0.05, 0.7), p)
 
+    # With rho = 1 the cell is its block: P(|Z| >= z given |Z| >= z_block)
+    z_block = stats.norm.isf(0.01 / 2)
+    for z in (1.0, 3.0, 4.0):
+        expected = min(1, stats.norm.sf(max(z, z_block)) / stats.norm.sf(z_block))
+        npt.assert_almost_equal(conditional_pvalue(z, 0.01, 1.0), expected)
+        npt.assert_allclose(conditional_pvalue(z, 0.01, 0.99999), expected, atol=0.01)
+
 
 def test_partition_bundle_into_blocks():
     grid = _stats_grid()
@@ -1007,6 +1027,7 @@ def _bundle_statistics(grid, effect, *, seed=0):
     }
 
 
+@needs_statsmodels
 @pytest.mark.parametrize("method", ["simes", "stouffer"])
 def test_hierarchical_fdr(method):
     grid = _stats_grid()
@@ -1029,6 +1050,7 @@ def test_hierarchical_fdr(method):
     assert np.isnan(p_hfdr["null"]).all()
 
 
+@needs_statsmodels
 def test_hierarchical_fdr_single_block():
     bundle = _bundle_statistics(_stats_grid(), True)
     bundle["p"][:, :2] = np.nan
@@ -1043,6 +1065,7 @@ def test_hierarchical_fdr_single_block():
     assert len(blocks) == 1
 
 
+@needs_statsmodels
 def test_hierarchical_fdr_1d_profiles():
     # 1D statistics along the segments of a 2D grid
     grid = _stats_grid()
@@ -1057,6 +1080,17 @@ def test_hierarchical_fdr_1d_profiles():
     assert [block["significant"] for block in blocks] == [0, 1, 1, 1, 0, 0]
     assert (p_hfdr["g"][8:18] < 0.15).mean() > 0.7
     assert np.isnan(p_hfdr["g"][20:]).all()
+
+
+@needs_statsmodels
+def test_hierarchical_fdr_single_cell():
+    grid = _stats_grid()
+    p = np.full((grid.n_segments, grid.n_radial), np.nan)
+    p[4, 1] = 1e-4
+    bundle = {"grid": grid, "t": -np.ones_like(p), "p": p}
+    p_hfdr, blocks = hierarchical_fdr({"g": bundle})
+    assert len(blocks) == 1
+    assert np.isfinite(p_hfdr["g"][4, 1])
 
 
 def test_hierarchical_fdr_errors():

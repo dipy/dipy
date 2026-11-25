@@ -26,6 +26,7 @@ from dipy.utils.optpkg import optional_package
 
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels.formula.api")
+multitest, have_multitest, _ = optional_package("statsmodels.stats.multitest")
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):
@@ -902,22 +903,26 @@ class SpectraGrid:
         if len(bundle) == 0 or len(orig_bundle) == 0:
             raise ValueError("One of the bundles contains no streamlines")
 
-        s_index, _, s_distance, _, counts = self.assign(bundle)
-
-        # Mask the segments with too few points
-        segment_counts = counts.sum(axis=1)
-        nonzero = segment_counts[segment_counts > 0]
-        threshold = 0
-        if nonzero.size:
-            threshold = np.clip(
-                np.median(nonzero) * mask_threshold, min_count, max_count
-            )
+        # Segments of the grid with a single radial bin: parameterize_bundle
+        # then masks the points of the segments with too few points
+        s_index, _, s_distance, valid, _ = parameterize_bundle(
+            bundle,
+            self.centroid,
+            self.radial_vectors,
+            np.array([-np.inf, np.inf]),
+            mask_threshold=mask_threshold,
+            min_count=min_count,
+            max_count=max_count,
+        )
 
         affine_r = np.linalg.inv(affine)
         orig_points = Streamlines(transform_streamlines(orig_bundle, affine_r))
         values = map_coordinates(metric, orig_points.get_data().T, order=1)
 
-        valid = np.isfinite(values)
+        # BUAN weighted mean of each segment. buan_profile computes the same
+        # mean, but on segments that it builds from a model bundle, so it cannot
+        # use the segments of the grid.
+        valid &= np.isfinite(values)
         weights = 1 / (s_distance[valid] + 1e-8)
         weighted_sum = np.bincount(
             s_index[valid], weights=weights * values[valid], minlength=self.n_segments
@@ -927,7 +932,7 @@ class SpectraGrid:
         )
 
         profile = np.full(self.n_segments, np.nan)
-        keep = (segment_counts >= threshold) & (weight_total > 0)
+        keep = weight_total > 0
         profile[keep] = weighted_sum[keep] / weight_total[keep]
         return profile
 
@@ -1454,6 +1459,8 @@ def fit_grid_lmm(
 
         - ``"n_subjects"``: number of subjects with a valid measure per cell.
         - ``"mask"``: cells that were fitted and tested.
+        - ``"n_failed"``: number of cells whose model could not be fitted, for
+          example because of a singular design. Their statistics are NaN.
         - ``"residuals"``: shape ``(n_segments, n_radial, n_subjects)``,
           residuals of the model.
         - ``"residuals_reduced"``: residuals of the model without the target,
@@ -1539,19 +1546,26 @@ def fit_grid_lmm(
     residuals = np.full(shape + (n_subjects,), np.nan)
     residuals_reduced = np.full(shape + (n_subjects,), np.nan)
 
+    n_failed = 0
     for s, r in zip(*np.nonzero(cell_mask)):
         rows = np.flatnonzero(~np.isnan(metric[:, s, r]))
         df_cell = df.iloc[rows].copy()
         df_cell["metric"] = metric[rows, s, r]
+        if np.ptp(metric[rows, s, r]) == 0:
+            # Same value for every subject: there is nothing to fit
+            n_failed += 1
+            continue
 
         fit = _fit_cell_model(df_cell, formula, groups)
         if fit is None:
+            n_failed += 1
             continue
 
         beta = fit.params[target]
         se = fit.bse[target]
         dof = len(rows) - fit.model.exog.shape[1]
         if not (np.isfinite(beta) and np.isfinite(se) and se > 0 and dof > 0):
+            n_failed += 1
             continue
 
         t = beta / se
@@ -1581,8 +1595,15 @@ def fit_grid_lmm(
     for name in stat_names:
         results[name][~tested] = np.nan
 
+    if n_failed:
+        logger.warning(
+            f"{n_failed} of {int(cell_mask.sum())} cells could not be fitted, "
+            "their statistics are NaN"
+        )
+
     results["n_subjects"] = n_valid
     results["mask"] = tested
+    results["n_failed"] = n_failed
     results["residuals"] = residuals
     if fit_reduced:
         results["residuals_reduced"] = residuals_reduced
@@ -1810,10 +1831,11 @@ def _storey_pi0(p_values):
 def fdr_correction(p_values, *, adaptive=False):
     """Adjust p-values for the false discovery rate (FDR).
 
-    Benjamini-Hochberg procedure. If ``adaptive`` is True, the adjusted
-    p-values are multiplied by Storey's estimate of the proportion of true
-    null hypotheses, and are not allowed to be smaller than the uncorrected
-    p-values.
+    Benjamini-Hochberg procedure, computed with
+    :func:`statsmodels.stats.multitest.fdrcorrection`. If ``adaptive`` is
+    True, the adjusted p-values are multiplied by Storey's estimate of the
+    proportion of true null hypotheses, as in SPECTRA, and are not allowed to
+    be smaller than the uncorrected p-values.
 
     See :footcite:p:`Feng2026SPECTRA` for further details about the method.
 
@@ -1835,25 +1857,20 @@ def fdr_correction(p_values, *, adaptive=False):
     .. footbibliography::
 
     """
+    if not have_multitest:
+        raise ImportError("fdr_correction requires statsmodels")
+
     p_values = np.asarray(p_values, dtype=float)
     p_corr = np.full(p_values.shape, np.nan)
     valid = ~np.isnan(p_values)
     p = p_values[valid]
-    m = len(p)
-    if m == 0:
+    if p.size == 0:
         return p_corr
 
-    pi0 = _storey_pi0(p) if adaptive else 1.0
-
-    order = np.argsort(p)
-    adjusted = p[order] * m * pi0 / np.arange(1, m + 1)
-    # Make the adjusted p-values increase with the uncorrected p-values
-    adjusted = np.minimum.accumulate(adjusted[::-1])[::-1]
-
-    q = np.empty(m)
-    q[order] = np.minimum(adjusted, 1.0)
+    q = multitest.fdrcorrection(p)[1]
     if adaptive:
-        q = np.maximum(q, p)
+        # statsmodels has no Storey estimate, which SPECTRA uses
+        q = np.maximum(q * _storey_pi0(p), p)
     p_corr[valid] = q
     return p_corr
 
@@ -1957,7 +1974,16 @@ def conditional_pvalue(z, threshold, rho):
         return float(2 * stats.norm.sf(z))
 
     z_block = stats.norm.ppf(1 - threshold / 2)
-    scale = np.sqrt(max(1 - rho**2, 0.0))
+    p_block = 2 * stats.norm.sf(z_block)
+    if p_block < 1e-15:
+        return float(2 * stats.norm.sf(z))
+
+    if 1 - rho**2 < 1e-12:
+        # The cell z-score is the block z-score (e.g. a block of one cell), so
+        # p = P(|Z| >= z given |Z| >= z_block)
+        return float(min(1.0, stats.norm.sf(max(z, z_block)) / stats.norm.sf(z_block)))
+
+    scale = np.sqrt(1 - rho**2)
 
     def tail_given_block(u):
         # P(|cell z| >= z | block z = u) times the density of the block z
@@ -1967,9 +1993,6 @@ def conditional_pvalue(z, threshold, rho):
 
     upper, _ = integrate.quad(tail_given_block, z_block, np.inf)
     lower, _ = integrate.quad(tail_given_block, -np.inf, -z_block)
-    p_block = 2 * stats.norm.sf(z_block)
-    if p_block < 1e-15:
-        return float(2 * stats.norm.sf(z))
     return float(np.clip((upper + lower) / p_block, 0.0, 1.0))
 
 

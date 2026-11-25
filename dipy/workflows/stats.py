@@ -885,7 +885,7 @@ def _spectra_grids(model_bundle_files, segment_length, radial_length, robust_met
 
 def _alpha_name(alpha):
     """Column suffix of a Stage 2 level, e.g. ac15 for 0.15, as in SPECTRA."""
-    return f"ac{int(alpha * 100):02d}"
+    return f"ac{round(alpha * 100):02d}"
 
 
 def _save_spectra_results(
@@ -1444,8 +1444,8 @@ class SpectraFDRFlow(Workflow):
         .. footbibliography::
 
         """
-        if not have_pd:
-            raise ImportError("dipy_spectra_fdr requires pandas")
+        if not have_pd or not have_smf:
+            raise ImportError("dipy_spectra_fdr requires pandas and statsmodels")
         if stats_mode not in ("fdr", "hfdr_resel", "hfdr_bundle"):
             raise ValueError("stats_mode must be 'fdr', 'hfdr_resel' or 'hfdr_bundle'")
 
@@ -1591,8 +1591,10 @@ class SpectraHFDRExternalFlow(Workflow):
         .. footbibliography::
 
         """
-        if not have_pd:
-            raise ImportError("dipy_spectra_hfdr_external requires pandas")
+        if not have_pd or not have_smf:
+            raise ImportError(
+                "dipy_spectra_hfdr_external requires pandas and statsmodels"
+            )
 
         table = pd.read_csv(stats_file)
         missing = {"grid_name", "s_idx", "r_idx", "t_stat", "p_value"} - set(
