@@ -1362,18 +1362,42 @@ class ConvertSHFlow(Workflow):
     def run(
         self,
         input_files,
+        to_mrtrix=False,
+        from_mrtrix=False,
+        legacy=None,
+        full_basis=False,
         out_dir="",
         out_file="sh_convert_dipy_mrtrix_out.nii.gz",
     ):
         """Converts SH basis representation between DIPY and MRtrix3 formats.
-        Because this conversion is equal to its own inverse, it can be used to
-        convert in either direction: DIPY to MRtrix3 or vice versa.
+        Without a direction, this conversion is equal to its own inverse, so
+        it can be used to convert in either direction: DIPY to MRtrix3 or vice
+        versa. However, MRtrix3 expresses directions in world space and DIPY
+        in the voxel frame, so unless the image axes are aligned with the
+        world (RAS) axes, set the direction to also reorient the SH with the
+        image affine.
 
         Parameters
         ----------
         input_files : string or Path
             Path to the input files. This path may contain wildcards to
             process multiple inputs at once.
+
+        to_mrtrix : bool, optional
+            Convert from DIPY to MRtrix3, also reorienting the SH using the
+            image affine.
+
+        from_mrtrix : bool, optional
+            Convert from MRtrix3 to DIPY, also reorienting the SH using the
+            image affine.
+
+        legacy : bool, optional
+            False (``--no-legacy``) if the DIPY SH use the non-legacy
+            ``descoteaux07`` basis, which requires ``--to_mrtrix`` or
+            ``--from_mrtrix``. (default True)
+
+        full_basis : bool, optional
+            True if the SH include odd orders.
 
         out_dir : string or Path, optional
             Where the resulting file will be saved. (default '')
@@ -1383,11 +1407,20 @@ class ConvertSHFlow(Workflow):
             (default 'sh_convert_dipy_mrtrix_out.nii.gz')
         """
 
+        if to_mrtrix and from_mrtrix:
+            raise ValueError("Use only one of to_mrtrix and from_mrtrix.")
+        direction = to_mrtrix if (to_mrtrix or from_mrtrix) else None
         io_it = self.get_io_iterator()
 
         for in_file, out_file in io_it:
             data, affine, image = load_nifti(in_file, return_img=True)
-            data = convert_sh_descoteaux_tournier(data)
+            data = convert_sh_descoteaux_tournier(
+                data,
+                affine=None if direction is None else affine,
+                to_mrtrix=direction,
+                legacy=legacy is not False,
+                full_basis=full_basis,
+            )
             save_nifti(out_file, data, affine, hdr=image.header)
 
 
@@ -1405,6 +1438,11 @@ class ConvertTensorsFlow(Workflow):
         out_tensor="converted_tensor",
     ):
         """Converts tensor representation between different formats.
+
+        Tensors are also reoriented between the frames of the formats using
+        the image affine: world space for MRtrix3, the voxel frame for DIPY
+        and ANTs, and for FSL the voxel frame with its first axis flipped for
+        images stored in neurological order (positive determinant).
 
         Parameters
         ----------
@@ -1426,7 +1464,7 @@ class ConvertTensorsFlow(Workflow):
         for fpath, otensor in io_it:
             logger.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
-            data = convert_tensors(data, from_format, to_format)
+            data = convert_tensors(data, from_format, to_format, affine=affine)
             save_nifti(otensor, data, affine, hdr=image.header)
 
 

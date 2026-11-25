@@ -11,6 +11,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.core.geometry import euler_matrix
 import dipy.core.gradients as grad
 from dipy.data import default_sphere, get_fnames
 from dipy.data.fetcher import dipy_home
@@ -55,6 +56,9 @@ logging.basicConfig(
 )
 
 is_big_endian = "big" in sys.byteorder.lower()
+
+
+OBLIQUE_LAS = euler_matrix(0.3, -0.2, 0.1) @ np.diag([-2.0, 2.0, 2.0, 1.0])
 
 
 def test_io_info(tmp_path, caplog):
@@ -476,6 +480,26 @@ def test_convert_sh_flow(tmp_path):
     # Compare
     npt.assert_array_almost_equal(img_out, expected_img_out)
 
+    # With a direction, the SH are also reoriented with an oblique LAS affine
+    save_nifti(filepath_in, img_in, OBLIQUE_LAS)
+    _, affine = load_nifti(filepath_in)  # as stored in the header
+    for to_mrtrix, legacy in ((False, None), (True, False)):
+        ConvertSHFlow(force=True).run(
+            filepath_in,
+            to_mrtrix=to_mrtrix,
+            from_mrtrix=not to_mrtrix,
+            legacy=legacy,
+            out_dir=tmp_path,
+            out_file=filename_out,
+        )
+        expected_img_out = convert_sh_descoteaux_tournier(
+            img_in, affine=affine, to_mrtrix=to_mrtrix, legacy=legacy is not False
+        )
+        npt.assert_array_almost_equal(load_nifti(filepath_out)[0], expected_img_out)
+    npt.assert_raises(
+        ValueError, ConvertSHFlow().run, filepath_in, to_mrtrix=True, from_mrtrix=True
+    )
+
 
 def test_convert_tractogram_flow(tmp_path):
     data_path, _, _ = get_fnames(name="gold_standard_io")
@@ -542,6 +566,21 @@ def test_convert_tensors_flow(tmp_path):
 
     img_out, _ = load_nifti(filepath_out)
     npt.assert_array_almost_equal(img_out, expected_img_out)
+
+    # The tensors are also reoriented with an oblique LAS affine
+    save_nifti(filepath_in, tensor_vals, OBLIQUE_LAS)
+    _, affine = load_nifti(filepath_in)  # as stored in the header
+    ConvertTensorsFlow(force=True).run(
+        filepath_in,
+        from_format="dipy",
+        to_format="mrtrix",
+        out_dir=tmp_path,
+        out_tensor=filename_out,
+    )
+    expected_img_out = reconst_utils.convert_tensors(
+        tensor_vals, "dipy", "mrtrix", affine=affine
+    )
+    npt.assert_array_almost_equal(load_nifti(filepath_out)[0], expected_img_out)
 
 
 def generate_random_pam():
