@@ -596,7 +596,8 @@ def mode(q_form):
     return mode
 
 
-def norm_anisotropy(q_form):
+@warning_for_keywords()
+def norm_anisotropy(evals, *, axis=-1):
     r"""
     Norm of anisotropy (NA) of a diffusion tensor.
 
@@ -605,9 +606,13 @@ def norm_anisotropy(q_form):
 
     Parameters
     ----------
-    q_form : ndarray
-        The quadratic form of a tensor, or an array with quadratic forms of
-        tensors. Should be of shape (x, y, z, 3, 3) or (n, 3, 3) or (3, 3).
+    evals : array-like
+        Eigenvalues of a diffusion tensor, e.g. ``tenfit.evals``. Unlike
+        :func:`mode`, :func:`deviatoric` and :func:`isotropic`, this function
+        does not take the quadratic form: a (..., 3, 3) tensor is not
+        rejected, but each row is read as a set of eigenvalues.
+    axis : int, optional
+        Axis of `evals` which contains 3 eigenvalues.
 
     Returns
     -------
@@ -627,18 +632,66 @@ def norm_anisotropy(q_form):
 
     .. math::
 
-        NA = \lVert \widetilde{D} \rVert
+        NA = \lVert \widetilde{A} \rVert
             = \sqrt{(\lambda_1-MD)^2 + (\lambda_2-MD)^2 + (\lambda_3-MD)^2}
 
-    Where :math:`\widetilde{D}` is the deviatoric part of the tensor quadratic form.
+    Where :math:`\widetilde{A}` is the deviatoric part of the tensor quadratic
+    form (see :func:`deviatoric`). NA is computed from the eigenvalues, using the
+    right-hand side, so the 3x3 tensor is never built.
 
     References
     ----------
     .. footbibliography::
     """
+    _, na = _deviatoric_evals(evals, axis=axis)
+    return na
 
-    A_squiggle = deviatoric(q_form)
-    return norm(A_squiggle)
+
+def _deviatoric_evals(evals, *, axis=-1):
+    """Eigenvalues of the deviatoric tensor and their norm (NA).
+
+    Parameters
+    ----------
+    evals : ndarray
+        Eigenvalues of a diffusion tensor.
+    axis : int, optional
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    dev : ndarray
+        ``evals - MD``, with the 3 eigenvalues on the first axis.
+    na : ndarray
+        Norm of anisotropy, ``sqrt(sum(dev**2))``.
+    """
+    evals = _roll_evals(evals, axis=axis)
+    dev = evals - evals.mean(axis=0)
+    return dev, np.sqrt((dev * dev).sum(axis=0))
+
+
+def _mode_from_evals(evals):
+    """Tensor mode computed from eigenvalues, without building 3x3 tensors.
+
+    The eigenvalues of the deviatoric tensor are ``mu = evals - MD``, so its
+    determinant is ``prod(mu)`` and its Frobenius norm is NA. Mode is then
+    ``3 * sqrt(6) * prod(mu / NA)``, equal to :func:`mode` applied to the
+    quadratic form. Normalizing before the product, as :func:`mode` does,
+    avoids underflow for small, nearly equal eigenvalues. Returns 0 where NA
+    is exactly zero, like :func:`mode`.
+
+    Parameters
+    ----------
+    evals : ndarray
+        Eigenvalues of a diffusion tensor, shape (..., 3).
+
+    Returns
+    -------
+    mode : ndarray
+        Tensor mode, shape (...).
+    """
+    dev, na = _deviatoric_evals(evals)
+    # Where NA == 0, dev is 0 too, so dividing by 1 gives mode 0
+    return 3 * np.sqrt(6) * (dev / np.where(na == 0, 1, na)).prod(axis=0)
 
 
 @warning_for_keywords()
@@ -1085,16 +1138,16 @@ class TensorFit:
     @auto_attr
     def mode(self):
         """
-        Tensor mode calculated from the tensor quadratic form.
+        Tensor mode calculated from cached eigenvalues.
         """
-        return mode(self.quadratic_form)
+        return _mode_from_evals(self.evals)
 
     @auto_attr
     def na(self):
         """
-        Norm of anisotropy (NA) calculated from the tensor quadratic form.
+        Norm of anisotropy (NA) calculated from cached eigenvalues.
         """
-        return norm_anisotropy(self.quadratic_form)
+        return norm_anisotropy(self.evals)
 
     @auto_attr
     def md(self):

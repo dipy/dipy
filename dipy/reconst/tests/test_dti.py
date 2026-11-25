@@ -101,28 +101,52 @@ def test_mode_with_isotropic():
 @set_random_number_generator()
 def test_norm_anisotropy(rng=None):
     # Isotropic tensors have no anisotropic component
-    npt.assert_almost_equal(norm_anisotropy(np.eye(3) * 2.5), 0)
+    npt.assert_almost_equal(norm_anisotropy(np.array([2.5, 2.5, 2.5])), 0)
 
-    # NA is the Frobenius norm of the deviatoric tensor, which equals the
-    # root sum of squared deviations of the eigenvalues from MD
+    # NA is the Frobenius norm of the deviatoric tensor. Cross-check the
+    # eigenvalue formula against the tensor definition on rotated tensors.
     evals = rng.random((4, 5, 6, 3))
-    # Random rotations, so the tensors are not axis aligned
     evecs = np.linalg.qr(rng.standard_normal(evals.shape[:-1] + (3, 3)))[0]
     q_form = dti.vec_val_vect(evecs, evals)
-    md = evals.mean(axis=-1, keepdims=True)
-    expected = np.sqrt(np.sum((evals - md) ** 2, axis=-1))
-    npt.assert_array_almost_equal(norm_anisotropy(q_form), expected)
+    expected = dti.norm(dti.deviatoric(q_form))
+    npt.assert_array_almost_equal(norm_anisotropy(evals), expected)
 
     # FA is NA normalized by the tensor norm: FA = sqrt(3/2) * NA / ||D||
     fa = fractional_anisotropy(evals)
     npt.assert_array_almost_equal(
-        fa, np.sqrt(3 / 2) * norm_anisotropy(q_form) / dti.norm(q_form)
+        fa, np.sqrt(3 / 2) * norm_anisotropy(evals) / dti.norm(q_form)
     )
 
-    # Supported shapes: (3, 3), (n, 3, 3) and (x, y, z, 3, 3)
-    npt.assert_equal(norm_anisotropy(q_form[0, 0, 0]).shape, ())
-    npt.assert_equal(norm_anisotropy(q_form[0, 0]).shape, (6,))
-    npt.assert_equal(norm_anisotropy(q_form).shape, (4, 5, 6))
+    # Supported shapes: (3,), (n, 3) and (x, y, z, 3)
+    npt.assert_equal(norm_anisotropy(evals[0, 0, 0]).shape, ())
+    npt.assert_equal(norm_anisotropy(evals[0, 0]).shape, (6,))
+    npt.assert_equal(norm_anisotropy(evals).shape, (4, 5, 6))
+
+
+@set_random_number_generator()
+def test_mode_from_evals(rng=None):
+    # The eigenvalue formula matches mode() on the quadratic form
+    evals = rng.random((4, 5, 6, 3))
+    evecs = np.linalg.qr(rng.standard_normal(evals.shape[:-1] + (3, 3)))[0]
+    q_form = dti.vec_val_vect(evecs, evals)
+    npt.assert_array_almost_equal(dti._mode_from_evals(evals), mode(q_form))
+
+    # Isotropic -> 0, linear -> +1, planar -> -1 (as in test_mode_with_isotropic)
+    special = np.array(
+        [[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [2.0, 1.0, 1.0], [1.0, 2.0, 2.0]]
+    )
+    npt.assert_array_almost_equal(dti._mode_from_evals(special), [0, 0, 1, -1])
+    npt.assert_equal(dti._mode_from_evals(evals[0, 0, 0]).shape, ())
+
+    # Mode is scale invariant. Small eigenvalues must not underflow to NaN,
+    # which happens if prod(evals - MD) and NA**3 are computed separately.
+    for dtype, scale in [(np.float32, 1e-20), (np.float64, 1e-110)]:
+        small = np.array([1.0, 2.0, 4.0], dtype=dtype) * dtype(scale)
+        npt.assert_almost_equal(
+            dti._mode_from_evals(small),
+            dti._mode_from_evals(np.array([1.0, 2.0, 4.0])),
+            decimal=5,
+        )
 
 
 def test_tensor_model():
