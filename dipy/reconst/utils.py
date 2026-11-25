@@ -1,4 +1,7 @@
 import numpy as np
+from scipy.linalg import polar
+
+from dipy.reconst.dti import from_lower_triangular, lower_triangular
 
 
 def dki_design_matrix(gtab):
@@ -262,7 +265,7 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
     return mask
 
 
-def convert_tensors(tensor, from_format, to_format):
+def convert_tensors(tensor, from_format, to_format, *, affine=None):
     """Convert tensors from one format to another.
 
     Parameters
@@ -273,13 +276,21 @@ def convert_tensors(tensor, from_format, to_format):
         Format of the input tensor. Options: 'dipy', 'mrtrix', 'ants', 'fsl'.
     to_format : str
         Format of the output tensor. Options: 'dipy', 'mrtrix', 'ants', 'fsl'.
+    affine : ndarray (4, 4), optional
+        Voxel-to-world affine of the image. If given, tensors are also
+        reoriented between the frames of the formats: world (scanner) space
+        for 'mrtrix', the voxel frame for 'dipy' and 'ants', and for 'fsl',
+        the voxel frame with its first axis flipped if the determinant of the
+        affine is positive (neurological storage order). 'dipy' tensors are
+        assumed to be in the voxel frame, which is not the case if they were
+        fitted with the FSL b-vectors of an image with a positive determinant.
 
     Notes
     -----
     - DIPY order: [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
       Shape: [i, j , k, 6].
       See: https://github.com/dipy/dipy/blob/master/dipy/reconst/dti.py#L1639
-    - MRTRIX order: [Dxx, Dyy, Dzz, Dxy, Dxz, Dyz]
+    - MRTRIX order: [Dxx, Dyy, Dzz, Dxy, Dxz, Dyz], in world space.
        Shape: [i, j , k, 6].
        See: https://mrtrix.readthedocs.io/en/dev/reference/commands/dwi2tensor.html  # noqa
     - ANTS: [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
@@ -296,24 +307,36 @@ def convert_tensors(tensor, from_format, to_format):
         "ants": [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
     }
 
-    if from_format.lower() not in tensor_order.keys():
+    from_format, to_format = from_format.lower(), to_format.lower()
+    if from_format not in tensor_order.keys():
         raise ValueError(f"Unknown tensor format: {from_format}")
-    if to_format.lower() not in tensor_order.keys():
+    if to_format not in tensor_order.keys():
         raise ValueError(f"Unknown tensor format: {to_format}")
 
-    if from_format.lower() == to_format.lower():
+    if from_format == to_format:
         return tensor
 
-    if from_format.lower() in ["ants", "dipy"]:
+    if from_format in ["ants", "dipy"]:
         tensor = np.squeeze(tensor) if tensor.ndim == 5 else tensor
 
-    tensor_dipy = tensor[..., tensor_order[from_format.lower()][0]]
+    tensor_dipy = tensor[..., tensor_order[from_format][0]]
 
-    if to_format.lower() == "ants":
+    if affine is not None:
+        # Rotations from the frame of each format to the voxel frame
+        linear = affine[:3, :3]
+        to_voxel = {
+            "mrtrix": polar(linear)[0].T,
+            "fsl": np.diag([-np.sign(np.linalg.det(linear)), 1.0, 1.0]),
+        }
+        eye = np.eye(3)
+        rot = to_voxel.get(to_format, eye).T @ to_voxel.get(from_format, eye)
+        tensor_dipy = lower_triangular(rot @ from_lower_triangular(tensor_dipy) @ rot.T)
+
+    if to_format == "ants":
         tensor_dipy = tensor_dipy[:, :, :, np.newaxis, :]
         return tensor_dipy
-    elif to_format.lower() == "dipy":
+    elif to_format == "dipy":
         return tensor_dipy
 
-    tensor_reordered = tensor_dipy[..., tensor_order[to_format.lower()][1]]
+    tensor_reordered = tensor_dipy[..., tensor_order[to_format][1]]
     return tensor_reordered

@@ -1,5 +1,6 @@
 """Test spherical harmonic models and the tools associated with those models."""
 
+import itertools
 import warnings
 
 import numpy as np
@@ -12,9 +13,10 @@ from numpy.testing import (
     assert_raises,
 )
 
+from dipy.core.geometry import euler_matrix
 from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
-from dipy.core.sphere import Sphere, hemi_icosahedron
+from dipy.core.sphere import Sphere, hemi_icosahedron, unit_icosahedron
 from dipy.data import mrtrix_spherical_functions
 from dipy.direction.peaks import peak_directions
 from dipy.reconst import odf
@@ -1403,3 +1405,64 @@ def test_convert_sh_descoteaux_tournier():
                 ]
             )
             assert_array_equal(converted_coeffs, expected_coeffs)
+
+
+@set_random_number_generator(1234)
+def test_convert_sh_descoteaux_tournier_affine(rng=None):
+    # Voxel-to-world affines: RAS, LAS (det < 0), oblique, oblique LAS
+    rot = euler_matrix(*rng.uniform(-np.pi, np.pi, 3))
+    affines = [
+        np.diag([2.0, 2.0, 2.0, 1.0]),
+        np.diag([-2.0, 2.0, 2.0, 1.0]),
+        rot @ np.diag([1.5, 1.5, 3.0, 1.0]),
+        rot @ np.diag([-1.5, 1.5, 3.0, 1.0]),
+    ]
+    vertices = unit_icosahedron.subdivide(n=3).vertices
+    for full_basis, legacy, sh_order_max in itertools.product(
+        (False, True), (True, False), (0, 2, 8)
+    ):
+        kw = {"legacy": legacy, "full_basis": full_basis}
+        n_coeffs = sph_harm_ind_list(sh_order_max, full_basis=full_basis)[0].size
+        sh_mrtrix = rng.standard_normal((2, 3, n_coeffs))
+        for affine in affines:
+            sh_dipy = convert_sh_descoteaux_tournier(
+                sh_mrtrix, affine=affine, to_mrtrix=False, **kw
+            )
+            # The DIPY function along a voxel axis direction must equal the
+            # MRtrix3 function along the same direction in world space.
+            to_world = affine[:3, :3] / npl.norm(affine[:3, :3], axis=0)
+            sf_mrtrix = sh_to_sf(
+                sh_mrtrix,
+                Sphere(xyz=vertices @ to_world.T),
+                sh_order_max=sh_order_max,
+                basis_type="tournier07",
+                legacy=False,
+                full_basis=full_basis,
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", PendingDeprecationWarning)
+                sf_dipy = sh_to_sf(
+                    sh_dipy, Sphere(xyz=vertices), sh_order_max=sh_order_max, **kw
+                )
+            assert_array_almost_equal(sf_dipy, sf_mrtrix)
+            back = convert_sh_descoteaux_tournier(
+                sh_dipy, affine=affine, to_mrtrix=True, **kw
+            )
+            assert_array_almost_equal(back, sh_mrtrix)
+
+        # With axes aligned to RAS, this reduces to the basis conversion
+        assert_array_almost_equal(
+            convert_sh_descoteaux_tournier(
+                sh_mrtrix, affine=affines[0], to_mrtrix=False, **kw
+            ),
+            convert_sh_descoteaux_tournier(sh_mrtrix, to_mrtrix=False, **kw),
+        )
+
+    sh_32 = sh_mrtrix.astype(np.float32)
+    out = convert_sh_descoteaux_tournier(
+        sh_32, affine=affines[3], to_mrtrix=False, full_basis=True
+    )
+    assert_equal(out.dtype, np.float32)
+    # The direction is required whenever the conversion is not its own inverse
+    assert_raises(ValueError, convert_sh_descoteaux_tournier, sh_32, affine=np.eye(4))
+    assert_raises(ValueError, convert_sh_descoteaux_tournier, sh_32, legacy=False)

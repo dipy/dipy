@@ -1,7 +1,10 @@
 import numpy as np
 import numpy.testing as npt
 
+from dipy.core.geometry import euler_matrix
+from dipy.reconst.dti import from_lower_triangular
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume, convert_tensors
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_roi_in_volume():
@@ -97,3 +100,28 @@ def test_convert_tensor():
 
     npt.assert_raises(ValueError, convert_tensors, tensor, "amico", "dipy")
     npt.assert_raises(ValueError, convert_tensors, tensor, "dipy", "amico")
+
+
+@set_random_number_generator(1234)
+def test_convert_tensor_affine(rng=None):
+    rot = euler_matrix(*rng.uniform(-np.pi, np.pi, 3))
+    tensor = rng.standard_normal((2, 3, 4, 6))
+    v = rng.standard_normal((10, 3))  # directions in the voxel frame
+    quad = "ni,...ij,nj->...n"
+    expected = np.einsum(quad, v, from_lower_triangular(tensor), v)
+    for sign in (-1.0, 1.0):  # oblique, stored in LAS (det < 0) or RAS order
+        affine = rot @ np.diag([1.5 * sign, 1.5, 3.0, 1.0])
+        to_world = affine[:3, :3] / np.linalg.norm(affine[:3, :3], axis=0)
+        # The same directions, in the frame of each format. The diffusivity
+        # along them must not depend on the format.
+        frames = {"mrtrix": v @ to_world.T, "fsl": v * [-sign, 1, 1], "ants": v}
+        out = {}
+        for fmt, u in frames.items():
+            out[fmt] = convert_tensors(tensor, "dipy", fmt, affine=affine)
+            d_fmt = from_lower_triangular(convert_tensors(out[fmt], fmt, "dipy"))
+            npt.assert_array_almost_equal(np.einsum(quad, u, d_fmt, u), expected)
+            back = convert_tensors(out[fmt], fmt, "dipy", affine=affine)
+            npt.assert_array_almost_equal(back, tensor)
+        npt.assert_array_almost_equal(
+            convert_tensors(out["fsl"], "fsl", "mrtrix", affine=affine), out["mrtrix"]
+        )
