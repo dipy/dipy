@@ -160,7 +160,6 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 _skyline = skyline(
     images=[(fa_data, affine, "FA")],
     tractograms=[(sft, "FORCE tractogram")],
-    is_light_version=True,
     is_cluster=True,
     cluster_thr=15.0,
     cluster_size_thr=10,
