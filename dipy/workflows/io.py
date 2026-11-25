@@ -1117,6 +1117,25 @@ class ExtractB0Flow(Workflow):
                 logger.error("No b0 volumes found")
 
 
+def _suffixed(fname, suffix):
+    """Append ``_<suffix>`` to the name of a file, before its extension(s).
+
+    Parameters
+    ----------
+    fname : str or Path
+        File name or path.
+    suffix : str
+        Text to append to the name, after an underscore.
+
+    Returns
+    -------
+    Path
+        ``fname`` with the suffix added to its name.
+    """
+    name, ext = split_filename_extension(fname)
+    return Path(fname).with_name(f"{name}_{suffix}{ext}")
+
+
 class ExtractShellFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -1134,6 +1153,8 @@ class ExtractShellFlow(Workflow):
         group_shells=True,
         out_dir="",
         out_shell="shell.nii.gz",
+        out_bval="shell.bval",
+        out_bvec="shell.bvec",
     ):
         """Extract shells from the input 4D file.
 
@@ -1168,6 +1189,10 @@ class ExtractShellFlow(Workflow):
             Output directory.
         out_shell : string, optional
             Name of the resulting shell volume.
+        out_bval : string, optional
+            Name of the b-values file of the resulting shell volume.
+        out_bvec : string, optional
+            Name of the b-vectors file of the resulting shell volume.
 
         """
         io_it = self.get_io_iterator()
@@ -1180,7 +1205,8 @@ class ExtractShellFlow(Workflow):
 
         bvals_to_extract = handle_vol_idx(bvals_to_extract)
 
-        for dwi, bval, bvec, oshell in io_it:
+        written = {"out_shell": [], "out_bval": [], "out_bvec": []}
+        for dwi, bval, bvec, oshell, obval, obvec in io_it:
             logger.info(f"Extracting shell from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
@@ -1209,10 +1235,29 @@ class ExtractShellFlow(Workflow):
             for i, shell in enumerate(shell_data):
                 shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
                 shell_value = "_".join(shell_value.tolist())
-                out_name, out_ext = split_filename_extension(oshell)
-                out_fname = Path(oshell).with_name(f"{out_name}_{shell_value}{out_ext}")
+
+                out_fname = _suffixed(oshell, shell_value)
                 save_nifti(out_fname, shell, affine, hdr=image.header)
-                logger.info(f"b0 saved as {out_fname}")
+                logger.info(f"Shell saved as {out_fname}")
+
+                out_bval_fname = _suffixed(obval, shell_value)
+                np.savetxt(out_bval_fname, output_bvals[i][None], fmt="%.10g")
+                logger.info(f"Shell b-values saved as {out_bval_fname}")
+
+                out_bvec_fname = _suffixed(obvec, shell_value)
+                np.savetxt(out_bvec_fname, output_bvecs[i].T, fmt="%.8f")
+                logger.info(f"Shell b-vectors saved as {out_bvec_fname}")
+                written["out_shell"].append(out_fname)
+                written["out_bval"].append(out_bval_fname)
+                written["out_bvec"].append(out_bvec_fname)
+
+        # The files carry the b-values of their shell, so the names set by the
+        # input/output iterator do not exist. When a single shell file was
+        # written, report it, so that a pipeline can hand it to the next stage.
+        if all(len(paths) == 1 for paths in written.values()):
+            self.last_generated_outputs.update(
+                {key: paths[0] for key, paths in written.items()}
+            )
 
 
 class ExtractVolumeFlow(Workflow):
