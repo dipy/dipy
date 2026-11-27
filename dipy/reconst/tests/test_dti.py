@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
@@ -55,6 +56,50 @@ def test_roll_evals():
     # Just making sure this never passes through
     weird_evals = np.array([1, 0.5])
     npt.assert_raises(ValueError, dti._roll_evals, weird_evals)
+    npt.assert_raises(ValueError, dti._roll_evals, np.array(1.0))
+
+    # The checked axis is the one given by `axis`, not always the last one
+    evals = np.ones((4, 3, 5))
+    npt.assert_equal(dti._roll_evals(evals, axis=1).shape, (3, 4, 5))
+    npt.assert_raises(ValueError, dti._roll_evals, evals)
+    npt.assert_raises(ValueError, dti._roll_evals, evals, axis=0)
+    npt.assert_raises(np.exceptions.AxisError, dti._roll_evals, evals, axis=5)
+
+    # Subclasses such as masked arrays are kept
+    masked = np.ma.masked_array(np.ones((2, 3)), mask=[[0, 0, 0], [1, 1, 1]])
+    assert isinstance(dti._roll_evals(masked), np.ma.MaskedArray)
+    assert fractional_anisotropy(masked).mask.tolist() == [False, True]
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        fractional_anisotropy,
+        geodesic_anisotropy,
+        mean_diffusivity,
+        axial_diffusivity,
+        radial_diffusivity,
+        trace,
+        linearity,
+        planarity,
+        sphericity,
+    ],
+)
+def test_evals_functions_axis_and_array_like(func):
+    rng = np.random.default_rng(1234)
+    evals = np.sort(rng.random((4, 5, 3)), axis=-1)[..., ::-1]
+    expected = func(evals)
+
+    # Eigenvalues on any axis give the same result
+    npt.assert_array_almost_equal(func(np.moveaxis(evals, -1, 0), axis=0), expected)
+    npt.assert_array_almost_equal(func(np.moveaxis(evals, -1, 1), axis=1), expected)
+
+    # Lists are accepted, as the docstrings say "array-like"
+    npt.assert_array_almost_equal(func(evals[0].tolist()), expected[0])
+
+    # A single voxel gives a scalar-shaped result, as an array or a list
+    npt.assert_array_almost_equal(func(evals[0, 0]), expected[0, 0])
+    npt.assert_array_almost_equal(func(evals[0, 0].tolist()), expected[0, 0])
 
 
 @set_random_number_generator()
