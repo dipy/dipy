@@ -26,7 +26,6 @@ def _validate_signals(observed, predicted, axis):
 def _mean_magnitude(values, axis, *, squared):
     magnitude = np.abs(values)
     peak = magnitude.max(axis=axis, keepdims=True)
-    # Rescaling avoids overflow or underflow when squaring large or small values.
     magnitude /= np.where(peak == 0, 1, peak)
     if squared:
         np.square(magnitude, out=magnitude)
@@ -37,36 +36,23 @@ def _mean_magnitude(values, axis, *, squared):
 
 
 def rmse(observed, predicted, *, axis=-1):
-    """Compute the root mean squared error between paired signals.
+    """Compute the root mean squared error in the signal units.
 
     Parameters
     ----------
     observed, predicted : array_like
-        Nonempty, real numeric signals with identical shapes. Corresponding
-        entries must represent the same measurements in the same units.
+        Equally shaped, nonempty, finite real signals in the same units.
     axis : int, optional
-        Measurement axis to reduce. The default is the last axis.
+        Measurement axis, defaulting to the last.
 
     Returns
     -------
     error : floating or ndarray
-        Square root of the mean squared residual, in the input signal units.
-        The output shape is the input shape with `axis` removed. A 1D input
-        gives a scalar.
-
-    Raises
-    ------
-    ValueError
-        If the shapes differ, the arrays are empty, or either contains NaN or
-        infinity.
-    TypeError
-        If either signal has a non-real-numeric dtype or `axis` is not an integer.
-    numpy.exceptions.AxisError
-        If `axis` is out of bounds.
+        Root mean squared residual with the measurement axis removed.
 
     Notes
     -----
-    Calculations use at least double precision, including for integer inputs.
+    Calculations use at least double precision.
 
     Examples
     --------
@@ -79,46 +65,22 @@ def rmse(observed, predicted, *, axis=-1):
 
 
 def nrmse(observed, predicted, *, normalization="rms", axis=-1):
-    """Compute the normalized root mean squared error between paired signals.
+    """Divide RMSE by a scale computed from the observed signal.
 
     Parameters
     ----------
     observed, predicted : array_like
-        Nonempty, real numeric signals with identical shapes. Corresponding
-        entries must represent the same measurements in the same units.
+        Equally shaped, nonempty, finite real signals in the same units.
     normalization : {'rms', 'mean_absolute'}, optional
-        Scale computed from the observed signal along `axis`. ``'rms'`` is
-        the root mean square (the default). ``'mean_absolute'`` is the mean
-        absolute magnitude and equals the mean for nonnegative observations.
+        Observed root mean square (default) or mean absolute magnitude.
     axis : int, optional
-        Measurement axis to reduce. The default is the last axis.
+        Measurement axis, defaulting to the last.
 
     Returns
     -------
     error : floating or ndarray
-        Dimensionless ratio with the input shape minus `axis`. A 1D input
-        gives a scalar. A zero normalization scale gives NaN, even for an
-        exact prediction.
-
-    Raises
-    ------
-    ValueError
-        If the shapes differ, the arrays are empty, either contains NaN or
-        infinity, or `normalization` is unsupported.
-    TypeError
-        If either signal has a non-real-numeric dtype or `axis` is not an integer.
-    numpy.exceptions.AxisError
-        If `axis` is out of bounds.
-
-    See Also
-    --------
-    rmse : Root mean squared error in the original signal units.
-
-    Notes
-    -----
-    RMSE is computed in the original signal units, then divided by the
-    observed scale. Both terms use the same measurements. Calculations use
-    at least double precision.
+        Dimensionless error with the measurement axis removed. A zero scale
+        gives NaN.
 
     Examples
     --------

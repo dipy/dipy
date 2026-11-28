@@ -101,7 +101,6 @@ def _spherical_density_folds(gtab, folds, *, shell_tol, rng):
     for label in range(len(centers)):
         shell = rng.permutation(np.flatnonzero(shell_labels == label))
         for group in _direction_groups(directions[shell], folds):
-            # Carry shell remainders across shells so global sizes stay balanced.
             slots = (cursor + np.arange(len(group))) % folds
             assignments[rng.permutation(shell[group])] = fold_order[slots]
             cursor = (cursor + len(group)) % folds
@@ -117,7 +116,6 @@ def _direction_groups(directions, size):
 
     similarities = np.clip(np.abs(directions @ directions.T), 0, 1)
     np.fill_diagonal(similarities, -np.inf)
-    # Smaller similarity to the last neighbor means a larger angular radius.
     column = len(directions) - (size - 1)
     density = np.partition(similarities, column, axis=1)[:, column]
     remaining = np.ones(len(directions), dtype=bool)
@@ -158,64 +156,47 @@ def kfold_xval(
     shell_tol=20,
     **model_kwargs,
 ):
-    """Perform k-fold cross-validation.
+    """Predict held-out diffusion measurements using k-fold cross-validation.
 
-    It generates out-of-sample predictions for each measurement.
-
-    See :footcite:p:`Rokem2014` for further details about the method.
+    See :footcite:p:`Rokem2014` for the method.
 
     Parameters
     ----------
     model : Model class instance
-        The type of the model to use for prediction. The corresponding Fit
-        object must have a `predict` function implemented One of the following:
-        `reconst.dti.TensorModel` or
-        `reconst.csdeconv.ConstrainedSphericalDeconvModel`.
+        Model with a gradient table and a fit supporting `predict(gtab=..., S0=...)`.
     data : ndarray
-        Diffusion MRI data acquired with the GradientTable of the model. Shape
-        will typically be `(x, y, z, b)` where `xyz` are spatial dimensions and
-        b is the number of bvals/bvecs in the GradientTable.
+        Diffusion MRI data with measurements along the last axis.
     folds : int
-        The number of divisions to apply to the data
+        Number of folds.
     model_args : list
-        Additional arguments to the model initialization
+        Positional arguments for model construction.
     split_strategy : {'random', 'spherical_density'}, optional
-        The default randomly splits the DWI measurements into equal-sized folds.
-        Spherical-density splitting distributes local groups of directions within
-        each b-value shell across folds. It supports uneven counts and balances
-        both total and per-shell fold sizes to within one measurement.
+        Random splitting requires equal fold sizes. Spherical-density splitting
+        spreads nearby antipodal directions across folds within each shell and
+        balances total and per-shell sizes to within one measurement.
     shell_tol : float, optional
-        Tolerance in s/mm² for identifying shells with spherical-density splitting.
+        Shell tolerance in s/mm? for spherical-density splitting.
     model_kwargs : dict
-        Additional key-word arguments to the model initialization. If contains
-        the kwarg `mask`, this will be used as a key-word argument to the `fit`
-        method of the model object, rather than being used in the
-        initialization of the model object. Pass `rng` as a `numpy.random.Generator`
-        to reproduce a split.
+        Model keywords. `mask` goes to `fit`. Pass a `numpy.random.Generator`
+        as `rng` to reproduce a split.
+
+    Returns
+    -------
+    prediction : ndarray
+        Predictions in acquisition order. All fits use every b0 measurement,
+        and the returned b0 positions contain their observed mean.
 
     Notes
     -----
-    This function assumes that a prediction API is implemented in the Model
-    class for which prediction is conducted. That is, the Fit object that gets
-    generated upon fitting the model needs to have a `predict` method, which
-    receives a GradientTable class instance as input and produces a predicted
-    signal as output.
-
-    The model's gradient table supplies b-values and gradient directions. All
-    b0 measurements are used in each fit and their mean fills the b0 positions
-    of the returned array. Spherical-density splitting assumes shelled linear
-    encoding and treats opposite gradient directions as equivalent axes. Repeated
-    measurements of an axis can be assigned to different folds.
+    Spherical-density splitting requires shelled linear encoding and at least
+    one b0. Repeated measurements of the same axis can land in different folds.
 
     References
     ----------
     .. footbibliography::
-
     """
     rng = model_kwargs.pop("rng", np.random.default_rng())
 
-    # This should always be there, if the model inherits from
-    # dipy.reconst.base.ReconstModel:
     gtab = model.gtab
     b0_indices = np.flatnonzero(gtab.b0s_mask)
     dwi_indices = np.flatnonzero(~gtab.b0s_mask)
@@ -225,7 +206,6 @@ def kfold_xval(
             raise ValueError("The data's last axis must match the gradient table.")
         holdouts = _spherical_density_folds(gtab, folds, shell_tol=shell_tol, rng=rng)
     elif split_strategy == "random":
-        # Preserve the existing seeded random permutation.
         div_by_folds = np.mod(dwi_indices.size, folds)
         if div_by_folds != 0:
             raise ValueError(f"np.mod({dwi_indices.size}, {folds}) is {div_by_folds}")
@@ -236,7 +216,6 @@ def kfold_xval(
     S0 = np.mean(data[..., gtab.b0s_mask], axis=-1)
     prediction = np.zeros(data.shape)
 
-    # Pop the mask, if there is one, out here for use in every fold:
     mask = model_kwargs.pop("mask", None)
     for holdout in holdouts:
         train = np.ones(dwi_indices.size, dtype=bool)
@@ -261,6 +240,5 @@ def kfold_xval(
 
         prediction[..., held_dwi_indices] = this_predict[..., b0_indices.size :]
 
-    # For the b0 measurements
     prediction[..., gtab.b0s_mask] = S0[..., None]
     return prediction

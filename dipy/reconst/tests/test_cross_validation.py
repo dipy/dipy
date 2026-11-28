@@ -182,7 +182,6 @@ def test_spherical_density_spreads_clustered_measurements():
     labels = np.repeat(np.arange(3), counts)
     directions = np.eye(3)[labels]
     directions[::2] *= -1
-    # Tilt one repeated axis slightly and keep that measurement eligible.
     directions[0] = [-np.sqrt(1 - 1e-6), 0.001, 0]
     gtab = _density_test_gtab(np.full(len(labels), 1000), directions)
     folds = xval._spherical_density_folds(

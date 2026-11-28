@@ -170,7 +170,6 @@ def test_reconstruction_signals(model_name):
             snr=None,
         )
 
-    # Perturb one measurement so the test compares meaningful nonzero residuals.
     observed = np.stack([signal, signal])
     observed[:, -1] += [2.0, -4.0]
     predicted = model.fit(observed).predict(gtab, S0=s0)
