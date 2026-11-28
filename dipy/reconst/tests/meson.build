@@ -19,6 +19,7 @@ python_sources = [
   'test_ivim.py',
   'test_mapmri.py',
   'test_mcsd.py',
+  'test_metrics.py',
   'test_msdki.py',
   'test_multi_voxel.py',
   'test_odf.py',
