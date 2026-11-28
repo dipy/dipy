@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.core.gradients as gt
 import dipy.data as dpd
@@ -143,3 +144,167 @@ def test_no_predict():
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Whatever
 
     npt.assert_raises(ValueError, xval.kfold_xval, my_model, data, 2)
+
+
+def _density_test_gtab(bvals, directions):
+    return gt.gradient_table(np.r_[0, bvals], bvecs=np.vstack(([0, 0, 0], directions)))
+
+
+def test_spherical_density_shell_balance_and_seed():
+    rng = np.random.default_rng(7)
+    counts = [9, 7, 2]
+    bvals = np.repeat([1000, 2000, 3000], counts)
+    directions = rng.normal(size=(len(bvals), 3))
+    directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+    order = rng.permutation(len(bvals))
+    bvals, directions = bvals[order], directions[order]
+
+    def split(directions):
+        return xval._spherical_density_folds(
+            _density_test_gtab(bvals, directions),
+            5,
+            shell_tol=20,
+            rng=np.random.default_rng(17),
+        )
+
+    folds = split(directions)
+    npt.assert_array_equal(np.sort(np.concatenate(folds)), np.arange(len(bvals)))
+    assert np.ptp([len(fold) for fold in folds]) == 1
+    for shell in np.unique(bvals):
+        assert np.ptp([np.count_nonzero(bvals[fold] == shell) for fold in folds]) <= 1
+    signs = rng.choice([-1, 1], size=(len(bvals), 1))
+    for fold, flipped in zip(folds, split(directions * signs)):
+        npt.assert_array_equal(fold, flipped)
+
+
+def test_spherical_density_spreads_clustered_measurements():
+    counts = [4, 8, 12]
+    labels = np.repeat(np.arange(3), counts)
+    directions = np.eye(3)[labels]
+    directions[::2] *= -1
+    directions[0] = [-np.sqrt(1 - 1e-6), 0.001, 0]
+    gtab = _density_test_gtab(np.full(len(labels), 1000), directions)
+    folds = xval._spherical_density_folds(
+        gtab, 4, shell_tol=20, rng=np.random.default_rng(12)
+    )
+
+    def worst_gap(holdouts):
+        return max(
+            np.max(
+                np.arccos(np.clip(np.abs(np.eye(3) @ directions[fold].T).max(1), 0, 1))
+            )
+            for fold in holdouts
+        )
+
+    for fold in folds:
+        npt.assert_array_equal(np.bincount(labels[fold], minlength=3), [1, 2, 3])
+    random_gaps = [
+        worst_gap(np.split(np.random.default_rng(seed).permutation(len(labels)), 4))
+        for seed in range(20)
+    ]
+    assert worst_gap(folds) < np.deg2rad(1)
+    assert worst_gap(folds) < np.median(random_gaps)
+
+
+def test_spherical_density_preserves_acquisition_metadata_and_order():
+    bvals = np.array([1000, 0, 1001, 2000, 80, 2001, 1002])
+    directions = np.eye(3)[np.arange(len(bvals)) % 3]
+    kwargs = {"b0_threshold": 100, "big_delta": 0.05, "small_delta": 0.02}
+    gtab = gt.gradient_table(bvals, bvecs=directions, btens="LTE", **kwargs)
+    signal = np.arange(len(bvals), dtype=float)
+    signal[gtab.b0s_mask] = [1, 3]
+    voxel_mask = np.array([True, False])
+    fitted, held = [], []
+
+    def check_table(table):
+        for key, value in kwargs.items():
+            assert getattr(table, key) == value
+        original = np.array([np.flatnonzero(bvals == b)[0] for b in table.bvals])
+        npt.assert_array_equal(table.btens, gtab.btens[original])
+        npt.assert_array_equal(table.bvals[table.b0s_mask], [0, 80])
+        return original
+
+    class RecordingModel:
+        def __init__(self, gtab):
+            self.gtab = gtab
+
+        def fit(self, data, *, mask):
+            original = check_table(self.gtab)
+            npt.assert_array_equal(mask, voxel_mask)
+            npt.assert_array_equal(data, np.stack([signal[original]] * 2))
+            fitted.append(original[2:])
+            return self
+
+        def predict(self, *, gtab, S0):
+            assert S0 == 1
+            held.append(check_table(gtab)[2:])
+            return np.broadcast_to(gtab.bvals, (2, len(gtab.bvals)))
+
+    args = RecordingModel(gtab), np.stack([signal] * 2), 3
+    with pytest.raises(ValueError, match="np.mod"):
+        xval.kfold_xval(*args)
+
+    prediction = xval.kfold_xval(
+        *args,
+        split_strategy="spherical_density",
+        mask=voxel_mask,
+        rng=np.random.default_rng(5),
+    )
+    expected = 2 * bvals
+    expected[gtab.b0s_mask] = 2
+    npt.assert_array_equal(prediction, np.stack([expected] * 2))
+    dwi_indices = np.flatnonzero(~gtab.b0s_mask)
+    for train, test in zip(fitted, held):
+        npt.assert_array_equal(train, np.setdiff1d(dwi_indices, test))
+    npt.assert_array_equal(np.sort(np.concatenate(held)), dwi_indices)
+
+
+@pytest.mark.parametrize(
+    ("folds", "strategy", "tol", "message"),
+    [
+        (2, "invalid", 20, "split_strategy"),
+        (1, "spherical_density", 20, "folds"),
+        (5, "spherical_density", 20, "folds"),
+        (2.0, "spherical_density", 20, "folds"),
+        (2, "spherical_density", -1, "shell_tol"),
+    ],
+)
+def test_spherical_density_invalid_options(folds, strategy, tol, message):
+    gtab = _density_test_gtab(np.full(3, 1000), np.eye(3))
+    model = dti.TensorModel(gtab)
+    with pytest.raises(ValueError, match=message):
+        xval.kfold_xval(
+            model, np.ones(4), folds, split_strategy=strategy, shell_tol=tol
+        )
+
+
+def test_spherical_density_requires_b0_and_linear_encoding():
+    no_b0 = gt.gradient_table(np.full(3, 1000), bvecs=np.eye(3))
+    with pytest.raises(ValueError, match="at least one b0"):
+        xval.kfold_xval(
+            base.ReconstModel(no_b0), np.ones(3), 2, split_strategy="spherical_density"
+        )
+
+    spherical_encoding = gt.gradient_table(
+        [0, 1000, 1000], bvecs=[[0, 0, 0], [1, 0, 0], [0, 1, 0]], btens="STE"
+    )
+    with pytest.raises(ValueError, match="linear encoding"):
+        xval.kfold_xval(
+            base.ReconstModel(spherical_encoding),
+            np.ones(3),
+            2,
+            split_strategy="spherical_density",
+        )
+
+
+def test_spherical_density_rejects_ambiguous_shell_tie():
+    gtab = _density_test_gtab(
+        [1000, 1016, 1034, 1040, 1052], np.eye(3)[[0, 1, 2, 0, 1]]
+    )
+    with (
+        pytest.warns(UserWarning, match="overlap"),
+        pytest.raises(ValueError, match="uniquely assign"),
+    ):
+        xval._spherical_density_folds(
+            gtab, 2, shell_tol=20, rng=np.random.default_rng(0)
+        )
